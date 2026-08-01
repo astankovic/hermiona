@@ -102,7 +102,7 @@
     // ——— Fast path: working / preview resolution ———
     if (size === 'working') {
       const processed = Engine.process(opts.workingData, params, processOpts);
-      if (!processed) throw new Error('Nema slike za export');
+      if (!processed) throw new Error('No image to export');
       const canvas = canvasFromImageData(processed);
       return {
         canvas: canvas,
@@ -117,7 +117,7 @@
     // ——— No originalImage: scale working canvas (never upscale past working) ———
     if (!opts.originalImage) {
       let base = opts.workingCanvas;
-      if (!base) throw new Error('Nema slike');
+      if (!base) throw new Error('No image');
       // Process first at working res, then downscale if needed
       const ctx = base.getContext('2d', { willReadFrequently: true });
       const data = ctx.getImageData(0, 0, base.width, base.height);

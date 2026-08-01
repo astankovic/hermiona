@@ -1,58 +1,60 @@
 # Hermiona — Premium Photo Editor
 
-Lep, brz i potpuno frontend photo editor inspirisan Lightroom-om.  
-Radi kao **single-page** aplikacija i savršeno se hostuje na **GitHub Pages**.
+A fast, fully frontend photo editor inspired by Lightroom and iOS Photos.  
+Runs as a **single-page** app and hosts cleanly on **GitHub Pages**.
 
-## Karakteristike
+## Features
 
-- **Svetlo**: Ekspozicija, Kontrast, Svetla, Senke, Bela, Crna
-- **Boja**: Temperatura, Nijansa, Zasićenost, Vibracija
-- **Efekti**: Jasnoća, Oštrina, Vinjeta, Zrno + gotovi preseti
-- **Isecanje**: Rotacija 90°, Flip, fine rotacije
-- Before / After poređenje (drži dugme ili Space)
-- Drag & Drop + klik za upload
-- Potpuno responsive i **super mobile-friendly**
-- Tamna premium estetika
-- Nema backend-a, nema build-a, nema zavisnosti
+- **Light**: Exposure, Contrast, Highlights, Shadows, Whites, Blacks
+- **Color**: Temperature, Tint, Saturation, Vibrance
+- **Effects**: Clarity, Sharpen, Vignette, Grain
+- **Presets**: ready looks (Portra, Cinestill, HP5, Lomo, Holga…) = film + camera + lens + grade
+- **Age**: analog imperfections — soft corners, light leak, dust, scratches, film gate, barrel, CA, ghost, stains, Polaroid border, date stamp, halation
+- **Crop**: 90° rotate, flip, straighten
+- Before / After compare (hold photo or Space)
+- Drag & drop + tap to upload
+- Fully responsive and **mobile-friendly**
+- Dark premium UI
+- No backend, no build step, no dependencies
 
-## Kako da hostuješ na GitHub Pages
+## Host on GitHub Pages
 
-1. Napravi novi GitHub repository (npr. `hermiona-editor` ili `photo-editor`)
-2. Upload-uj sadržaj ovog foldera (`index.html`, `styles.css`, `app.js`, `README.md`)
-3. Idi u **Settings → Pages**
-4. Under **Source** izaberi branch `main` (ili `master`) i folder `/ (root)`
-5. Sačuvaj. Posle 30–60 sekundi biće dostupno na:
-   `https://tvoj-username.github.io/ime-repozitorijuma/`
+1. Create a GitHub repository (e.g. `hermiona-editor` or `photo-editor`)
+2. Upload this folder (`index.html`, `styles.css`, `app.js`, `README.md`, `js/`, …)
+3. Go to **Settings → Pages**
+4. Under **Source** pick branch `main` (or `master`) and folder `/ (root)`
+5. Save. After 30–60 seconds it will be live at:
+   `https://your-username.github.io/repo-name/`
 
-### Brzi način preko CLI-a
+### Quick CLI path
 
 ```bash
 git init
 git add .
 git commit -m "Initial commit — Hermiona photo editor"
 git branch -M main
-git remote add origin https://github.com/TVOJ_USERNAME/IME_REPO.git
+git remote add origin https://github.com/YOUR_USERNAME/REPO_NAME.git
 git push -u origin main
 ```
 
-Zatim u GitHub-u uključi Pages.
+Then enable Pages in GitHub.
 
-## Lokalni pregled
+## Local preview
 
-Jednostavno otvori `index.html` u browseru ili koristi bilo koji statički server:
+Open `index.html` in a browser or use any static server:
 
 ```bash
 npx serve .
-# ili
+# or
 python -m http.server 8000
 ```
 
-## Napomene
+## Notes
 
-- Za bolje performanse na mobilnim uređajima, editor automatski smanjuje velike fotografije na max ~1600px za real-time editing.
-- Download izvozi trenutno obrađenu (working) verziju u visokom kvalitetu JPEG.
-- Sve radi offline nakon prvog učitavanja.
+- For smoother mobile performance, large photos are downscaled for live editing (working long edge ~1400px).
+- Download re-runs the full pipeline at the chosen export size/quality.
+- Works offline after the first load (portrait AI only downloads when DoF / Analyze is used).
 
 ---
 
-Napravljeno sa pažnjom. Uživaj u uređivanju. ✦
+Built with care. Enjoy editing. ✦

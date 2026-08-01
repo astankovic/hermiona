@@ -269,9 +269,8 @@
 
     const cocMap = cocBuilt ? cocBuilt.coc : null;
 
-    // Film + camera + lens (lens CA/bloom/soft weighted by CoC when available)
+    // Film + camera + imperfections + lens
     if (Looks && options.look) {
-      // During scrub, still apply looks but without CoC-weighted heavy lens path
       Looks.applyLooks(
         data,
         w,
@@ -279,7 +278,8 @@
         options.look,
         options.grainMode || 'static',
         quality,
-        fast ? null : cocMap
+        fast ? null : cocMap,
+        { fast: fast }
       );
     }
 

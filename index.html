@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="sr">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -16,13 +16,13 @@
     <!-- Top chrome — iOS Photos style -->
     <header class="topbar" id="topbar">
       <div class="topbar-left">
-        <button type="button" class="tb-btn" id="btnClose" title="Zatvori / nova slika" disabled>
+        <button type="button" class="tb-btn" id="btnClose" title="Close / new photo" disabled>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
-        <button type="button" class="tb-btn" id="btnUndo" title="Poništi" disabled>
+        <button type="button" class="tb-btn" id="btnUndo" title="Undo" disabled>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6.7 3L3 13"/></svg>
         </button>
-        <button type="button" class="tb-btn" id="btnRedo" title="Ponovi" disabled>
+        <button type="button" class="tb-btn" id="btnRedo" title="Redo" disabled>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6.7 3L21 13"/></svg>
         </button>
       </div>
@@ -31,17 +31,17 @@
         <span class="topbar-title" id="topbarTitle">Hermiona</span>
         <div class="header-busy" id="headerBusy" hidden>
           <span class="busy-spinner" aria-hidden="true"></span>
-          <span class="header-busy-text" id="headerBusyText">Obrada…</span>
+          <span class="header-busy-text" id="headerBusyText">Processing…</span>
         </div>
       </div>
 
       <div class="topbar-right">
-        <button type="button" class="tb-btn" id="btnReset" title="Resetuj sve" disabled>
+        <button type="button" class="tb-btn" id="btnReset" title="Reset all" disabled>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
         </button>
         <button type="button" class="tb-done" id="btnDownload" disabled>
           <span class="btn-spinner" hidden aria-hidden="true"></span>
-          <span class="btn-label">Gotovo</span>
+          <span class="btn-label">Done</span>
         </button>
       </div>
     </header>
@@ -58,35 +58,44 @@
                 <path d="M21 15l-5-5L5 21"/>
               </svg>
             </div>
-            <p class="drop-title">Dodaj fotografiju</p>
-            <p class="drop-sub">Dodirni ili prevuci · brzi edit</p>
-            <button type="button" class="btn-pill" id="btnUpload">Učitaj</button>
+            <p class="drop-title">Add a photo</p>
+            <p class="drop-sub">Tap or drop · quick edit</p>
+            <button type="button" class="btn-pill" id="btnUpload">Upload</button>
           </div>
         </div>
 
         <div class="canvas-wrap" id="canvasWrap">
           <canvas id="mainCanvas"></canvas>
+        </div>
 
-          <!-- Crop overlay -->
-          <div class="crop-layer" id="cropLayer" hidden>
-            <div class="crop-frame" id="cropFrame">
-              <div class="crop-rect" id="cropRect">
-                <div class="crop-grid"></div>
-                <span class="crop-handle nw" data-handle="nw"></span>
-                <span class="crop-handle n" data-handle="n"></span>
-                <span class="crop-handle ne" data-handle="ne"></span>
-                <span class="crop-handle e" data-handle="e"></span>
-                <span class="crop-handle se" data-handle="se"></span>
-                <span class="crop-handle s" data-handle="s"></span>
-                <span class="crop-handle sw" data-handle="sw"></span>
-                <span class="crop-handle w" data-handle="w"></span>
-              </div>
+        <!-- Crop overlay (tracks canvas display box; not transformed with zoom parent) -->
+        <div class="crop-layer" id="cropLayer" hidden>
+          <div class="crop-frame" id="cropFrame">
+            <div class="crop-guides" id="cropGuides" aria-hidden="true"></div>
+            <div class="crop-rect" id="cropRect">
+              <div class="crop-grid"></div>
+              <span class="crop-handle nw" data-handle="nw"></span>
+              <span class="crop-handle n" data-handle="n"></span>
+              <span class="crop-handle ne" data-handle="ne"></span>
+              <span class="crop-handle e" data-handle="e"></span>
+              <span class="crop-handle se" data-handle="se"></span>
+              <span class="crop-handle s" data-handle="s"></span>
+              <span class="crop-handle sw" data-handle="sw"></span>
+              <span class="crop-handle w" data-handle="w"></span>
             </div>
+            <div class="subject-hint" id="subjectHint" hidden></div>
           </div>
         </div>
 
+        <!-- Zoom HUD -->
+        <div class="zoom-hud" id="zoomHud" hidden>
+          <button type="button" class="zoom-btn" id="btnZoomOut" title="Zoom out">−</button>
+          <button type="button" class="zoom-btn zoom-label" id="btnZoomFit" title="Fit to screen">100%</button>
+          <button type="button" class="zoom-btn" id="btnZoomIn" title="Zoom in">+</button>
+        </div>
+
         <!-- Hold-to-compare hint -->
-        <div class="compare-hint" id="compareHint" hidden>Drži za original</div>
+        <div class="compare-hint" id="compareHint" hidden>Hold for original</div>
 
         <!-- Look badge -->
         <div class="look-chip" id="lookChip" hidden></div>
@@ -95,142 +104,169 @@
         <div class="busy-overlay" id="busyOverlay" hidden aria-live="polite" aria-busy="true">
           <div class="busy-card">
             <div class="busy-spinner" aria-hidden="true"></div>
-            <p class="busy-title" id="busyTitle">Obrada…</p>
+            <p class="busy-title" id="busyTitle">Processing…</p>
             <p class="busy-sub" id="busySub" hidden></p>
           </div>
         </div>
       </div>
     </main>
 
-    <!-- Editor dock — iOS Photos style -->
+    <!-- Editor dock — iOS Photos style (bottom portrait · side landscape/desktop) -->
     <footer class="dock" id="dock" hidden>
-      <!-- Active dial row (adjust tools) -->
-      <div class="dial-row" id="dialRow" hidden>
-        <button type="button" class="dial-reset" id="dialReset" title="Vrati na podrazumevano" hidden>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-        </button>
-        <div class="dial-meta">
-          <span class="dial-name" id="dialName">Ekspozicija</span>
-          <span class="dial-value" id="dialValue">0</span>
-        </div>
-        <div class="dial-track-wrap" id="dialTrackWrap">
-          <input type="range" id="activeDial" class="ios-dial" min="-100" max="100" step="1" value="0" />
-          <div class="dial-center-mark" aria-hidden="true"></div>
-        </div>
-        <p class="dial-hint" id="dialHint">Drži chip · fino podešavanje · 2× tap = reset</p>
-      </div>
-
-      <!-- Horizontal adjustment chips -->
-      <div class="chips-scroll" id="chipsScroll" hidden>
-        <div class="chips" id="chips" role="listbox" aria-label="Podešavanja"></div>
-      </div>
-
-      <!-- Looks panel (film / camera / lens) -->
-      <div class="subpanel" id="panelLooks" hidden>
-        <div class="subpanel-seg" id="looksSeg" role="tablist">
-          <button type="button" class="seg-btn active" data-looks="film">Film</button>
-          <button type="button" class="seg-btn" data-looks="camera">Aparat</button>
-          <button type="button" class="seg-btn" data-looks="lens">Objektiv</button>
-        </div>
-        <div class="look-scroll" id="filmLooks"></div>
-        <div class="look-scroll" id="cameraLooks" hidden></div>
-        <div class="look-scroll" id="lensLooks" hidden></div>
-        <div class="look-intensity" id="lookIntensityWrap" hidden>
-          <div class="dial-meta compact">
-            <span class="dial-name" id="lookIntensityName">Intenzitet</span>
-            <span class="dial-value" id="lookIntensityValue">100</span>
+      <div class="dock-body" id="dockBody">
+        <!-- Active dial row (adjust tools) -->
+        <div class="dial-row" id="dialRow" hidden>
+          <button type="button" class="dial-reset" id="dialReset" title="Reset to default" hidden>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          </button>
+          <div class="dial-meta">
+            <span class="dial-name" id="dialName">Exposure</span>
+            <span class="dial-value" id="dialValue">0</span>
           </div>
-          <input type="range" id="lookIntensity" class="ios-dial" min="0" max="100" step="1" value="100" />
+          <div class="dial-track-wrap" id="dialTrackWrap">
+            <input type="range" id="activeDial" class="ios-dial" min="-100" max="100" step="1" value="0" />
+            <div class="dial-center-mark" aria-hidden="true"></div>
+          </div>
+          <p class="dial-hint" id="dialHint">Hold chip · fine adjust · double-tap = reset</p>
         </div>
-      </div>
 
-      <!-- Crop panel -->
-      <div class="subpanel" id="panelCrop" hidden>
-        <div class="crop-tools">
-          <button type="button" class="tool-icon-btn" id="btnRotateLeft" title="Rotiraj levo">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2.5 12a9.5 9.5 0 1 1 1.5 5.2"/><polyline points="2 8 2.5 12 6.5 11.5"/></svg>
-            <span>90°</span>
-          </button>
-          <button type="button" class="tool-icon-btn" id="btnRotateRight" title="Rotiraj desno">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21.5 12a9.5 9.5 0 1 0-1.5 5.2"/><polyline points="22 8 21.5 12 17.5 11.5"/></svg>
-            <span>90°</span>
-          </button>
-          <button type="button" class="tool-icon-btn" id="btnFlipH" title="Obrni H">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
-            <span>Flip H</span>
-          </button>
-          <button type="button" class="tool-icon-btn" id="btnFlipV" title="Obrni V">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3"/><path d="M3 16v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-            <span>Flip V</span>
-          </button>
+        <!-- Horizontal adjustment chips -->
+        <div class="chips-scroll" id="chipsScroll" hidden>
+          <div class="chips" id="chips" role="listbox" aria-label="Adjustments"></div>
         </div>
-        <div class="ratio-scroll">
-          <button type="button" class="ratio-chip active" data-ratio="free">Slobodno</button>
-          <button type="button" class="ratio-chip" data-ratio="original">Original</button>
-          <button type="button" class="ratio-chip" data-ratio="1:1">1:1</button>
-          <button type="button" class="ratio-chip" data-ratio="4:5">4:5</button>
-          <button type="button" class="ratio-chip" data-ratio="3:2">3:2</button>
-          <button type="button" class="ratio-chip" data-ratio="4:3">4:3</button>
-          <button type="button" class="ratio-chip" data-ratio="16:9">16:9</button>
-          <button type="button" class="ratio-chip" data-ratio="9:16">9:16</button>
-        </div>
-        <div class="crop-apply-row">
-          <button type="button" class="btn-ghost-wide" id="btnCropReset">Reset</button>
-          <button type="button" class="btn-accent-wide" id="btnCropApply">Primeni</button>
-        </div>
-      </div>
 
-      <!-- Portrait / scene panel -->
-      <div class="subpanel" id="panelPortrait" hidden>
-        <p class="scene-status" id="sceneStatus">Učitaj sliku</p>
-        <div class="portrait-actions">
-          <button type="button" class="btn-pill sm" id="btnSceneAnalyze" disabled>
-            <span class="btn-spinner" hidden aria-hidden="true"></span>
-            <span class="btn-label">Analiziraj</span>
-          </button>
-          <label class="ios-switch">
-            <input type="checkbox" id="opticsEnabled" checked />
-            <span class="ios-switch-ui"></span>
-            <span class="ios-switch-label">DoF</span>
-          </label>
+        <!-- Looks panel: Presets + film / camera / lens -->
+        <div class="subpanel" id="panelLooks" hidden>
+          <div class="subpanel-seg" id="looksSeg" role="tablist">
+            <button type="button" class="seg-btn active" data-looks="presets">Presets</button>
+            <button type="button" class="seg-btn" data-looks="film">Film</button>
+            <button type="button" class="seg-btn" data-looks="camera">Camera</button>
+            <button type="button" class="seg-btn" data-looks="lens">Lens</button>
+          </div>
+
+          <!-- Curated recipes -->
+          <div class="presets-pane" id="presetsPane">
+            <div class="preset-cats" id="presetCats" role="tablist" aria-label="Categories"></div>
+            <div class="preset-scroll" id="presetLooks"></div>
+            <p class="preset-hint" id="presetHint">Ready looks · film + camera + lens</p>
+          </div>
+
+          <div class="look-scroll" id="filmLooks" hidden></div>
+          <div class="look-scroll" id="cameraLooks" hidden></div>
+          <div class="look-scroll" id="lensLooks" hidden></div>
+          <div class="look-intensity" id="lookIntensityWrap" hidden>
+            <div class="dial-meta compact">
+              <span class="dial-name" id="lookIntensityName">Strength</span>
+              <span class="dial-value" id="lookIntensityValue">100</span>
+            </div>
+            <input type="range" id="lookIntensity" class="ios-dial" min="0" max="100" step="1" value="100" />
+          </div>
         </div>
-        <div class="focal-scroll" id="focalRecipeGrid">
-          <button type="button" class="ratio-chip" data-focal="35">35mm</button>
-          <button type="button" class="ratio-chip active" data-focal="50">50mm</button>
-          <button type="button" class="ratio-chip" data-focal="85">85mm</button>
-          <button type="button" class="ratio-chip" data-focal="anamo">Anamo</button>
+
+        <!-- Crop panel — studio framing -->
+        <div class="subpanel" id="panelCrop" hidden>
+          <p class="crop-section-label">Studio frame</p>
+          <div class="frame-scroll" id="frameSuggestScroll">
+            <button type="button" class="ratio-chip frame-chip active" data-frame="full">Full</button>
+            <button type="button" class="ratio-chip frame-chip" data-frame="subject">Subject</button>
+            <button type="button" class="ratio-chip frame-chip" data-frame="portrait">Portrait</button>
+            <button type="button" class="ratio-chip frame-chip" data-frame="thirds">Thirds</button>
+            <button type="button" class="ratio-chip frame-chip" data-frame="tight">Tight</button>
+            <button type="button" class="ratio-chip frame-chip" data-frame="wide">Wide</button>
+            <button type="button" class="ratio-chip frame-chip" data-frame="center">Center</button>
+          </div>
+          <p class="crop-hint" id="cropHint">Soft-snaps to subject &amp; thirds · scroll to zoom</p>
+
+          <div class="crop-tools">
+            <button type="button" class="tool-icon-btn" id="btnRotateLeft" title="Rotate left">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2.5 12a9.5 9.5 0 1 1 1.5 5.2"/><polyline points="2 8 2.5 12 6.5 11.5"/></svg>
+              <span>90°</span>
+            </button>
+            <button type="button" class="tool-icon-btn" id="btnRotateRight" title="Rotate right">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21.5 12a9.5 9.5 0 1 0-1.5 5.2"/><polyline points="22 8 21.5 12 17.5 11.5"/></svg>
+              <span>90°</span>
+            </button>
+            <button type="button" class="tool-icon-btn" id="btnFlipH" title="Flip horizontal">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
+              <span>Flip H</span>
+            </button>
+            <button type="button" class="tool-icon-btn" id="btnFlipV" title="Flip vertical">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3"/><path d="M3 16v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              <span>Flip V</span>
+            </button>
+          </div>
+          <div class="ratio-scroll">
+            <button type="button" class="ratio-chip active" data-ratio="free">Free</button>
+            <button type="button" class="ratio-chip" data-ratio="original">Original</button>
+            <button type="button" class="ratio-chip" data-ratio="1:1">1:1</button>
+            <button type="button" class="ratio-chip" data-ratio="4:5">4:5</button>
+            <button type="button" class="ratio-chip" data-ratio="3:2">3:2</button>
+            <button type="button" class="ratio-chip" data-ratio="4:3">4:3</button>
+            <button type="button" class="ratio-chip" data-ratio="16:9">16:9</button>
+            <button type="button" class="ratio-chip" data-ratio="9:16">9:16</button>
+          </div>
+          <div class="crop-apply-row">
+            <button type="button" class="btn-ghost-wide" id="btnCropReset">Reset</button>
+            <button type="button" class="btn-accent-wide" id="btnCropApply">Apply</button>
+          </div>
         </div>
-        <div class="bokeh-scroll" id="bokehShapeGrid">
-          <button type="button" class="ratio-chip active" data-bokeh="auto">Auto</button>
-          <button type="button" class="ratio-chip" data-bokeh="circle">Circle</button>
-          <button type="button" class="ratio-chip" data-bokeh="hex">Hex</button>
-          <button type="button" class="ratio-chip" data-bokeh="anamorphic">Anamo</button>
-        </div>
-        <div class="debug-row compact">
-          <button type="button" class="debug-btn active" data-debug="off">Off</button>
-          <button type="button" class="debug-btn" data-debug="mask">Subj</button>
-          <button type="button" class="debug-btn" data-debug="depth">Depth</button>
-          <button type="button" class="debug-btn" data-debug="coc">CoC</button>
+
+        <!-- Portrait / scene panel -->
+        <div class="subpanel" id="panelPortrait" hidden>
+          <p class="scene-status" id="sceneStatus">Load a photo</p>
+          <div class="portrait-actions">
+            <button type="button" class="btn-pill sm" id="btnSceneAnalyze" disabled>
+              <span class="btn-spinner" hidden aria-hidden="true"></span>
+              <span class="btn-label">Analyze</span>
+            </button>
+            <label class="ios-switch">
+              <input type="checkbox" id="opticsEnabled" />
+              <span class="ios-switch-ui"></span>
+              <span class="ios-switch-label">DoF</span>
+            </label>
+          </div>
+          <div class="focal-scroll" id="focalRecipeGrid">
+            <button type="button" class="ratio-chip" data-focal="35">35mm</button>
+            <button type="button" class="ratio-chip active" data-focal="50">50mm</button>
+            <button type="button" class="ratio-chip" data-focal="85">85mm</button>
+            <button type="button" class="ratio-chip" data-focal="anamo">Anamo</button>
+          </div>
+          <div class="bokeh-scroll" id="bokehShapeGrid">
+            <button type="button" class="ratio-chip active" data-bokeh="auto">Auto</button>
+            <button type="button" class="ratio-chip" data-bokeh="circle">Circle</button>
+            <button type="button" class="ratio-chip" data-bokeh="hex">Hex</button>
+            <button type="button" class="ratio-chip" data-bokeh="anamorphic">Anamo</button>
+          </div>
+          <div class="debug-row compact">
+            <button type="button" class="debug-btn active" data-debug="off">Off</button>
+            <button type="button" class="debug-btn" data-debug="mask">Subj</button>
+            <button type="button" class="debug-btn" data-debug="depth">Depth</button>
+            <button type="button" class="debug-btn" data-debug="coc">CoC</button>
+          </div>
         </div>
       </div>
 
       <!-- Category tool rail -->
-      <nav class="tool-rail" id="toolRail" role="tablist" aria-label="Alati">
+      <nav class="tool-rail" id="toolRail" role="tablist" aria-label="Tools">
         <button type="button" class="tool-btn active" data-tool="adjust" role="tab" aria-selected="true">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-          <span>Svetlo</span>
+          <span>Light</span>
         </button>
         <button type="button" class="tool-btn" data-tool="color" role="tab">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" opacity="0.35"/><path d="M12 3a9 9 0 0 1 0 18" opacity="0.5"/></svg>
-          <span>Boja</span>
+          <span>Color</span>
         </button>
         <button type="button" class="tool-btn" data-tool="effects" role="tab">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3z"/><path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8L18 15z" opacity="0.7"/></svg>
-          <span>Efekti</span>
+          <span>Effects</span>
+        </button>
+        <button type="button" class="tool-btn" data-tool="age" role="tab">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 5v14M16 5v14" opacity="0.45"/><path d="M4 10h16" opacity="0.3"/><circle cx="18" cy="8" r="1" fill="currentColor" stroke="none" opacity="0.5"/></svg>
+          <span>Age</span>
         </button>
         <button type="button" class="tool-btn" data-tool="looks" role="tab">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M7 5V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-1"/><circle cx="10" cy="12" r="2.5"/></svg>
-          <span>Look</span>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M7 5v-1a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-1"/><circle cx="10" cy="12" r="2.5"/><path d="M14 9h4M14 12h3" opacity="0.55"/></svg>
+          <span>Preset</span>
         </button>
         <button type="button" class="tool-btn" data-tool="crop" role="tab">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>
@@ -238,7 +274,7 @@
         </button>
         <button type="button" class="tool-btn" data-tool="portrait" role="tab">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5"/><circle cx="12" cy="12" r="9" opacity="0.35"/></svg>
-          <span>Portret</span>
+          <span>Portrait</span>
         </button>
       </nav>
     </footer>
@@ -248,15 +284,15 @@
 
   <!-- Export sheet -->
   <div class="sheet-backdrop" id="exportBackdrop" hidden></div>
-  <div class="sheet" id="exportSheet" hidden role="dialog" aria-label="Preuzmi sliku">
+  <div class="sheet" id="exportSheet" hidden role="dialog" aria-label="Download image">
     <div class="sheet-handle"></div>
-    <h2 class="sheet-title">Preuzmi</h2>
+    <h2 class="sheet-title">Download</h2>
 
-    <p class="sheet-label">Veličina</p>
+    <p class="sheet-label">Size</p>
     <div class="export-size-grid" id="exportSizeGrid">
       <button type="button" class="export-size-btn active" data-size="working">
-        <span class="export-size-name">Pregled</span>
-        <span class="export-size-meta" id="exportMetaWorking">brzo</span>
+        <span class="export-size-name">Preview</span>
+        <span class="export-size-meta" id="exportMetaWorking">fast</span>
       </button>
       <button type="button" class="export-size-btn" data-size="1080">
         <span class="export-size-name">1080px</span>
@@ -264,11 +300,11 @@
       </button>
       <button type="button" class="export-size-btn" data-size="2048">
         <span class="export-size-name">2048px</span>
-        <span class="export-size-meta">visok kvalitet</span>
+        <span class="export-size-meta">high quality</span>
       </button>
       <button type="button" class="export-size-btn" data-size="full">
-        <span class="export-size-name">Pun res</span>
-        <span class="export-size-meta" id="exportMetaFull">izvorni px</span>
+        <span class="export-size-name">Full res</span>
+        <span class="export-size-meta" id="exportMetaFull">source px</span>
       </button>
     </div>
 
@@ -280,7 +316,7 @@
 
     <div class="control export-quality" id="exportQualityWrap">
       <div class="control-header">
-        <label>Kvalitet JPEG</label>
+        <label>JPEG quality</label>
         <span class="value" id="exportQualityValue">95%</span>
       </div>
       <input type="range" id="exportQuality" class="ios-dial" min="0.7" max="1" step="0.01" value="0.95" />
@@ -290,9 +326,9 @@
 
     <button type="button" class="btn-accent-wide block" id="btnExportConfirm">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Preuzmi
+      Download
     </button>
-    <button type="button" class="btn-ghost-wide block sheet-cancel" id="btnExportCancel">Otkaži</button>
+    <button type="button" class="btn-ghost-wide block sheet-cancel" id="btnExportCancel">Cancel</button>
   </div>
 
   <div class="export-toast" id="exportToast" hidden></div>
@@ -300,13 +336,14 @@
   <!-- Fine-adjust press overlay -->
   <div class="fine-overlay" id="fineOverlay" hidden>
     <div class="fine-card">
-      <p class="fine-name" id="fineName">Ekspozicija</p>
+      <p class="fine-name" id="fineName">Exposure</p>
       <p class="fine-value" id="fineValue">0</p>
-      <p class="fine-hint">Povuci levo / desno · otpusti da sačuvaš</p>
+      <p class="fine-hint">Drag left / right · release to keep</p>
     </div>
   </div>
 
   <script src="js/looks.js"></script>
+  <script src="js/imperfections.js"></script>
   <script src="js/scene/depth-pseudo.js"></script>
   <script src="js/scene/coc.js"></script>
   <script src="js/scene/bokeh.js"></script>

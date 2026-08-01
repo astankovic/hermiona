@@ -58,6 +58,36 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7" opacity="0.4"/><circle cx="12" cy="12" r="10" opacity="0.2"/></svg>',
     ca:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="12" r="6" opacity="0.5"/><circle cx="14" cy="12" r="6" opacity="0.7"/></svg>',
+    softCorners:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" opacity="0.35"/><path d="M4 4l2 2M20 4l-2 2M4 20l2-2M20 20l-2-2" opacity="0.5"/></svg>',
+    leakEdge:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 4h16v4H4z" opacity="0.35"/><path d="M18 4v16" opacity="0.7"/><path d="M4 8l14-4" opacity="0.5"/></svg>',
+    dust:
+      '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="7" cy="8" r="1.2"/><circle cx="14" cy="6" r="0.8"/><circle cx="18" cy="12" r="1"/><circle cx="9" cy="15" r="0.7"/><circle cx="15" cy="17" r="1.1"/></svg>',
+    scratches:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 3v18M12 5v14M16 2v20" opacity="0.8"/></svg>',
+    gate:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="5" width="16" height="14" rx="1"/><rect x="7" y="8" width="10" height="8" opacity="0.4"/></svg>',
+    uneven:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 6h16M4 12h16M4 18h16" opacity="0.35"/><path d="M4 4v16" stroke-width="3" opacity="0.7"/></svg>',
+    barrel:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 7c2 3 2 7 0 10M19 7c-2 3-2 7 0 10M8 4h8M8 20h8"/></svg>',
+    lateralCA:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="12" r="5" opacity="0.45"/><circle cx="14" cy="12" r="5" opacity="0.75"/></svg>',
+    ghost:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="12" height="12" rx="1" opacity="0.45"/><rect x="9" y="7" width="12" height="12" rx="1"/></svg>',
+    stains:
+      '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><ellipse cx="9" cy="10" rx="5" ry="4" opacity="0.45"/><ellipse cx="16" cy="15" rx="4" ry="3" opacity="0.35"/></svg>',
+    border:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="3" width="14" height="18" rx="1"/><rect x="7" y="5" width="10" height="10" opacity="0.4"/></svg>',
+    dateStamp:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 18h12M8 18V9l2-2h4l2 2v9"/><path d="M10 13h4" opacity="0.6"/></svg>',
+    halationBlur:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.35" stroke="none"/><circle cx="12" cy="12" r="7" opacity="0.5"/><circle cx="12" cy="12" r="10" opacity="0.25"/></svg>',
+    highlightRoll:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 16c4-8 12-8 16 0"/><path d="M4 18h16" opacity="0.4"/></svg>',
+    imperfIntensity:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg>',
     dofStrength:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" opacity="0.35"/><path d="M4 12h2M18 12h2" opacity="0.5"/></svg>',
     aperture:
@@ -73,43 +103,105 @@
   /** @type {Record<string, AdjDef[]>} */
   const TOOL_ADJUSTMENTS = {
     adjust: [
-      { id: 'exposure', label: 'Ekspozicija', min: -2, max: 2, step: 0.01, def: 0, store: 'params', format: 'exp' },
-      { id: 'contrast', label: 'Kontrast', min: -100, max: 100, step: 1, def: 0, store: 'params' },
-      { id: 'highlights', label: 'Svetla', min: -100, max: 100, step: 1, def: 0, store: 'params' },
-      { id: 'shadows', label: 'Senke', min: -100, max: 100, step: 1, def: 0, store: 'params' },
-      { id: 'whites', label: 'Bela', min: -100, max: 100, step: 1, def: 0, store: 'params' },
-      { id: 'blacks', label: 'Crna', min: -100, max: 100, step: 1, def: 0, store: 'params' }
+      { id: 'exposure', label: 'Exposure', min: -2, max: 2, step: 0.01, def: 0, store: 'params', format: 'exp' },
+      { id: 'contrast', label: 'Contrast', min: -100, max: 100, step: 1, def: 0, store: 'params' },
+      { id: 'highlights', label: 'Highlights', min: -100, max: 100, step: 1, def: 0, store: 'params' },
+      { id: 'shadows', label: 'Shadows', min: -100, max: 100, step: 1, def: 0, store: 'params' },
+      { id: 'whites', label: 'Whites', min: -100, max: 100, step: 1, def: 0, store: 'params' },
+      { id: 'blacks', label: 'Blacks', min: -100, max: 100, step: 1, def: 0, store: 'params' }
     ],
     color: [
-      { id: 'temperature', label: 'Temperatura', min: -100, max: 100, step: 1, def: 0, store: 'params' },
-      { id: 'tint', label: 'Nijansa', min: -100, max: 100, step: 1, def: 0, store: 'params' },
-      { id: 'saturation', label: 'Zasićenost', min: -100, max: 100, step: 1, def: 0, store: 'params' },
-      { id: 'vibrance', label: 'Vibracija', min: -100, max: 100, step: 1, def: 0, store: 'params' }
+      { id: 'temperature', label: 'Temperature', min: -100, max: 100, step: 1, def: 0, store: 'params' },
+      { id: 'tint', label: 'Tint', min: -100, max: 100, step: 1, def: 0, store: 'params' },
+      { id: 'saturation', label: 'Saturation', min: -100, max: 100, step: 1, def: 0, store: 'params' },
+      { id: 'vibrance', label: 'Vibrance', min: -100, max: 100, step: 1, def: 0, store: 'params' }
     ],
     effects: [
-      { id: 'clarity', label: 'Jasnoća', min: -100, max: 100, step: 1, def: 0, store: 'params' },
-      { id: 'sharpen', label: 'Oštrina', min: 0, max: 100, step: 1, def: 0, store: 'params' },
-      { id: 'vignette', label: 'Vinjeta', min: 0, max: 100, step: 1, def: 0, store: 'params' },
-      { id: 'grain', label: 'Zrno', min: 0, max: 100, step: 1, def: 0, store: 'params' },
+      { id: 'clarity', label: 'Clarity', min: -100, max: 100, step: 1, def: 0, store: 'params' },
+      { id: 'sharpen', label: 'Sharpen', min: 0, max: 100, step: 1, def: 0, store: 'params' },
+      { id: 'vignette', label: 'Vignette', min: 0, max: 100, step: 1, def: 0, store: 'params' },
+      { id: 'grain', label: 'Grain', min: 0, max: 100, step: 1, def: 0, store: 'params' },
       { id: 'bloom', label: 'Bloom', min: 0, max: 100, step: 1, def: 0, store: 'look' },
       { id: 'ca', label: 'CA', min: 0, max: 100, step: 1, def: 0, store: 'look' }
     ],
     portrait: [
-      { id: 'dofStrength', label: 'DoF snaga', min: 0, max: 100, step: 1, def: 55, store: 'optics', opticsKey: 'strength', format: 'pct' },
-      { id: 'aperture', label: 'Otvor', min: 0, max: 100, step: 1, def: 55, store: 'optics', opticsKey: 'apertureStrength', format: 'fstop' },
-      { id: 'focusDepth', label: 'Fokus', min: 0, max: 100, step: 1, def: 30, store: 'optics', opticsKey: 'focusDepth', format: 'pct' },
+      { id: 'dofStrength', label: 'DoF amount', min: 0, max: 100, step: 1, def: 55, store: 'optics', opticsKey: 'strength', format: 'pct' },
+      { id: 'aperture', label: 'Aperture', min: 0, max: 100, step: 1, def: 55, store: 'optics', opticsKey: 'apertureStrength', format: 'fstop' },
+      { id: 'focusDepth', label: 'Focus', min: 0, max: 100, step: 1, def: 30, store: 'optics', opticsKey: 'focusDepth', format: 'pct' },
       { id: 'bokehAmount', label: 'Bokeh', min: 0, max: 100, step: 1, def: 55, store: 'optics', opticsKey: 'bokehAmount', format: 'pct' }
     ],
     crop: [
-      { id: 'rotation', label: 'Ispravljanje', min: -45, max: 45, step: 0.5, def: 0, store: 'params', format: 'deg' }
+      { id: 'rotation', label: 'Straighten', min: -45, max: 45, step: 0.5, def: 0, store: 'params', format: 'deg' }
+    ],
+    /** I6 analog imperfections */
+    age: [
+      { id: 'imperfIntensity', label: 'Age amount', min: 0, max: 100, step: 1, def: 100, store: 'look' },
+      { id: 'softCorners', label: 'Soft corners', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
+      { id: 'leakEdge', label: 'Light leak', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
+      { id: 'dust', label: 'Dust', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
+      { id: 'scratches', label: 'Scratches', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
+      { id: 'gate', label: 'Film gate', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
+      { id: 'uneven', label: 'Uneven', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
+      { id: 'barrel', label: 'Barrel', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
+      { id: 'lateralCA', label: 'Edge CA', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
+      { id: 'ghost', label: 'Ghost', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
+      { id: 'stains', label: 'Stains', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
+      { id: 'border', label: 'Polaroid', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
+      { id: 'dateStamp', label: 'Date stamp', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
+      { id: 'halationBlur', label: 'Halation', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
+      { id: 'highlightRoll', label: 'Film knee', min: 0, max: 100, step: 1, def: 0, store: 'imperf' }
     ]
   };
 
+  const IMPERF_KEYS = [
+    'softCorners',
+    'leakEdge',
+    'dust',
+    'scratches',
+    'gate',
+    'uneven',
+    'barrel',
+    'lateralCA',
+    'ghost',
+    'stains',
+    'border',
+    'dateStamp',
+    'halationBlur',
+    'highlightRoll'
+  ];
+
+  function emptyImperf() {
+    const o = {};
+    IMPERF_KEYS.forEach((k) => {
+      o[k] = 0;
+    });
+    return o;
+  }
+
   const LOOK_INTENSITY = {
-    film: { id: 'filmIntensity', label: 'Intenzitet filma', def: 100 },
-    camera: { id: 'cameraIntensity', label: 'Intenzitet aparata', def: 100 },
-    lens: { id: 'lensIntensity', label: 'Intenzitet objektiva', def: 100 }
+    film: { id: 'filmIntensity', label: 'Film strength', def: 100 },
+    camera: { id: 'cameraIntensity', label: 'Camera strength', def: 100 },
+    lens: { id: 'lensIntensity', label: 'Lens strength', def: 100 },
+    presets: { id: 'presetIntensity', label: 'Preset strength', def: 100 }
   };
+
+  /** Base grade keys a preset may set (geometry/rotation excluded) */
+  const PRESET_PARAM_KEYS = [
+    'exposure',
+    'contrast',
+    'highlights',
+    'shadows',
+    'whites',
+    'blacks',
+    'temperature',
+    'tint',
+    'saturation',
+    'vibrance',
+    'clarity',
+    'sharpen',
+    'vignette',
+    'grain'
+  ];
 
   // ========== STATE ==========
   const state = {
@@ -146,13 +238,21 @@
       lens: 'none',
       lensIntensity: 100,
       bloom: 0,
-      ca: 0
+      ca: 0,
+      /** Active curated recipe id */
+      preset: 'none',
+      presetIntensity: 100,
+      /** I6 user imperfection overrides 0..100 (0 = off / use only if set via dials or camera seed) */
+      imperf: emptyImperf(),
+      imperfIntensity: 100,
+      /** when false, resolve() uses camera.imperf defaults only */
+      imperfManual: false
     },
     lookQuality: 'preview',
     scene: null,
     sceneStatus: 'idle',
     optics: {
-      enabled: true,
+      enabled: false, // portrait / DoF off by default
       strength: 0.55,
       apertureStrength: 0.55,
       apertureSlider: 55,
@@ -169,7 +269,22 @@
       y: 0,
       w: 1,
       h: 1,
-      aspect: 'free'
+      aspect: 'free',
+      frame: 'full', // studio suggestion id
+      subject: null // cached bbox {x,y,w,h,cx,cy}
+    },
+    /** CSS viewport — zoom/pan without reprocessing pixels */
+    view: {
+      zoom: 1,
+      panX: 0,
+      panY: 0,
+      fitW: 0,
+      fitH: 0,
+      minZoom: 1,
+      maxZoom: 8,
+      /** true while canvas holds high-res filter detail for zoom */
+      detailActive: false,
+      detailLong: 0
     },
     export: {
       size: 'working',
@@ -179,7 +294,8 @@
     ui: {
       tool: 'adjust',
       activeAdj: 'exposure',
-      looksTab: 'film',
+      looksTab: 'presets',
+      presetCategory: 'all',
       scrubbing: false,
       comparing: false
     },
@@ -236,6 +352,13 @@
   const cropLayer = $('#cropLayer');
   const cropFrame = $('#cropFrame');
   const cropRectEl = $('#cropRect');
+  const canvasWrap = $('#canvasWrap');
+  const zoomHud = $('#zoomHud');
+  const btnZoomIn = $('#btnZoomIn');
+  const btnZoomOut = $('#btnZoomOut');
+  const btnZoomFit = $('#btnZoomFit');
+  const subjectHint = $('#subjectHint');
+  const cropHint = $('#cropHint');
 
   const dialRow = $('#dialRow');
   const dialName = $('#dialName');
@@ -251,6 +374,10 @@
   const filmLooksEl = $('#filmLooks');
   const cameraLooksEl = $('#cameraLooks');
   const lensLooksEl = $('#lensLooks');
+  const presetLooksEl = $('#presetLooks');
+  const presetsPane = $('#presetsPane');
+  const presetCatsEl = $('#presetCats');
+  const presetHint = $('#presetHint');
   const lookIntensityWrap = $('#lookIntensityWrap');
   const lookIntensity = $('#lookIntensity');
   const lookIntensityName = $('#lookIntensityName');
@@ -298,7 +425,7 @@
 
   function refreshBusyUI() {
     const active = busyJobs.size > 0;
-    let title = 'Obrada…';
+    let title = 'Processing…';
     let sub = '';
     if (active) {
       const last = [...busyJobs.values()].pop();
@@ -325,12 +452,12 @@
   }
 
   function busyStart(id, title, sub) {
-    busyJobs.set(id, { title: title || 'Obrada…', sub: sub || '' });
+    busyJobs.set(id, { title: title || 'Processing…', sub: sub || '' });
     refreshBusyUI();
   }
   function busyUpdate(id, title, sub) {
     if (!busyJobs.has(id)) return;
-    busyJobs.set(id, { title: title || 'Obrada…', sub: sub || '' });
+    busyJobs.set(id, { title: title || 'Processing…', sub: sub || '' });
     refreshBusyUI();
   }
   function busyEnd(id) {
@@ -404,6 +531,10 @@
     if (!adj) return 0;
     if (adj.store === 'params') return state.params[adj.id];
     if (adj.store === 'look') return state.look[adj.id];
+    if (adj.store === 'imperf') {
+      if (!state.look.imperf) state.look.imperf = emptyImperf();
+      return state.look.imperf[adj.id] != null ? state.look.imperf[adj.id] : 0;
+    }
     if (adj.store === 'optics') {
       if (adj.id === 'aperture') return state.optics.apertureSlider != null ? state.optics.apertureSlider : 55;
       if (adj.id === 'dofStrength') return Math.round(state.optics.strength * 100);
@@ -425,6 +556,15 @@
     } else if (adj.store === 'look') {
       state.look[adj.id] = val;
       state.lookQuality = 'preview';
+    } else if (adj.store === 'imperf') {
+      if (!state.look.imperf) state.look.imperf = emptyImperf();
+      // First manual tweak: bake current camera defaults into user values
+      if (!state.look.imperfManual) {
+        seedImperfFromCamera(true);
+        state.look.imperfManual = true;
+      }
+      state.look.imperf[adj.id] = val;
+      state.lookQuality = 'preview';
     } else if (adj.store === 'optics') {
       if (adj.id === 'dofStrength') state.optics.strength = val / 100;
       else if (adj.id === 'aperture') {
@@ -444,6 +584,22 @@
       markChipModified();
       updateToolDots();
     }
+  }
+
+  /**
+   * Copy camera.imperf (0..1) → state.look.imperf (0..100).
+   * @param {boolean} [force] also when already manual (for bake-on-first-edit)
+   */
+  function seedImperfFromCamera(force) {
+    if (!Looks) return;
+    if (state.look.imperfManual && !force) return;
+    const cam = Looks.cameraById(state.look.camera || 'none');
+    const base = (cam && cam.imperf) || {};
+    const next = emptyImperf();
+    IMPERF_KEYS.forEach((k) => {
+      next[k] = Math.round(clamp((base[k] || 0) * 100, 0, 100));
+    });
+    state.look.imperf = next;
   }
 
   function formatAdjValue(adj, val) {
@@ -470,8 +626,30 @@
       if (adj.id === 'bokehAmount') return Math.abs(state.optics.bokehAmount - 0.55) > 0.01;
       return false;
     }
+    if (adj.store === 'imperf' || adj.id === 'imperfIntensity') {
+      if (adj.id === 'imperfIntensity') {
+        return Math.abs((state.look.imperfIntensity != null ? state.look.imperfIntensity : 100) - 100) > 0.5;
+      }
+      // show modified when camera has defaults OR user set values
+      const cur = getAdjValue(adj);
+      if (state.look.imperfManual) return cur > 0.5;
+      if (!Looks) return cur > 0.5;
+      const cam = Looks.cameraById(state.look.camera || 'none');
+      const base = cam && cam.imperf ? cam.imperf[adj.id] || 0 : 0;
+      return base > 0.02 || cur > 0.5;
+    }
     const cur = getAdjValue(adj);
     return Math.abs(cur - adj.def) > (adj.step < 1 ? 0.001 : 0.5);
+  }
+
+  function getImperfDisplayValue(adj) {
+    if (!adj || adj.store !== 'imperf') return getAdjValue(adj);
+    if (state.look.imperfManual) return getAdjValue(adj);
+    // show camera default while not manual
+    if (!Looks) return 0;
+    const cam = Looks.cameraById(state.look.camera || 'none');
+    const base = cam && cam.imperf ? cam.imperf[adj.id] || 0 : 0;
+    return Math.round(base * 100);
   }
 
   // ========== HISTORY ==========
@@ -496,7 +674,8 @@
         w: state.crop.w,
         h: state.crop.h,
         aspect: state.crop.aspect
-      }
+      },
+      uiPresetCategory: state.ui.presetCategory
     };
   }
 
@@ -513,7 +692,9 @@
       state.crop.h = snap.crop.h;
       state.crop.aspect = snap.crop.aspect;
     }
+    if (snap.uiPresetCategory) state.ui.presetCategory = snap.uiPresetCategory;
     if (opticsEnabledEl) opticsEnabledEl.checked = state.optics.enabled;
+    if (typeof buildPresetCards === 'function') buildPresetCards();
     syncLookUI();
     syncRatioChips();
     syncFocalBokeh();
@@ -543,7 +724,7 @@
     applySnapshot(history.stack[history.index]);
     updateHistoryButtons();
     hapticLight();
-    showToast('Poništeno', 900);
+    showToast('Undone', 900);
   }
 
   function redo() {
@@ -552,7 +733,7 @@
     applySnapshot(history.stack[history.index]);
     updateHistoryButtons();
     hapticLight();
-    showToast('Ponovljeno', 900);
+    showToast('Redone', 900);
   }
 
   function resetHistory() {
@@ -576,7 +757,7 @@
   function loadImage(file) {
     if (!file || !file.type.startsWith('image/')) return;
 
-    busyStart('load', 'Učitavam sliku…', file.name || '');
+    busyStart('load', 'Loading photo…', file.name || '');
     dropOverlay.classList.add('hidden');
 
     const reader = new FileReader();
@@ -604,21 +785,22 @@
         setTool(state.ui.tool || 'adjust');
         busyEnd('load');
         resetHistory();
+        if (typeof updateLayoutMode === 'function') updateLayoutMode();
         render(false);
         if (state.crop.active) updateCropOverlay();
-        scheduleSceneAnalysis(200);
+        // Portrait/DoF off by default — no auto scene analysis on load
       };
       img.onerror = () => {
         busyEnd('load');
         dropOverlay.classList.remove('hidden');
-        alert('Greška pri učitavanju slike.');
+        alert('Could not load the image.');
       };
       img.src = e.target.result;
     };
     reader.onerror = () => {
       busyEnd('load');
       dropOverlay.classList.remove('hidden');
-      alert('Greška pri čitanju fajla.');
+      alert('Could not read the file.');
     };
     reader.readAsDataURL(file);
   }
@@ -644,6 +826,7 @@
 
     canvas.width = w;
     canvas.height = h;
+    resetView(true);
   }
 
   function buildScrubProxy() {
@@ -678,7 +861,253 @@
     buildScrubProxy();
     canvas.width = srcCanvas.width;
     canvas.height = srcCanvas.height;
+    resetView(true);
   }
+
+  // ========== VIEWPORT: fit + performant zoom/pan (CSS transform) ==========
+  function resetView(layout) {
+    state.view.zoom = 1;
+    state.view.panX = 0;
+    state.view.panY = 0;
+    if (layout !== false) layoutViewport();
+    else applyViewTransform();
+    updateZoomHud();
+  }
+
+  /**
+   * Size canvas CSS to fully fit stage (fixes portrait overflow on web).
+   * Zoom multiplies via GPU transform — no pixel reprocess.
+   */
+  function layoutViewport() {
+    if (!state.hasImage || !state.workingCanvas || !canvasArea) return;
+    const area = canvasArea.getBoundingClientRect();
+    const pad = state.crop.active ? 12 : 8;
+    const availW = Math.max(40, area.width - pad * 2);
+    const availH = Math.max(40, area.height - pad * 2);
+    const iw = state.workingCanvas.width;
+    const ih = state.workingCanvas.height;
+    if (iw < 1 || ih < 1) return;
+
+    const fit = Math.min(availW / iw, availH / ih);
+    const fitW = Math.max(1, Math.floor(iw * fit));
+    const fitH = Math.max(1, Math.floor(ih * fit));
+    state.view.fitW = fitW;
+    state.view.fitH = fitH;
+
+    canvas.style.width = fitW + 'px';
+    canvas.style.height = fitH + 'px';
+
+    // Clamp pan so image stays reachable
+    clampPan();
+    applyViewTransform();
+    updateZoomHud();
+    if (state.crop.active) updateCropOverlay();
+  }
+
+  function clampPan() {
+    const z = state.view.zoom;
+    const fw = state.view.fitW || 1;
+    const fh = state.view.fitH || 1;
+    const area = canvasArea ? canvasArea.getBoundingClientRect() : { width: fw, height: fh };
+    const visW = fw * z;
+    const visH = fh * z;
+    // Allow panning so edges can reach center when zoomed
+    const maxX = Math.max(0, (visW - area.width) / 2 + 40);
+    const maxY = Math.max(0, (visH - area.height) / 2 + 40);
+    state.view.panX = clamp(state.view.panX, -maxX, maxX);
+    state.view.panY = clamp(state.view.panY, -maxY, maxY);
+    if (z <= 1.001) {
+      state.view.panX = 0;
+      state.view.panY = 0;
+    }
+  }
+
+  function applyViewTransform() {
+    if (!canvasWrap) return;
+    const z = state.view.zoom;
+    const x = state.view.panX;
+    const y = state.view.panY;
+    canvasWrap.style.transform =
+      'translate3d(' + x + 'px,' + y + 'px,0) scale(' + z + ')';
+  }
+
+  function updateZoomHud() {
+    if (zoomHud) zoomHud.hidden = !state.hasImage;
+    if (btnZoomFit) {
+      const pct = Math.round(state.view.zoom * 100);
+      btnZoomFit.textContent = pct + '%';
+    }
+  }
+
+  function setZoom(next, anchorClientX, anchorClientY, animate) {
+    if (!state.hasImage) return;
+    const prev = state.view.zoom;
+    const z = clamp(next, state.view.minZoom, state.view.maxZoom);
+    if (Math.abs(z - prev) < 0.001) return;
+
+    // Zoom toward anchor point in canvas-area
+    if (
+      anchorClientX != null &&
+      anchorClientY != null &&
+      canvasArea &&
+      state.view.fitW
+    ) {
+      const area = canvasArea.getBoundingClientRect();
+      const cx = area.left + area.width / 2;
+      const cy = area.top + area.height / 2;
+      // Point relative to center before zoom
+      const ax = anchorClientX - cx - state.view.panX;
+      const ay = anchorClientY - cy - state.view.panY;
+      const r = z / prev;
+      state.view.panX += ax - ax * r;
+      state.view.panY += ay - ay * r;
+    }
+
+    state.view.zoom = z;
+    clampPan();
+    if (animate && canvasWrap) {
+      canvasWrap.classList.add('zoom-animate');
+      applyViewTransform();
+      clearTimeout(setZoom._t);
+      setZoom._t = setTimeout(() => {
+        if (canvasWrap) canvasWrap.classList.remove('zoom-animate');
+      }, 200);
+    } else {
+      if (canvasWrap) canvasWrap.classList.remove('zoom-animate');
+      applyViewTransform();
+    }
+    updateZoomHud();
+    if (state.crop.active) updateCropOverlay();
+    // After zoom settles, re-process filters at higher pixel density
+    scheduleDetailRender(320);
+  }
+
+  function zoomBy(factor, clientX, clientY) {
+    setZoom(state.view.zoom * factor, clientX, clientY, false);
+  }
+
+  function fitView() {
+    cancelDetailRender();
+    state.view.detailActive = false;
+    state.view.detailLong = 0;
+    resetView(true);
+    scheduleRender(false);
+  }
+
+  // Wheel zoom (trackpad + mouse)
+  if (canvasArea) {
+    canvasArea.addEventListener(
+      'wheel',
+      (e) => {
+        if (!state.hasImage) return;
+        // Don't steal wheel from dock panels
+        if (e.target.closest('.dock, .sheet, .panel')) return;
+        e.preventDefault();
+        const delta = e.deltaY;
+        // Smooth multiplicative zoom
+        const factor = Math.exp(-delta * 0.0018);
+        zoomBy(factor, e.clientX, e.clientY);
+      },
+      { passive: false }
+    );
+  }
+
+  // Pinch zoom
+  const pinch = { active: false, startDist: 0, startZoom: 1 };
+  function touchDist(t0, t1) {
+    const dx = t0.clientX - t1.clientX;
+    const dy = t0.clientY - t1.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+  if (canvasArea) {
+    canvasArea.addEventListener(
+      'touchstart',
+      (e) => {
+        if (!state.hasImage || e.touches.length !== 2) return;
+        pinch.active = true;
+        pinch.startDist = touchDist(e.touches[0], e.touches[1]);
+        pinch.startZoom = state.view.zoom;
+      },
+      { passive: true }
+    );
+    canvasArea.addEventListener(
+      'touchmove',
+      (e) => {
+        if (!pinch.active || e.touches.length !== 2) return;
+        e.preventDefault();
+        const d = touchDist(e.touches[0], e.touches[1]);
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        const z = pinch.startZoom * (d / (pinch.startDist || 1));
+        setZoom(z, midX, midY, false);
+      },
+      { passive: false }
+    );
+    canvasArea.addEventListener('touchend', () => {
+      if (!pinch.active) return;
+      if (!window.TouchEvent) {
+        pinch.active = false;
+        return;
+      }
+      // end when fingers lift
+      pinch.active = false;
+    });
+    canvasArea.addEventListener('touchcancel', () => {
+      pinch.active = false;
+    });
+  }
+
+  // Alt / middle-mouse / touch pan when zoomed (Space remains compare)
+  const panDrag = { active: false, x: 0, y: 0, panX: 0, panY: 0 };
+
+  if (canvasArea) {
+    canvasArea.addEventListener('pointerdown', (e) => {
+      if (!state.hasImage) return;
+      if (e.target.closest('.crop-rect, .crop-handle, .zoom-hud, button, .drop-overlay')) return;
+      if (state.view.zoom <= 1.02) return;
+      const wantPan =
+        e.button === 1 ||
+        e.altKey ||
+        (e.pointerType === 'touch' && !state.crop.active);
+      if (!wantPan) return;
+      if (e.button === 1) e.preventDefault();
+      panDrag.active = true;
+      panDrag.x = e.clientX;
+      panDrag.y = e.clientY;
+      panDrag.panX = state.view.panX;
+      panDrag.panY = state.view.panY;
+      try {
+        canvasArea.setPointerCapture(e.pointerId);
+      } catch (_) { /* ignore */ }
+    });
+    canvasArea.addEventListener('pointermove', (e) => {
+      if (!panDrag.active) return;
+      state.view.panX = panDrag.panX + (e.clientX - panDrag.x);
+      state.view.panY = panDrag.panY + (e.clientY - panDrag.y);
+      clampPan();
+      applyViewTransform();
+      if (state.crop.active) updateCropOverlay();
+    });
+    const endPan = () => {
+      panDrag.active = false;
+    };
+    canvasArea.addEventListener('pointerup', endPan);
+    canvasArea.addEventListener('pointercancel', endPan);
+  }
+
+  if (btnZoomIn) {
+    btnZoomIn.addEventListener('click', () => {
+      const area = canvasArea.getBoundingClientRect();
+      setZoom(state.view.zoom * 1.25, area.left + area.width / 2, area.top + area.height / 2, true);
+    });
+  }
+  if (btnZoomOut) {
+    btnZoomOut.addEventListener('click', () => {
+      const area = canvasArea.getBoundingClientRect();
+      setZoom(state.view.zoom / 1.25, area.left + area.width / 2, area.top + area.height / 2, true);
+    });
+  }
+  if (btnZoomFit) btnZoomFit.addEventListener('click', () => fitView());
 
   // ========== RENDER (RAF + scrub fast path) ==========
   let renderPending = false;
@@ -704,12 +1133,16 @@
       if (canvasArea) canvasArea.classList.remove('scrubbing');
       scheduleRender(false);
       scheduleLookHQ();
+      // After filter settles, rebuild real detail at current zoom
+      scheduleDetailRender(200);
     }, 140);
   }
 
   function beginScrub() {
     state.ui.scrubbing = true;
     if (canvasArea) canvasArea.classList.add('scrubbing');
+    // Drop HQ while scrubbing for snappy feedback
+    cancelDetailRender();
   }
 
   function endScrub() {
@@ -733,10 +1166,38 @@
     return blitCtx;
   }
 
-  function drawToMain(imageData, straightenDeg) {
+  /**
+   * @param {ImageData} imageData
+   * @param {number} straightenDeg
+   * @param {{native?:boolean}} [opts] native=true keeps ImageData pixel size (HQ zoom detail)
+   */
+  function drawToMain(imageData, straightenDeg, opts) {
+    opts = opts || {};
     const w = imageData.width;
     const h = imageData.height;
-    // Keep display buffer at working size so scrub proxy doesn't resize the stage
+
+    // HQ path: keep full pixel density on canvas; CSS fit size is separate
+    if (opts.native) {
+      if (!straightenDeg) {
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+        ctx.putImageData(imageData, 0, 0);
+        return;
+      }
+      const bctx = ensureBlit(w, h);
+      bctx.putImageData(imageData, 0, 0);
+      const rotated = Engine.rotateCoverCanvas(blitCanvas, straightenDeg);
+      if (canvas.width !== rotated.width || canvas.height !== rotated.height) {
+        canvas.width = rotated.width;
+        canvas.height = rotated.height;
+      }
+      ctx.drawImage(rotated, 0, 0);
+      return;
+    }
+
+    // Working path: display buffer at working size
     const targetW =
       state.workingCanvas && state.workingCanvas.width
         ? state.workingCanvas.width
@@ -767,7 +1228,6 @@
     const bctx = ensureBlit(w, h);
     bctx.putImageData(imageData, 0, 0);
 
-    // Scale to working size first if scrub proxy
     let src = blitCanvas;
     if (needsUpscale) {
       const full = document.createElement('canvas');
@@ -788,19 +1248,198 @@
     ctx.drawImage(rotated, 0, 0);
   }
 
+  // ——— High-res filter detail for zoom (real grain/optics, not CSS blur) ———
+  let detailToken = 0;
+  let detailTimer = null;
+  const DETAIL_MAX_LONG = 4096;
+  const DETAIL_ZOOM_MIN = 1.08;
+
+  function cancelDetailRender() {
+    clearTimeout(detailTimer);
+    detailTimer = null;
+    detailToken++;
+    busyEnd('detail');
+    if (canvasArea) canvasArea.classList.remove('detail-render');
+  }
+
+  function scheduleDetailRender(delay) {
+    clearTimeout(detailTimer);
+    // Invalidate any in-flight HQ job (new zoom / filter supersedes it)
+    detailToken++;
+    busyEnd('detail');
+    if (canvasArea) canvasArea.classList.remove('detail-render');
+
+    if (!state.hasImage) return;
+    if (state.view.zoom <= DETAIL_ZOOM_MIN) {
+      if (state.view.detailActive) {
+        state.view.detailActive = false;
+        state.view.detailLong = 0;
+        // Drop back to working-res preview
+        scheduleRender(false);
+      }
+      return;
+    }
+    const myToken = detailToken;
+    detailTimer = setTimeout(() => {
+      if (myToken !== detailToken) return;
+      runDetailRender();
+    }, delay != null ? delay : 300);
+  }
+
+  function buildDetailSource(targetLong) {
+    // Prefer original + geometry so filters match export character
+    if (state.originalImage && Engine.rebuildGeometry) {
+      let rebuilt = Engine.rebuildGeometry(
+        state.originalImage,
+        state.ops || [],
+        targetLong
+      );
+      if (!rebuilt) return null;
+      const long = Math.max(rebuilt.width, rebuilt.height);
+      if (long > targetLong) {
+        rebuilt = Engine.scaleCanvasToLongEdge(rebuilt, targetLong);
+      }
+      const rctx = rebuilt.getContext('2d', { willReadFrequently: true });
+      return rctx.getImageData(0, 0, rebuilt.width, rebuilt.height);
+    }
+    // Fallback: scale working canvas up (softer but still better than CSS-only)
+    if (!state.workingCanvas) return null;
+    const ww = state.workingCanvas.width;
+    const wh = state.workingCanvas.height;
+    const cur = Math.max(ww, wh);
+    if (cur >= targetLong) {
+      return state.originalData;
+    }
+    const s = targetLong / cur;
+    const tw = Math.max(1, Math.round(ww * s));
+    const th = Math.max(1, Math.round(wh * s));
+    const c = document.createElement('canvas');
+    c.width = tw;
+    c.height = th;
+    const cctx = c.getContext('2d');
+    cctx.imageSmoothingEnabled = true;
+    cctx.imageSmoothingQuality = 'high';
+    cctx.drawImage(state.workingCanvas, 0, 0, tw, th);
+    return cctx.getImageData(0, 0, tw, th);
+  }
+
+  async function runDetailRender() {
+    if (!state.hasImage || state.ui.scrubbing || state.isComparing) return;
+    if (state.exporting) return;
+
+    const zoom = state.view.zoom;
+    if (zoom <= DETAIL_ZOOM_MIN) {
+      state.view.detailActive = false;
+      state.view.detailLong = 0;
+      return;
+    }
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const workLong = state.workingCanvas
+      ? Math.max(state.workingCanvas.width, state.workingCanvas.height)
+      : state.maxWorkingSize;
+    const origLong = state.originalImage
+      ? Math.max(
+          state.originalImage.naturalWidth || 0,
+          state.originalImage.naturalHeight || 0
+        )
+      : workLong;
+
+    let targetLong = Math.round(workLong * zoom * dpr);
+    targetLong = Math.min(targetLong, origLong || targetLong, DETAIL_MAX_LONG);
+    targetLong = Math.max(targetLong, workLong);
+
+    // Already showing equal-or-better detail?
+    if (
+      state.view.detailActive &&
+      state.view.detailLong >= targetLong * 0.92 &&
+      canvas.width >= workLong
+    ) {
+      return;
+    }
+
+    // Not enough gain over working preview
+    if (targetLong < workLong * 1.15) return;
+
+    const token = detailToken;
+    const pct = Math.round(zoom * 100);
+    busyStart(
+      'detail',
+      'Rendering filter detail…',
+      pct + '% · ' + targetLong + 'px'
+    );
+    if (canvasArea) canvasArea.classList.add('detail-render');
+
+    try {
+      // Yield so busy UI paints
+      await new Promise((r) => setTimeout(r, 24));
+      if (token !== detailToken) return;
+
+      const srcData = buildDetailSource(targetLong);
+      if (!srcData || token !== detailToken) return;
+
+      const straighten = state.crop.active ? state.params.rotation : 0;
+      const processed = Engine.process(srcData, state.params, {
+        grain: true,
+        grainMode: 'static',
+        look: state.look,
+        quality: 'export',
+        fast: false,
+        scene: state.scene,
+        optics: {
+          enabled: state.optics.enabled && state.debugScene === 'off',
+          strength: state.optics.strength,
+          apertureStrength: state.optics.apertureStrength,
+          focusDepth: state.optics.focusDepth,
+          focalRecipe: state.optics.focalRecipe || '50',
+          bokehShape: state.optics.bokehShape || 'auto',
+          bokehAmount:
+            state.optics.bokehAmount != null ? state.optics.bokehAmount : 0.55
+        },
+        debugScene: state.debugScene === 'off' ? null : state.debugScene
+      });
+
+      if (!processed || token !== detailToken) return;
+
+      // Another zoom/scrub may have started
+      if (state.ui.scrubbing || state.view.zoom <= DETAIL_ZOOM_MIN) return;
+
+      drawToMain(processed, straighten, { native: true });
+      state.view.detailActive = true;
+      state.view.detailLong = Math.max(processed.width, processed.height);
+      layoutViewport();
+      updateCropOverlay();
+    } catch (err) {
+      console.warn('Detail render failed', err);
+    } finally {
+      if (token === detailToken) {
+        busyEnd('detail');
+        if (canvasArea) canvasArea.classList.remove('detail-render');
+      }
+    }
+  }
+
   function render(fast) {
     if (!state.hasImage) return;
 
     const straighten = state.crop.active ? state.params.rotation : 0;
 
     if (state.isComparing) {
+      cancelDetailRender();
       const src = fast && state.scrubData ? state.scrubData : state.originalData;
       drawToMain(src, straighten);
+      layoutViewport();
       updateCropOverlay();
       return;
     }
 
     const useFast = !!fast || state.ui.scrubbing;
+    // While scrubbing or at fit zoom, always show working-res live preview
+    if (useFast || state.view.zoom <= DETAIL_ZOOM_MIN) {
+      state.view.detailActive = false;
+      state.view.detailLong = 0;
+    }
+
     const srcData =
       useFast && state.scrubData ? state.scrubData : state.originalData;
 
@@ -825,8 +1464,14 @@
     if (processed) {
       drawToMain(processed, straighten);
     }
+    layoutViewport();
     updateCropOverlay();
     updateLookChip();
+
+    // After live preview paints, queue real high-res detail if zoomed
+    if (!useFast && state.view.zoom > DETAIL_ZOOM_MIN) {
+      scheduleDetailRender(280);
+    }
   }
 
   // ========== SCENE ==========
@@ -843,7 +1488,7 @@
     state.scene = null;
     state.sceneStatus = 'idle';
     if (state.hasImage) {
-      setSceneStatus('Scena zastarela — analiziraj ponovo', null);
+      setSceneStatus('Scene outdated — analyze again', null);
     }
   }
 
@@ -851,14 +1496,14 @@
     if (!state.hasImage || !state.workingCanvas || !Scene) return;
     const token = ++analyzeToken;
     state.sceneStatus = 'loading';
-    setSceneStatus('Učitavam AI model…', 'busy');
-    setButtonBusy(btnSceneAnalyze, true, '…', 'Analiziraj');
-    busyStart('scene', 'Učitavam AI model…', 'On-device · prvi put može malo duže');
+    setSceneStatus('Loading AI model…', 'busy');
+    setButtonBusy(btnSceneAnalyze, true, '…', 'Analyze');
+    busyStart('scene', 'Loading AI model…', 'On-device · first run may take longer');
 
     try {
-      busyUpdate('scene', 'Analiziram scenu…', 'Segmentacija · depth');
+      busyUpdate('scene', 'Analyzing scene…', 'Segmentation · depth');
       state.sceneStatus = 'analyzing';
-      setSceneStatus('Analiziram…', 'busy');
+      setSceneStatus('Analyzing…', 'busy');
       const analysis = await Scene.analyze(state.workingCanvas);
       if (token !== analyzeToken) return;
 
@@ -874,8 +1519,8 @@
           : null;
       setSceneStatus(
         conf != null
-          ? 'Spremno · subjekt ' + conf + '%'
-          : 'Spremno',
+          ? 'Ready · subject ' + conf + '%'
+          : 'Ready',
         'ready'
       );
       scheduleRender(false);
@@ -883,24 +1528,32 @@
       console.error(err);
       if (token !== analyzeToken) return;
       state.sceneStatus = 'error';
-      setSceneStatus('Greška: ' + (err.message || err), 'error');
+      setSceneStatus('Error: ' + (err.message || err), 'error');
     } finally {
       if (token === analyzeToken) {
         busyEnd('scene');
-        setButtonBusy(btnSceneAnalyze, false, '…', 'Analiziraj');
+        setButtonBusy(btnSceneAnalyze, false, '…', 'Analyze');
       }
     }
   }
 
   let sceneTimer = null;
-  function scheduleSceneAnalysis(delay) {
+  /**
+   * @param {number} [delay]
+   * @param {{force?:boolean}} [opts] force=true from explicit Analyze button
+   */
+  function scheduleSceneAnalysis(delay, opts) {
+    opts = opts || {};
     clearTimeout(sceneTimer);
     sceneTimer = setTimeout(() => {
-      if (state.hasImage) runSceneAnalysis();
+      if (!state.hasImage) return;
+      // Skip auto profile/scene work unless DoF is on or user forced analysis
+      if (!opts.force && !state.optics.enabled) return;
+      runSceneAnalysis();
     }, delay || 200);
   }
 
-  // ========== LOOK UI ==========
+  // ========== LOOK / PRESET UI ==========
   function buildLookCards() {
     if (!Looks) return;
 
@@ -921,6 +1574,8 @@
         '</span></span>';
       btn.addEventListener('click', () => {
         pushHistory();
+        // Manual stack edit breaks curated preset link
+        state.look.preset = 'none';
         selectLook(kind, item.id);
         pushHistory();
       });
@@ -939,7 +1594,173 @@
       lensLooksEl.innerHTML = '';
       Looks.LENSES.forEach((l) => lensLooksEl.appendChild(makeCard(l, 'lens')));
     }
+
+    buildPresetCategories();
+    buildPresetCards();
     syncLookUI();
+  }
+
+  function buildPresetCategories() {
+    if (!presetCatsEl || !Looks || !Looks.PRESET_CATEGORIES) return;
+    presetCatsEl.innerHTML = '';
+    Looks.PRESET_CATEGORIES.forEach((cat) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className =
+        'preset-cat' + (cat.id === (state.ui.presetCategory || 'all') ? ' active' : '');
+      btn.dataset.cat = cat.id;
+      btn.textContent = cat.name;
+      btn.addEventListener('click', () => {
+        state.ui.presetCategory = cat.id;
+        presetCatsEl.querySelectorAll('.preset-cat').forEach((b) => {
+          b.classList.toggle('active', b.dataset.cat === cat.id);
+        });
+        buildPresetCards();
+      });
+      presetCatsEl.appendChild(btn);
+    });
+  }
+
+  function buildPresetCards() {
+    if (!presetLooksEl || !Looks || !Looks.PRESETS) return;
+    const cat = state.ui.presetCategory || 'all';
+    const list =
+      Looks.presetsByCategory
+        ? Looks.presetsByCategory(cat)
+        : Looks.PRESETS.filter((p) => cat === 'all' || p.category === cat || p.id === 'none');
+
+    presetLooksEl.innerHTML = '';
+    list.forEach((p) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className =
+        'preset-card' + (p.id === (state.look.preset || 'none') ? ' active' : '');
+      btn.dataset.id = p.id;
+      btn.title = (p.desc || p.name) + (p.recipe ? ' · ' + p.recipe : '');
+      btn.innerHTML =
+        '<span class="preset-swatch" style="background:' +
+        (p.swatch || '#333') +
+        '"></span>' +
+        '<span class="preset-card-name">' +
+        p.name +
+        '</span>' +
+        '<span class="preset-card-recipe">' +
+        (p.recipe || p.desc || '') +
+        '</span>';
+      btn.addEventListener('click', () => {
+        pushHistory();
+        applyPreset(p.id, state.look.presetIntensity != null ? state.look.presetIntensity : 100);
+        pushHistory();
+        hapticLight();
+        if (p.id !== 'none') showToast(p.name, 900);
+      });
+      presetLooksEl.appendChild(btn);
+    });
+  }
+
+  /**
+   * Apply a curated preset: film + camera + lens + base grade.
+   * intensity 0..100 scales look stack + grade strength.
+   * @param {string} id
+   * @param {number} [intensity]
+   * @param {{fast?:boolean}} [opts]
+   */
+  function applyPreset(id, intensity, opts) {
+    opts = opts || {};
+    if (!Looks || !Looks.presetById) {
+      resetLooks(true);
+      scheduleRender(false);
+      return;
+    }
+
+    const preset = Looks.presetById(id);
+    const t = clamp((intensity != null ? intensity : 100) / 100, 0, 1);
+    state.look.preset = preset.id;
+    state.look.presetIntensity = Math.round(t * 100);
+
+    if (preset.id === 'none') {
+      state.look.film = 'none';
+      state.look.camera = 'none';
+      state.look.lens = 'none';
+      state.look.filmIntensity = 100;
+      state.look.cameraIntensity = 100;
+      state.look.lensIntensity = 100;
+      state.look.bloom = 0;
+      state.look.ca = 0;
+      state.look.imperf = emptyImperf();
+      state.look.imperfManual = false;
+      state.look.imperfIntensity = 100;
+      // Clear grade params that presets typically set (keep rotation)
+      PRESET_PARAM_KEYS.forEach((k) => {
+        state.params[k] = 0;
+      });
+    } else {
+      state.look.film = preset.film || 'none';
+      state.look.camera = preset.camera || 'none';
+      state.look.lens = preset.lens || 'none';
+
+      const fBase = preset.filmIntensity != null ? preset.filmIntensity : 100;
+      const cBase = preset.cameraIntensity != null ? preset.cameraIntensity : 100;
+      const lBase = preset.lensIntensity != null ? preset.lensIntensity : 100;
+      const bloomBase = preset.bloom != null ? preset.bloom : 0;
+      const caBase = preset.ca != null ? preset.ca : 0;
+
+      state.look.filmIntensity = Math.round(fBase * t);
+      state.look.cameraIntensity = Math.round(cBase * t);
+      state.look.lensIntensity = Math.round(lBase * t);
+      state.look.bloom = Math.round(bloomBase * t);
+      state.look.ca = Math.round(caBase * t);
+
+      // Reset grade then apply scaled preset params
+      PRESET_PARAM_KEYS.forEach((k) => {
+        state.params[k] = 0;
+      });
+      const g = preset.params || {};
+      PRESET_PARAM_KEYS.forEach((k) => {
+        if (g[k] == null || g[k] === 0) return;
+        state.params[k] = typeof g[k] === 'number' ? g[k] * t : g[k];
+        if (k !== 'exposure') {
+          state.params[k] = Math.round(state.params[k] * 10) / 10;
+          if (Math.abs(state.params[k] - Math.round(state.params[k])) < 0.05) {
+            state.params[k] = Math.round(state.params[k]);
+          }
+        } else {
+          state.params[k] = Math.round(state.params[k] * 100) / 100;
+        }
+      });
+
+      // Spatial imperfections from camera body (scaled by preset strength)
+      state.look.imperfManual = false;
+      state.look.imperfIntensity = Math.round(100 * t);
+      seedImperfFromCamera(true);
+      // Scale seeded values by preset intensity
+      if (t < 0.999) {
+        state.look.imperfManual = true;
+        IMPERF_KEYS.forEach((k) => {
+          state.look.imperf[k] = Math.round((state.look.imperf[k] || 0) * t);
+        });
+      }
+    }
+
+    if (!opts.fast) {
+      syncLookUI();
+      updateDialUI();
+      markChipModified();
+      updateToolDots();
+    } else {
+      // Lightweight UI while scrubbing intensity
+      if (lookIntensityValue) lookIntensityValue.textContent = String(state.look.presetIntensity);
+      if (presetLooksEl) {
+        presetLooksEl.querySelectorAll('.preset-card').forEach((c) => {
+          c.classList.toggle('active', c.dataset.id === (state.look.preset || 'none'));
+        });
+      }
+      updateLookChip();
+    }
+
+    state.lookQuality = 'preview';
+    scheduleRender(!!opts.fast);
+    if (!opts.fast) scheduleLookHQ();
   }
 
   function selectLook(kind, id) {
@@ -952,6 +1773,10 @@
       state.look.camera = id;
       if (id !== 'none' && state.look.cameraIntensity === 0) {
         state.look.cameraIntensity = 100;
+      }
+      // New body → re-seed spatial imperfections unless user locked manual
+      if (!state.look.imperfManual) {
+        seedImperfFromCamera(true);
       }
     } else if (kind === 'lens') {
       state.look.lens = id;
@@ -1003,17 +1828,38 @@
       });
     });
 
+    if (presetLooksEl) {
+      presetLooksEl.querySelectorAll('.preset-card').forEach((c) => {
+        c.classList.toggle('active', c.dataset.id === (state.look.preset || 'none'));
+      });
+    }
+
     // intensity slider for active looks tab
-    const tab = state.ui.looksTab || 'film';
-    const meta = LOOK_INTENSITY[tab];
-    const lookId = state.look[tab];
-    if (lookIntensityWrap && meta) {
-      const show = lookId && lookId !== 'none';
-      lookIntensityWrap.hidden = !show;
-      if (show) {
-        if (lookIntensityName) lookIntensityName.textContent = meta.label;
-        if (lookIntensity) lookIntensity.value = state.look[meta.id];
-        if (lookIntensityValue) lookIntensityValue.textContent = String(state.look[meta.id]);
+    const tab = state.ui.looksTab || 'presets';
+    if (lookIntensityWrap) {
+      if (tab === 'presets') {
+        const hasPreset = state.look.preset && state.look.preset !== 'none';
+        lookIntensityWrap.hidden = !hasPreset;
+        if (hasPreset) {
+          if (lookIntensityName) lookIntensityName.textContent = 'Preset strength';
+          const v = state.look.presetIntensity != null ? state.look.presetIntensity : 100;
+          if (lookIntensity) lookIntensity.value = v;
+          if (lookIntensityValue) lookIntensityValue.textContent = String(v);
+        }
+      } else {
+        const meta = LOOK_INTENSITY[tab];
+        const lookId = state.look[tab];
+        if (meta) {
+          const show = lookId && lookId !== 'none';
+          lookIntensityWrap.hidden = !show;
+          if (show) {
+            if (lookIntensityName) lookIntensityName.textContent = meta.label;
+            if (lookIntensity) lookIntensity.value = state.look[meta.id];
+            if (lookIntensityValue) lookIntensityValue.textContent = String(state.look[meta.id]);
+          }
+        } else {
+          lookIntensityWrap.hidden = true;
+        }
       }
     }
     updateLookChip();
@@ -1021,6 +1867,23 @@
 
   function updateLookChip() {
     if (!lookChip || !Looks) return;
+    if (!state.hasImage) {
+      lookChip.hidden = true;
+      lookChip.textContent = '';
+      return;
+    }
+    if (state.look.preset && state.look.preset !== 'none' && Looks.presetById) {
+      const p = Looks.presetById(state.look.preset);
+      if (p) {
+        const strength =
+          state.look.presetIntensity != null && state.look.presetIntensity !== 100
+            ? ' · ' + state.look.presetIntensity + '%'
+            : '';
+        lookChip.textContent = p.name + strength;
+        lookChip.hidden = false;
+        return;
+      }
+    }
     const parts = [];
     if (state.look.film !== 'none') {
       const f = Looks.filmById(state.look.film);
@@ -1034,7 +1897,7 @@
       const l = Looks.lensById(state.look.lens);
       if (l) parts.push(l.name);
     }
-    if (!parts.length || !state.hasImage) {
+    if (!parts.length) {
       lookChip.hidden = true;
       lookChip.textContent = '';
       return;
@@ -1052,6 +1915,11 @@
     state.look.lensIntensity = 100;
     state.look.bloom = 0;
     state.look.ca = 0;
+    state.look.preset = 'none';
+    state.look.presetIntensity = 100;
+    state.look.imperf = emptyImperf();
+    state.look.imperfManual = false;
+    state.look.imperfIntensity = 100;
     syncLookUI();
     if (!silent) scheduleRender(false);
   }
@@ -1111,19 +1979,339 @@
     cropRectEl.style.top = y * 100 + '%';
     cropRectEl.style.width = w * 100 + '%';
     cropRectEl.style.height = h * 100 + '%';
+
+    // Subject bbox hint on full frame
+    if (subjectHint && state.crop.subject) {
+      const s = state.crop.subject;
+      subjectHint.hidden = false;
+      subjectHint.style.left = s.x * 100 + '%';
+      subjectHint.style.top = s.y * 100 + '%';
+      subjectHint.style.width = s.w * 100 + '%';
+      subjectHint.style.height = s.h * 100 + '%';
+    } else if (subjectHint) {
+      subjectHint.hidden = true;
+    }
+  }
+
+  // —— Studio framing: subject bbox + soft snap ——
+  const SNAP_THR = 0.022;
+
+  function refreshSubjectBBox() {
+    state.crop.subject = null;
+    if (Scene && Scene.subjectBBox && state.scene) {
+      state.crop.subject = Scene.subjectBBox(state.scene);
+    }
+  }
+
+  function ensureSubjectForCrop() {
+    refreshSubjectBBox();
+    if (state.crop.subject) {
+      if (cropHint) {
+        cropHint.textContent =
+          'Subject detected · soft-snaps to edges & thirds · scroll to zoom';
+      }
+      return Promise.resolve(state.crop.subject);
+    }
+    // Quiet analyze for framing (does not enable DoF)
+    if (!state.hasImage || !Scene) return Promise.resolve(null);
+    if (cropHint) cropHint.textContent = 'Detecting subject for studio frame…';
+    return runSceneAnalysis()
+      .then(() => {
+        refreshSubjectBBox();
+        if (cropHint) {
+          cropHint.textContent = state.crop.subject
+            ? 'Subject detected · soft-snaps to edges & thirds · scroll to zoom'
+            : 'No subject · using composition guides · scroll to zoom';
+        }
+        return state.crop.subject;
+      })
+      .catch(() => {
+        if (cropHint) {
+          cropHint.textContent = 'Composition guides · scroll to zoom';
+        }
+        return null;
+      });
+  }
+
+  function fitRectToAspect(rect, normAspect) {
+    // Expand/shrink rect to match normAspect (w/h in normalized image space)
+    // keeping center when possible
+    let { x, y, w, h } = rect;
+    if (!normAspect || normAspect <= 0) return clampRect({ x, y, w, h });
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    let nw = w;
+    let nh = w / normAspect;
+    if (nh < h) {
+      nh = h;
+      nw = h * normAspect;
+    }
+    if (nw > 1) {
+      nw = 1;
+      nh = nw / normAspect;
+    }
+    if (nh > 1) {
+      nh = 1;
+      nw = nh * normAspect;
+    }
+    x = clamp(cx - nw / 2, 0, 1 - nw);
+    y = clamp(cy - nh / 2, 0, 1 - nh);
+    return { x, y, w: nw, h: nh };
+  }
+
+  function clampRect(r) {
+    let { x, y, w, h } = r;
+    w = clamp(w, MIN_CROP_NORM, 1);
+    h = clamp(h, MIN_CROP_NORM, 1);
+    x = clamp(x, 0, 1 - w);
+    y = clamp(y, 0, 1 - h);
+    return { x, y, w, h };
+  }
+
+  /**
+   * Studio frame suggestions relative to subject / composition.
+   */
+  function applyStudioFrame(frameId) {
+    frameId = frameId || 'full';
+    state.crop.frame = frameId;
+    markFrameActive(frameId);
+
+    const imgW = state.workingCanvas ? state.workingCanvas.width : 1;
+    const imgH = state.workingCanvas ? state.workingCanvas.height : 1;
+    const aspect = parseAspect(state.crop.aspect, imgW, imgH);
+    const normAspect = aspect ? aspect * (imgH / imgW) : null;
+    const sub = state.crop.subject;
+
+    // Full frame (or no subject available for subject-based frames)
+    if (frameId === 'full' || !sub) {
+      if (frameId !== 'full' && !sub) {
+        showToast('No subject — try Analyze in Portrait', 1400);
+      }
+      if (normAspect && state.crop.aspect && state.crop.aspect !== 'free') {
+        applyAspectToCrop(state.crop.aspect);
+      } else {
+        state.crop.x = 0;
+        state.crop.y = 0;
+        state.crop.w = 1;
+        state.crop.h = 1;
+      }
+      updateCropOverlay();
+      scheduleRender(false);
+      if (frameId === 'full') showToast('Full frame', 900);
+      return;
+    }
+
+    let rect = { x: 0, y: 0, w: 1, h: 1 };
+    {
+      const padLoose = 0.28;
+      const padMed = 0.16;
+      const padTight = 0.06;
+
+      if (frameId === 'subject') {
+        rect = {
+          x: sub.x - sub.w * padMed,
+          y: sub.y - sub.h * padMed,
+          w: sub.w * (1 + padMed * 2),
+          h: sub.h * (1 + padMed * 2)
+        };
+      } else if (frameId === 'center') {
+        const tw = Math.min(1, Math.max(sub.w * 1.5, 0.45));
+        const th = Math.min(1, Math.max(sub.h * 1.5, 0.45));
+        rect = {
+          x: sub.cx - tw / 2,
+          y: sub.cy - th / 2,
+          w: tw,
+          h: th
+        };
+      } else if (frameId === 'tight') {
+        rect = {
+          x: sub.x - sub.w * padTight,
+          y: sub.y - sub.h * padTight,
+          w: sub.w * (1 + padTight * 2),
+          h: sub.h * (1 + padTight * 2)
+        };
+      } else if (frameId === 'wide') {
+        rect = {
+          x: sub.x - sub.w * padLoose,
+          y: sub.y - sub.h * padLoose,
+          w: sub.w * (1 + padLoose * 2),
+          h: sub.h * (1 + padLoose * 2)
+        };
+      } else if (frameId === 'portrait') {
+        // Classic headroom: subject in lower-middle, more space above
+        const tw = Math.min(1, Math.max(sub.w * 1.55, 0.42));
+        const th = Math.min(1, Math.max(sub.h * 1.85, 0.55));
+        let x = sub.cx - tw / 2;
+        let y = sub.cy - th * 0.58; // more headroom
+        rect = { x, y, w: tw, h: th };
+      } else if (frameId === 'thirds') {
+        // Place subject center on nearest rule-of-thirds intersection
+        const targets = [
+          [1 / 3, 1 / 3],
+          [2 / 3, 1 / 3],
+          [1 / 3, 2 / 3],
+          [2 / 3, 2 / 3]
+        ];
+        let best = targets[0];
+        let bestD = Infinity;
+        targets.forEach(([tx, ty]) => {
+          const d = (sub.cx - tx) * (sub.cx - tx) + (sub.cy - ty) * (sub.cy - ty);
+          if (d < bestD) {
+            bestD = d;
+            best = [tx, ty];
+          }
+        });
+        const tw = Math.min(1, Math.max(sub.w * 1.65, 0.5));
+        const th = Math.min(1, Math.max(sub.h * 1.65, 0.5));
+        // Offset frame so subject maps toward third point
+        let x = best[0] - tw * (sub.cx < 0.5 ? 0.38 : 0.62);
+        let y = best[1] - th * (sub.cy < 0.5 ? 0.38 : 0.62);
+        // Prefer keeping subject inside
+        x = sub.cx - tw / 2 + (best[0] - 0.5) * 0.12;
+        y = sub.cy - th / 2 + (best[1] - 0.5) * 0.12;
+        rect = { x, y, w: tw, h: th };
+      }
+    }
+
+    rect = clampRect(rect);
+    if (normAspect) rect = fitRectToAspect(rect, normAspect);
+    rect = clampRect(rect);
+
+    state.crop.x = rect.x;
+    state.crop.y = rect.y;
+    state.crop.w = rect.w;
+    state.crop.h = rect.h;
+    markFrameActive(frameId);
+    updateCropOverlay();
+    scheduleRender(false);
+    showToast(
+      frameId === 'full'
+        ? 'Full frame'
+        : 'Frame: ' + (frameId.charAt(0).toUpperCase() + frameId.slice(1)),
+      900
+    );
+  }
+
+  function markFrameActive(frameId) {
+    $$('.frame-chip').forEach((b) => {
+      b.classList.toggle('active', b.dataset.frame === frameId);
+    });
+  }
+
+  function softSnapValue(v, targets, thr) {
+    let best = v;
+    let bestD = thr;
+    let snapped = false;
+    for (let i = 0; i < targets.length; i++) {
+      const d = Math.abs(v - targets[i]);
+      if (d < bestD) {
+        bestD = d;
+        best = targets[i];
+        snapped = true;
+      }
+    }
+    return { v: best, snapped };
+  }
+
+  function applySoftSnap(rect, mode) {
+    const thirds = [0, 1 / 3, 0.5, 2 / 3, 1];
+    const sub = state.crop.subject;
+    const edgeTargetsX = thirds.slice();
+    const edgeTargetsY = thirds.slice();
+    if (sub) {
+      edgeTargetsX.push(sub.x, sub.x + sub.w, sub.cx);
+      edgeTargetsY.push(sub.y, sub.y + sub.h, sub.cy);
+    }
+
+    let { x, y, w, h } = rect;
+    let any = false;
+
+    // Move: snap whole frame (preserve size) via edges/center
+    if (mode === 'move') {
+      const L = softSnapValue(x, edgeTargetsX, SNAP_THR);
+      const R = softSnapValue(x + w, edgeTargetsX, SNAP_THR);
+      const CX = softSnapValue(x + w / 2, edgeTargetsX, SNAP_THR);
+      if (L.snapped) {
+        x = L.v;
+        any = true;
+      } else if (R.snapped) {
+        x = R.v - w;
+        any = true;
+      } else if (CX.snapped) {
+        x = CX.v - w / 2;
+        any = true;
+      }
+
+      const T = softSnapValue(y, edgeTargetsY, SNAP_THR);
+      const B = softSnapValue(y + h, edgeTargetsY, SNAP_THR);
+      const CY = softSnapValue(y + h / 2, edgeTargetsY, SNAP_THR);
+      if (T.snapped) {
+        y = T.v;
+        any = true;
+      } else if (B.snapped) {
+        y = B.v - h;
+        any = true;
+      } else if (CY.snapped) {
+        y = CY.v - h / 2;
+        any = true;
+      }
+      return { rect: clampRect({ x, y, w, h }), snapped: any };
+    }
+
+    // Resize: snap the edge being dragged (approx: all edges, keep min size)
+    const L = softSnapValue(x, edgeTargetsX, SNAP_THR);
+    if (L.snapped) {
+      const right = x + w;
+      x = L.v;
+      w = right - x;
+      any = true;
+    }
+    const R = softSnapValue(x + w, edgeTargetsX, SNAP_THR);
+    if (R.snapped) {
+      w = R.v - x;
+      any = true;
+    }
+    const T = softSnapValue(y, edgeTargetsY, SNAP_THR);
+    if (T.snapped) {
+      const bottom = y + h;
+      y = T.v;
+      h = bottom - y;
+      any = true;
+    }
+    const B = softSnapValue(y + h, edgeTargetsY, SNAP_THR);
+    if (B.snapped) {
+      h = B.v - y;
+      any = true;
+    }
+
+    return { rect: clampRect({ x, y, w, h }), snapped: any };
   }
 
   function setCropMode(active) {
     state.crop.active = active && state.hasImage;
+    if (canvasArea) canvasArea.classList.toggle('crop-mode', !!state.crop.active);
     if (!cropLayer) return;
     if (state.crop.active) {
       cropLayer.hidden = false;
       if (state.crop.aspect && state.crop.aspect !== 'free') {
         applyAspectToCrop(state.crop.aspect);
       }
-      requestAnimationFrame(() => updateCropOverlay());
+      // Fit full image first so portrait is fully visible in crop studio
+      fitView();
+      ensureSubjectForCrop().then(() => {
+        if (state.crop.active && state.crop.frame && state.crop.frame !== 'full') {
+          applyStudioFrame(state.crop.frame);
+        } else {
+          updateCropOverlay();
+        }
+      });
+      requestAnimationFrame(() => {
+        layoutViewport();
+        updateCropOverlay();
+      });
     } else {
       cropLayer.hidden = true;
+      if (subjectHint) subjectHint.hidden = true;
     }
     scheduleRender(false);
   }
@@ -1143,10 +2331,13 @@
     drag.startX = e.clientX;
     drag.startY = e.clientY;
     drag.origin = { ...state.crop };
+    state.crop.frame = 'custom';
+    markFrameActive('custom');
 
     const move = (ev) => cropPointerMove(ev);
     const up = () => {
       drag.mode = null;
+      if (cropRectEl) cropRectEl.classList.remove('snapping');
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', up);
@@ -1263,6 +2454,22 @@
       }
     }
 
+    // Soft snap to thirds / subject (preserve size on move)
+    const snapped = applySoftSnap({ x, y, w, h }, drag.mode === 'move' ? 'move' : 'resize');
+    x = snapped.rect.x;
+    y = snapped.rect.y;
+    w = snapped.rect.w;
+    h = snapped.rect.h;
+    // Re-fit aspect after resize snap
+    if (drag.mode !== 'move' && normAspect) {
+      const fitted = fitRectToAspect({ x, y, w, h }, normAspect);
+      x = fitted.x;
+      y = fitted.y;
+      w = fitted.w;
+      h = fitted.h;
+    }
+    if (cropRectEl) cropRectEl.classList.toggle('snapping', snapped.snapped);
+
     state.crop.x = x;
     state.crop.y = y;
     state.crop.w = w;
@@ -1271,6 +2478,14 @@
   }
 
   if (cropRectEl) cropRectEl.addEventListener('pointerdown', cropPointerDown);
+
+  // Studio frame chips
+  $$('.frame-chip').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.frame || 'full';
+      ensureSubjectForCrop().then(() => applyStudioFrame(id));
+    });
+  });
 
   function applyCrop() {
     if (!state.hasImage || !state.workingCanvas) return;
@@ -1284,11 +2499,11 @@
 
     if (!hasStraighten && fullCrop) {
       resetCropRect();
-      showToast('Nema izmene za primenu');
+      showToast('Nothing to apply');
       return;
     }
 
-    busyStart('crop', 'Primenjujem isecanje…', hasStraighten ? 'Ispravljanje + crop' : 'Crop');
+    busyStart('crop', 'Applying crop…', hasStraighten ? 'Straighten + crop' : 'Crop');
     requestAnimationFrame(() => {
       try {
         let src = state.workingCanvas;
@@ -1317,11 +2532,15 @@
         });
         setWorkingFromCanvas(dest);
         resetCropRect();
+        state.crop.frame = 'full';
+        markFrameActive('full');
         invalidateScene();
+        state.crop.subject = null;
         pushHistory();
+        fitView();
         scheduleRender(false);
         scheduleSceneAnalysis(150);
-        showToast('Isecanje primenjeno');
+        showToast('Crop applied');
       } finally {
         busyEnd('crop');
       }
@@ -1338,7 +2557,11 @@
     });
 
     const isAdj =
-      tool === 'adjust' || tool === 'color' || tool === 'effects' || tool === 'portrait';
+      tool === 'adjust' ||
+      tool === 'color' ||
+      tool === 'effects' ||
+      tool === 'portrait' ||
+      tool === 'age';
     const showDial = isAdj || tool === 'crop';
 
     if (dialRow) dialRow.hidden = !showDial;
@@ -1350,6 +2573,10 @@
     setCropMode(tool === 'crop');
 
     if (showDial) {
+      // When opening Age, surface current camera-baked values in dials
+      if (tool === 'age' && !state.look.imperfManual) {
+        seedImperfFromCamera(true);
+      }
       const list = TOOL_ADJUSTMENTS[tool] || TOOL_ADJUSTMENTS.adjust;
       const prefer = state.ui.activeAdj;
       const next = list.find((a) => a.id === prefer) || list[0];
@@ -1358,19 +2585,20 @@
     }
 
     if (tool === 'looks') {
-      setLooksTab(state.ui.looksTab || 'film');
+      setLooksTab(state.ui.looksTab || 'presets');
     }
 
     if (topbarTitle) {
       const titles = {
-        adjust: 'Svetlo',
-        color: 'Boja',
-        effects: 'Efekti',
-        looks: 'Look',
-        crop: 'Isecanje',
-        portrait: 'Portret'
+        adjust: 'Light',
+        color: 'Color',
+        effects: 'Effects',
+        age: 'Age / analog',
+        looks: 'Presets',
+        crop: 'Crop',
+        portrait: 'Portrait'
       };
-      topbarTitle.textContent = state.hasImage ? titles[tool] || 'Uredi' : 'Hermiona';
+      topbarTitle.textContent = state.hasImage ? titles[tool] || 'Edit' : 'Hermiona';
     }
   }
 
@@ -1442,7 +2670,8 @@
     const adj = findAdj(state.ui.activeAdj);
     if (!adj || !activeDial) return;
 
-    const val = getAdjValue(adj);
+    const val =
+      adj.store === 'imperf' ? getImperfDisplayValue(adj) : getAdjValue(adj);
 
     activeDial.min = String(adj.min);
     activeDial.max = String(adj.max);
@@ -1477,9 +2706,14 @@
         has = (TOOL_ADJUSTMENTS[tool] || []).some(isAdjModified);
       } else if (tool === 'looks') {
         has =
+          (state.look.preset && state.look.preset !== 'none') ||
           state.look.film !== 'none' ||
           state.look.camera !== 'none' ||
           state.look.lens !== 'none';
+      } else if (tool === 'age') {
+        has =
+          (TOOL_ADJUSTMENTS.age || []).some(isAdjModified) ||
+          (state.look.camera && state.look.camera !== 'none');
       } else if (tool === 'portrait') {
         has =
           state.optics.focusManual ||
@@ -1510,6 +2744,14 @@
       } else {
         state.optics.focusDepth = adj.def / 100;
       }
+    } else if (adj.store === 'imperf') {
+      if (!state.look.imperfManual) {
+        seedImperfFromCamera(true);
+        state.look.imperfManual = true;
+      }
+      state.look.imperf[adj.id] = 0;
+    } else if (adj.id === 'imperfIntensity') {
+      state.look.imperfIntensity = 100;
     } else {
       setAdjValue(adj, adj.def);
     }
@@ -1557,27 +2799,50 @@
 
   // Looks segment
   function setLooksTab(tab) {
-    state.ui.looksTab = tab;
-    $$('.seg-btn').forEach((b) => b.classList.toggle('active', b.dataset.looks === tab));
-    if (filmLooksEl) filmLooksEl.hidden = tab !== 'film';
-    if (cameraLooksEl) cameraLooksEl.hidden = tab !== 'camera';
-    if (lensLooksEl) lensLooksEl.hidden = tab !== 'lens';
+    state.ui.looksTab = tab || 'presets';
+    $$('#looksSeg .seg-btn').forEach((b) =>
+      b.classList.toggle('active', b.dataset.looks === state.ui.looksTab)
+    );
+    if (presetsPane) presetsPane.hidden = state.ui.looksTab !== 'presets';
+    if (filmLooksEl) filmLooksEl.hidden = state.ui.looksTab !== 'film';
+    if (cameraLooksEl) cameraLooksEl.hidden = state.ui.looksTab !== 'camera';
+    if (lensLooksEl) lensLooksEl.hidden = state.ui.looksTab !== 'lens';
+    if (state.ui.looksTab === 'presets') buildPresetCards();
     syncLookUI();
   }
-  $$('.seg-btn').forEach((btn) => {
+  $$('#looksSeg .seg-btn').forEach((btn) => {
     btn.addEventListener('click', () => setLooksTab(btn.dataset.looks));
   });
 
   if (lookIntensity) {
     lookIntensity.addEventListener('pointerdown', () => beginScrub());
     lookIntensity.addEventListener('input', () => {
-      const tab = state.ui.looksTab || 'film';
+      const tab = state.ui.looksTab || 'presets';
+      const val = parseFloat(lookIntensity.value);
+      if (tab === 'presets') {
+        // Live rescale full preset recipe (fast scrub path)
+        if (state.look.preset && state.look.preset !== 'none') {
+          applyPreset(state.look.preset, val, { fast: true });
+        }
+        if (lookIntensityValue) lookIntensityValue.textContent = String(val);
+        return;
+      }
       const meta = LOOK_INTENSITY[tab];
       if (!meta) return;
-      const val = parseFloat(lookIntensity.value);
       state.look[meta.id] = val;
+      // Manual intensity tweak detaches from named preset
+      if (state.look.preset && state.look.preset !== 'none') {
+        state.look.preset = 'none';
+        if (presetLooksEl) {
+          presetLooksEl.querySelectorAll('.preset-card').forEach((c) => {
+            c.classList.toggle('active', c.dataset.id === 'none');
+          });
+        }
+      }
       state.lookQuality = 'preview';
       if (lookIntensityValue) lookIntensityValue.textContent = String(val);
+      updateLookChip();
+      updateToolDots();
       scheduleRender(true);
     });
     lookIntensity.addEventListener('change', () => endScrub());
@@ -1710,17 +2975,22 @@
   }
 
   if (canvasArea) {
+    let compareStartX = 0;
+    let compareStartY = 0;
     canvasArea.addEventListener('pointerdown', (e) => {
       if (!state.hasImage) return;
       if (state.crop.active) return;
-      if (e.target.closest('.crop-layer')) return;
-      if (e.target.closest('button')) return;
-      // ignore multi-touch
+      if (panDrag.active) return;
+      if (e.altKey || e.button === 1) return;
+      if (e.target.closest('.crop-layer, .zoom-hud, button')) return;
       if (e.isPrimary === false) return;
 
       comparePointerId = e.pointerId;
+      compareStartX = e.clientX;
+      compareStartY = e.clientY;
       clearTimeout(compareTimer);
       compareTimer = setTimeout(() => {
+        if (panDrag.active) return;
         startCompare();
         hapticLight();
       }, 220);
@@ -1739,10 +3009,14 @@
     canvasArea.addEventListener('pointerleave', (e) => {
       if (e.pointerType === 'mouse') cancelCompareGesture(e);
     });
-    // movement cancels pending compare (allows pan later)
     canvasArea.addEventListener('pointermove', (e) => {
       if (!compareTimer) return;
-      // small movement ok
+      const dx = e.clientX - compareStartX;
+      const dy = e.clientY - compareStartY;
+      if (dx * dx + dy * dy > 36) {
+        clearTimeout(compareTimer);
+        compareTimer = null;
+      }
     });
   }
 
@@ -1787,6 +3061,9 @@
     pushHistory();
     resetParams(true);
     resetLooks(true);
+    PRESET_PARAM_KEYS.forEach((k) => {
+      state.params[k] = 0;
+    });
     state.optics.strength = 0.55;
     state.optics.apertureStrength = 0.55;
     state.optics.apertureSlider = 55;
@@ -1795,8 +3072,8 @@
     state.optics.focusDepth = 0.3;
     state.optics.focalRecipe = '50';
     state.optics.bokehShape = 'auto';
-    state.optics.enabled = true;
-    if (opticsEnabledEl) opticsEnabledEl.checked = true;
+    state.optics.enabled = false;
+    if (opticsEnabledEl) opticsEnabledEl.checked = false;
     state.debugScene = 'off';
     resetCropRect();
     syncFocalBokeh();
@@ -1806,7 +3083,7 @@
     updateToolDots();
     scheduleRender(false);
     pushHistory();
-    showToast('Sve resetovano');
+    showToast('All reset');
   }
 
   function syncRatioChips() {
@@ -1832,6 +3109,10 @@
     opticsEnabledEl.addEventListener('change', () => {
       pushHistory();
       state.optics.enabled = opticsEnabledEl.checked;
+      // When turning DoF on without a scene map, run analysis once
+      if (state.optics.enabled && !state.scene && state.hasImage) {
+        scheduleSceneAnalysis(80);
+      }
       scheduleRender(false);
       pushHistory();
     });
@@ -1886,7 +3167,7 @@
     const wh = state.workingCanvas.height;
     const size = state.export.size;
     if (size === 'working') {
-      return 'Izlaz: ' + ww + ' × ' + wh + ' px (pregled · brzo)';
+      return 'Output: ' + ww + ' × ' + wh + ' px (preview · fast)';
     }
     let ow = state.originalImage ? state.originalImage.naturalWidth : ww;
     let oh = state.originalImage ? state.originalImage.naturalHeight : wh;
@@ -1920,9 +3201,9 @@
       size === 'full'
         ? long > HARD
           ? ' · cap ' + HARD + 'px'
-          : ' · izvorni pikseli'
+          : ' · source pixels'
         : ' · full pipeline';
-    return 'Izlaz ≈ ' + outW + ' × ' + outH + ' px' + note;
+    return 'Output ≈ ' + outW + ' × ' + outH + ' px' + note;
   }
 
   function updateExportSheetUI() {
@@ -1989,19 +3270,19 @@
     closeExportSheet();
     const sizeLabel =
       state.export.size === 'full'
-        ? 'puna rezolucija'
+        ? 'full resolution'
         : state.export.size === 'working'
-          ? 'pregled'
+          ? 'preview'
           : state.export.size + 'px';
     busyStart(
       'export',
-      'Pripremam export…',
+      'Preparing export…',
       sizeLabel + ' · ' + (state.export.format || 'jpeg').toUpperCase()
     );
-    setButtonBusy(btnDownload, true, '…', 'Gotovo');
+    setButtonBusy(btnDownload, true, '…', 'Done');
 
     try {
-      busyUpdate('export', 'Obrađujem filtere…', sizeLabel);
+      busyUpdate('export', 'Applying filters…', sizeLabel);
       const result = await Export.download({
         size: state.export.size,
         format: state.export.format,
@@ -2024,14 +3305,14 @@
         },
         maxWorkingSize: state.maxWorkingSize
       });
-      showToast('Sačuvano · ' + result.width + '×' + result.height);
+      showToast('Saved · ' + result.width + '×' + result.height);
     } catch (err) {
       console.error(err);
-      alert('Export nije uspeo: ' + (err.message || err));
+      alert('Export failed: ' + (err.message || err));
     } finally {
       state.exporting = false;
       busyEnd('export');
-      setButtonBusy(btnDownload, false, '…', 'Gotovo');
+      setButtonBusy(btnDownload, false, '…', 'Done');
       btnDownload.disabled = !state.hasImage;
     }
   }
@@ -2073,7 +3354,7 @@
         fileInput.click();
         return;
       }
-      if (confirm('Zatvori i učitaj novu sliku? Izmene neće biti sačuvane.')) {
+      if (confirm('Close and load a new photo? Unsaved edits will be lost.')) {
         state.hasImage = false;
         state.originalImage = null;
         state.originalData = null;
@@ -2087,6 +3368,7 @@
         enableControls(false);
         if (lookChip) lookChip.hidden = true;
         if (topbarTitle) topbarTitle.textContent = 'Hermiona';
+        if (typeof updateLayoutMode === 'function') updateLayoutMode();
         fileInput.value = '';
         fileInput.click();
       }
@@ -2144,9 +3426,53 @@
     });
   }
 
-  window.addEventListener('resize', () => {
-    if (state.crop.active) updateCropOverlay();
+  // ========== RESPONSIVE LAYOUT (portrait bottom dock · landscape/desktop side dock) ==========
+  function updateLayoutMode() {
+    const w = window.innerWidth || document.documentElement.clientWidth || 0;
+    const h = window.innerHeight || document.documentElement.clientHeight || 0;
+    const landscape = w > h;
+    // Side panel: desktop/tablet, or landscape with enough height to not crush the photo
+    const side =
+      (w >= 860 && h >= 500) ||
+      (landscape && w >= 700 && h >= 420) ||
+      (landscape && w >= 780 && h >= 360);
+    // Compact chrome when height is tight (phone landscape)
+    const compact = h > 0 && h < 500 && (landscape || w < 860);
+
+    document.body.classList.toggle('layout-side', side);
+    document.body.classList.toggle('layout-compact', compact);
+    document.body.classList.toggle('layout-landscape', landscape);
+    document.body.classList.toggle('layout-portrait', !landscape);
+
+    // Refit image + crop after reflow (critical for portrait web layout)
+    requestAnimationFrame(() => {
+      layoutViewport();
+      if (state.crop.active) {
+        updateCropOverlay();
+        requestAnimationFrame(updateCropOverlay);
+      }
+    });
+  }
+
+  let layoutRaf = 0;
+  function scheduleLayoutMode() {
+    if (layoutRaf) return;
+    layoutRaf = requestAnimationFrame(() => {
+      layoutRaf = 0;
+      updateLayoutMode();
+    });
+  }
+
+  window.addEventListener('resize', scheduleLayoutMode);
+  window.addEventListener('orientationchange', () => {
+    // iOS fires before viewport settles
+    setTimeout(updateLayoutMode, 60);
+    setTimeout(updateLayoutMode, 220);
   });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', scheduleLayoutMode);
+  }
+  updateLayoutMode();
 
   document.addEventListener('keydown', (e) => {
     if (e.code === 'Escape') {
@@ -2176,6 +3502,25 @@
       return;
     }
 
+    // Zoom: + / - / 0 (fit)
+    if (!meta && (e.key === '=' || e.key === '+')) {
+      e.preventDefault();
+      const area = canvasArea.getBoundingClientRect();
+      setZoom(state.view.zoom * 1.2, area.left + area.width / 2, area.top + area.height / 2, true);
+      return;
+    }
+    if (!meta && e.key === '-') {
+      e.preventDefault();
+      const area = canvasArea.getBoundingClientRect();
+      setZoom(state.view.zoom / 1.2, area.left + area.width / 2, area.top + area.height / 2, true);
+      return;
+    }
+    if (!meta && e.key === '0') {
+      e.preventDefault();
+      fitView();
+      return;
+    }
+
     if (e.code === 'Space') {
       e.preventDefault();
       startCompare();
@@ -2197,9 +3542,7 @@
   if (dock) dock.hidden = true;
   enableControls(false);
 
-  if (Scene && Scene.preload) {
-    setTimeout(() => Scene.preload(), 1500);
-  }
+  // MediaPipe / portrait pipeline stays cold until user enables DoF or taps Analyze
 
   console.log('Hermiona ready ✦ iOS editor UI');
 })();

@@ -327,13 +327,13 @@ state.optics = {
 Look
   Film ………
   Analog ………
-  Objektiv ………   (existing cards; physical recipes added)
+  Lens ………   (existing cards; physical recipes added)
   ── Scene / DoF ──
-  [Analiziraj scenu]  or auto after upload
+  [Analyze scene]  or auto after upload
   Aperture  f/1.4 ──────── f/16
   Focus     near ←●→ far   (or tap on canvas)
-  ☐ Prikaži depth
-  ☐ Prikaži subject
+  ☐ Show depth
+  ☐ Show subject
 ```
 
 Canvas: optional tap-to-focus sets `focusDepth` from depth map at tap UV.

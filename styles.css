@@ -27,8 +27,11 @@
   --radius-pill: 999px;
   --topbar-h: 52px;
   --dock-rail: 64px;
+  --dock-w: min(380px, 38vw);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
   --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
     'Inter', system-ui, sans-serif;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -69,6 +72,8 @@ button, input {
   height: 100dvh;
   background: var(--bg);
   overflow: hidden;
+  /* Used by layout-side grid */
+  min-height: 0;
 }
 
 /* ========== TOP BAR ========== */
@@ -225,32 +230,64 @@ button, input {
   overflow: hidden;
   min-height: 0;
   touch-action: none;
+  /* room for full portrait photos above dock */
+  padding: 8px;
 }
 
 .canvas-wrap {
   position: relative;
-  max-width: 100%;
-  max-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  /* Zoom/pan via transform — GPU composited */
   will-change: transform;
+  transform-origin: center center;
+  transition: none;
+}
+
+/* Smooth zoom only when not actively gesturing */
+.canvas-wrap.zoom-animate {
+  transition: transform 0.18s var(--ease-out);
 }
 
 #mainCanvas {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
   display: none;
+  /* Explicit CSS size set by layoutViewport() so portrait always fits */
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
   border-radius: 0;
   box-shadow: 0 0 0 0 transparent;
   touch-action: none;
-  /* GPU layer for smoother swaps */
   transform: translateZ(0);
+  /* crisp when zoomed */
+  image-rendering: auto;
 }
 
 #mainCanvas.visible {
   display: block;
+}
+
+/* Studio crop mode — dimmer stage, more room for tools */
+.canvas-area.crop-mode {
+  padding: 10px;
+  background: #050506;
+}
+
+.canvas-area.crop-mode #mainCanvas.visible {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* High-res zoom detail re-render in progress */
+.canvas-area.detail-render::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.12);
+  z-index: 18;
 }
 
 .canvas-area.comparing #mainCanvas {
@@ -401,12 +438,25 @@ button, input {
   z-index: 50;
   display: flex;
   flex-direction: column;
+  min-height: 0;
   /* smooth expand/collapse of sub areas */
-  transition: min-height 0.22s var(--ease-out);
+  transition: min-height 0.22s var(--ease-out), width 0.22s var(--ease-out);
 }
 
 .dock[hidden] {
   display: none !important;
+}
+
+/* Dock body: dials / chips / panels (tool-rail stays outside, sticky bottom) */
+.dock-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* Dial row */
@@ -791,6 +841,187 @@ button, input {
   padding: 4px 4px 0;
 }
 
+/* ========== PRESETS ========== */
+.presets-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.presets-pane[hidden] {
+  display: none !important;
+}
+
+.preset-cats {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 2px 2px;
+}
+
+.preset-cats::-webkit-scrollbar {
+  display: none;
+}
+
+.preset-cat {
+  flex: 0 0 auto;
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 550;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, transform 0.12s;
+}
+
+.preset-cat:active {
+  transform: scale(0.96);
+}
+
+.preset-cat.active {
+  background: var(--accent);
+  color: #1a1400;
+}
+
+.preset-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 2px 2px 6px;
+  scroll-snap-type: x proximity;
+}
+
+.preset-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.preset-card {
+  flex: 0 0 auto;
+  width: 104px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-secondary);
+  scroll-snap-align: start;
+  transition: transform 0.12s var(--ease-spring), color 0.15s;
+  -webkit-user-select: none;
+}
+
+.preset-card:active {
+  transform: scale(0.95);
+}
+
+.preset-swatch {
+  display: block;
+  width: 104px;
+  height: 72px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  margin-bottom: 6px;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.preset-swatch::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.35) 0%, transparent 55%);
+  pointer-events: none;
+}
+
+.preset-card.active .preset-swatch {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.preset-card.active {
+  color: var(--accent);
+}
+
+.preset-card-name {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: inherit;
+}
+
+.preset-card-recipe {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+  line-height: 1.25;
+}
+
+.preset-card.active .preset-card-recipe {
+  color: rgba(255, 214, 10, 0.55);
+}
+
+.preset-hint {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  text-align: center;
+  letter-spacing: 0.01em;
+  padding: 0 4px 2px;
+}
+
+body.layout-side .preset-scroll {
+  flex-wrap: wrap;
+  overflow-x: visible;
+  gap: 12px 10px;
+}
+
+body.layout-side .preset-card {
+  width: calc(50% - 6px);
+}
+
+body.layout-side .preset-swatch {
+  width: 100%;
+  height: 64px;
+}
+
+body.layout-compact .preset-swatch {
+  width: 88px;
+  height: 56px;
+}
+
+body.layout-compact .preset-card {
+  width: 88px;
+}
+
+body.layout-compact .preset-hint {
+  display: none;
+}
+
+/* 4-segment looks tab — slightly tighter */
+#looksSeg .seg-btn {
+  font-size: 12px;
+  padding: 0 2px;
+}
+
 /* Crop tools */
 .crop-tools {
   display: flex;
@@ -1043,6 +1274,15 @@ button, input {
   white-space: nowrap;
 }
 
+/* 7 tools — slightly tighter labels */
+.tool-rail .tool-btn span {
+  font-size: 9.5px;
+}
+.tool-rail .tool-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
 .tool-btn:active {
   transform: scale(0.92);
 }
@@ -1081,14 +1321,34 @@ button, input {
   pointer-events: none;
 }
 
+.crop-guides {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  background:
+    linear-gradient(to right, transparent calc(33.333% - 0.5px), rgba(255,214,10,0.35) calc(33.333% - 0.5px), rgba(255,214,10,0.35) calc(33.333% + 0.5px), transparent calc(33.333% + 0.5px)),
+    linear-gradient(to right, transparent calc(66.666% - 0.5px), rgba(255,214,10,0.35) calc(66.666% - 0.5px), rgba(255,214,10,0.35) calc(66.666% + 0.5px), transparent calc(66.666% + 0.5px)),
+    linear-gradient(to bottom, transparent calc(33.333% - 0.5px), rgba(255,214,10,0.35) calc(33.333% - 0.5px), rgba(255,214,10,0.35) calc(33.333% + 0.5px), transparent calc(33.333% + 0.5px)),
+    linear-gradient(to bottom, transparent calc(66.666% - 0.5px), rgba(255,214,10,0.35) calc(66.666% - 0.5px), rgba(255,214,10,0.35) calc(66.666% + 0.5px), transparent calc(66.666% + 0.5px));
+}
+
 .crop-rect {
   position: absolute;
   box-sizing: border-box;
   border: 1.5px solid rgba(255, 255, 255, 0.95);
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
   pointer-events: auto;
   touch-action: none;
   cursor: move;
+  transition: box-shadow 0.12s;
+}
+
+.crop-rect.snapping {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 9999px rgba(0, 0, 0, 0.55),
+    0 0 0 1px var(--accent);
 }
 
 .crop-grid {
@@ -1096,10 +1356,137 @@ button, input {
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(to right, transparent calc(33.333% - 0.5px), rgba(255,255,255,0.3) calc(33.333% - 0.5px), rgba(255,255,255,0.3) calc(33.333% + 0.5px), transparent calc(33.333% + 0.5px)),
-    linear-gradient(to right, transparent calc(66.666% - 0.5px), rgba(255,255,255,0.3) calc(66.666% - 0.5px), rgba(255,255,255,0.3) calc(66.666% + 0.5px), transparent calc(66.666% + 0.5px)),
-    linear-gradient(to bottom, transparent calc(33.333% - 0.5px), rgba(255,255,255,0.3) calc(33.333% - 0.5px), rgba(255,255,255,0.3) calc(33.333% + 0.5px), transparent calc(33.333% + 0.5px)),
-    linear-gradient(to bottom, transparent calc(66.666% - 0.5px), rgba(255,255,255,0.3) calc(66.666% - 0.5px), rgba(255,255,255,0.3) calc(66.666% + 0.5px), transparent calc(66.666% + 0.5px));
+    linear-gradient(to right, transparent calc(33.333% - 0.5px), rgba(255,255,255,0.35) calc(33.333% - 0.5px), rgba(255,255,255,0.35) calc(33.333% + 0.5px), transparent calc(33.333% + 0.5px)),
+    linear-gradient(to right, transparent calc(66.666% - 0.5px), rgba(255,255,255,0.35) calc(66.666% - 0.5px), rgba(255,255,255,0.35) calc(66.666% + 0.5px), transparent calc(66.666% + 0.5px)),
+    linear-gradient(to bottom, transparent calc(33.333% - 0.5px), rgba(255,255,255,0.35) calc(33.333% - 0.5px), rgba(255,255,255,0.35) calc(33.333% + 0.5px), transparent calc(33.333% + 0.5px)),
+    linear-gradient(to bottom, transparent calc(66.666% - 0.5px), rgba(255,255,255,0.35) calc(66.666% - 0.5px), rgba(255,255,255,0.35) calc(66.666% + 0.5px), transparent calc(66.666% + 0.5px));
+}
+
+.subject-hint {
+  position: absolute;
+  border: 1px dashed rgba(255, 214, 10, 0.55);
+  border-radius: 4px;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+  z-index: 1;
+}
+
+.subject-hint[hidden] {
+  display: none !important;
+}
+
+/* Zoom HUD */
+.zoom-hud {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(20, 20, 22, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 0.5px solid var(--separator-strong);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+.zoom-hud[hidden] {
+  display: none !important;
+}
+
+.zoom-btn {
+  min-width: 34px;
+  height: 32px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, color 0.12s, transform 0.1s;
+}
+
+.zoom-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.zoom-btn:active {
+  transform: scale(0.94);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.zoom-btn.zoom-label {
+  min-width: 52px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: -0.02em;
+}
+
+.zoom-btn.zoom-label:hover {
+  color: var(--accent);
+}
+
+.crop-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  margin: 0 0 8px 2px;
+}
+
+.frame-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 0 10px;
+}
+
+.frame-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.frame-chip {
+  /* inherits ratio-chip */
+}
+
+.crop-hint {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin: -4px 0 12px 2px;
+  line-height: 1.35;
+}
+
+body.layout-side .zoom-hud {
+  right: 16px;
+  bottom: 16px;
+}
+
+body.layout-compact .zoom-hud {
+  right: 8px;
+  bottom: 8px;
+}
+
+body.layout-compact .zoom-btn {
+  min-width: 30px;
+  height: 28px;
+  font-size: 14px;
+}
+
+body.layout-compact .zoom-btn.zoom-label {
+  min-width: 44px;
+  font-size: 11px;
 }
 
 .crop-handle {
@@ -1453,42 +1840,339 @@ button, input {
   to { transform: rotate(360deg); }
 }
 
-/* Desktop: slightly wider dock content, keep bottom chrome */
-@media (min-width: 900px) {
-  .dock {
-    max-width: 720px;
-    margin: 0 auto;
-    width: 100%;
-    border-radius: 16px 16px 0 0;
-    border-left: 0.5px solid var(--separator);
-    border-right: 0.5px solid var(--separator);
-  }
+/* ========== LAYOUT: SIDE DOCK (wide / landscape desktop-tablet) ==========
+   body.layout-side is set by app.js when width/height allow a right panel.
+   Pure-CSS @media fallback is below. */
+body.layout-side #app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--dock-w);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "topbar topbar"
+    "stage  dock";
+}
 
-  .topbar {
-    max-width: 960px;
-    margin: 0 auto;
-    width: 100%;
-  }
+/* When no image yet, dock is hidden — stage fills width */
+body.layout-side #app:has(.dock[hidden]) {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "topbar"
+    "stage";
+}
 
-  .stage {
-    max-width: 960px;
-    margin: 0 auto;
-    width: 100%;
-  }
+body.layout-side .topbar {
+  grid-area: topbar;
+  max-width: none;
+  margin: 0;
+  padding-left: max(8px, var(--safe-left));
+  padding-right: max(8px, var(--safe-right));
+}
 
-  #mainCanvas.visible {
-    border-radius: 4px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
-  }
+body.layout-side .stage {
+  grid-area: stage;
+  max-width: none;
+  margin: 0;
+  min-width: 0;
+  min-height: 0;
+}
 
+body.layout-side .dock {
+  grid-area: dock;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  border-top: none;
+  border-left: 0.5px solid var(--separator);
+  border-radius: 0;
+  padding-bottom: max(8px, var(--safe-bottom));
+  padding-right: max(0px, var(--safe-right));
+  background: rgba(12, 12, 14, 0.94);
+}
+
+body.layout-side .dock-body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+body.layout-side .tool-rail {
+  margin-top: 0;
+  flex-shrink: 0;
+  height: auto;
+  min-height: var(--dock-rail);
+  padding: 8px 4px 10px;
+  border-top: 0.5px solid var(--separator);
+}
+
+body.layout-side .dial-row {
+  padding: 12px 16px 6px;
+  flex-shrink: 0;
+}
+
+body.layout-side .chips-scroll {
+  flex-shrink: 0;
+  padding: 4px 12px 12px;
+  overflow-x: visible;
+}
+
+body.layout-side .chips {
+  flex-wrap: wrap;
+  width: 100%;
+  justify-content: center;
+  gap: 10px 12px;
+  padding: 2px 0;
+}
+
+body.layout-side .subpanel {
+  max-height: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 14px 10px;
+}
+
+body.layout-side .look-scroll {
+  flex-wrap: wrap;
+  overflow-x: visible;
+  max-height: none;
+  padding-bottom: 8px;
+}
+
+body.layout-side .look-card {
+  width: 68px;
+}
+
+body.layout-side .look-swatch {
+  width: 68px;
+  height: 68px;
+}
+
+body.layout-side .canvas-area {
+  padding: 16px 20px;
+}
+
+/* Portrait phone: guarantee stage still shows full photo above dock */
+body.layout-portrait .canvas-area {
+  padding: 6px 8px;
+}
+
+body.layout-portrait.layout-compact .canvas-area {
+  padding: 4px 6px;
+}
+
+body.layout-side #mainCanvas.visible {
+  border-radius: 6px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  /* size controlled by layoutViewport — do not force max % here */
+}
+
+body.layout-side .compare-hint {
+  bottom: 20px;
+}
+
+body.layout-side .look-chip {
+  top: 16px;
+}
+
+body.layout-side .drop-content {
+  max-width: 360px;
+}
+
+body.layout-side .crop-tools {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+body.layout-side .tool-icon-btn {
+  flex: 1 1 calc(50% - 8px);
+  min-width: 72px;
+}
+
+body.layout-side .ratio-scroll,
+body.layout-side .focal-scroll,
+body.layout-side .bokeh-scroll {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+
+/* Wider side panel on large desktops */
+@media (min-width: 1200px) {
+  body.layout-side {
+    --dock-w: min(420px, 34vw);
+  }
+}
+
+@media (min-width: 1600px) {
+  body.layout-side {
+    --dock-w: min(460px, 30vw);
+  }
+}
+
+/* ========== LAYOUT: COMPACT LANDSCAPE (phone rotated, short height) ========== */
+body.layout-compact {
+  --topbar-h: 42px;
+  --dock-rail: 50px;
+}
+
+body.layout-compact .topbar {
+  padding-left: max(4px, var(--safe-left));
+  padding-right: max(4px, var(--safe-right));
+}
+
+body.layout-compact .topbar-title {
+  font-size: 14px;
+}
+
+body.layout-compact .tb-btn {
+  width: 36px;
+  height: 36px;
+}
+
+body.layout-compact .tb-done {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+body.layout-compact .dial-hint {
+  display: none;
+}
+
+body.layout-compact .dial-row {
+  padding: 4px 12px 0;
+  gap: 2px;
+}
+
+body.layout-compact .dial-meta {
+  min-height: 18px;
+}
+
+body.layout-compact .dial-name {
+  font-size: 12px;
+}
+
+body.layout-compact .dial-value {
+  font-size: 13px;
+}
+
+body.layout-compact .ios-dial {
+  height: 28px;
+}
+
+body.layout-compact .ios-dial::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  margin-top: -8.5px;
+}
+
+body.layout-compact .chips-scroll {
+  padding: 2px 8px 6px;
+}
+
+body.layout-compact .chip {
+  min-width: 48px;
+  gap: 4px;
+}
+
+body.layout-compact .chip-icon {
+  width: 34px;
+  height: 34px;
+}
+
+body.layout-compact .chip-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+body.layout-compact .chip-label {
+  font-size: 10px;
+  max-width: 52px;
+}
+
+body.layout-compact .subpanel {
+  max-height: min(32vh, 160px);
+  padding: 6px 10px 4px;
+}
+
+body.layout-compact .look-swatch {
+  width: 56px;
+  height: 56px;
+}
+
+body.layout-compact .look-card {
+  width: 56px;
+}
+
+body.layout-compact .tool-btn {
+  padding: 4px 2px;
+  gap: 1px;
+}
+
+body.layout-compact .tool-btn span {
+  font-size: 9px;
+}
+
+body.layout-compact .tool-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+body.layout-compact .dock {
+  padding-bottom: max(2px, var(--safe-bottom));
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+
+body.layout-compact .canvas-area {
+  /* give photo every free pixel */
+  min-height: 0;
+}
+
+body.layout-compact .drop-title {
+  font-size: 16px;
+}
+
+body.layout-compact .drop-sub {
+  margin-bottom: 12px;
+}
+
+body.layout-compact .drop-icon {
+  margin-bottom: 8px;
+}
+
+body.layout-compact .drop-icon svg {
+  width: 36px;
+  height: 36px;
+}
+
+/* Compact landscape with enough width: slim side dock instead of crushing height */
+body.layout-compact.layout-side {
+  --dock-w: min(300px, 42vw);
+  --topbar-h: 44px;
+}
+
+body.layout-compact.layout-side .subpanel {
+  max-height: none;
+}
+
+body.layout-compact.layout-side .chip-icon {
+  width: 36px;
+  height: 36px;
+}
+
+/* ========== SHEETS (desktop / landscape) ========== */
+@media (min-width: 720px) {
   .sheet {
     left: 50%;
     right: auto;
-    width: min(420px, 100%);
+    width: min(420px, 92vw);
     transform: translateX(-50%);
     border-radius: 16px;
-    bottom: 24px;
+    bottom: max(24px, var(--safe-bottom));
     padding-bottom: 20px;
+    max-height: min(85vh, 720px);
     animation: sheetUpDesk 0.28s var(--ease-out);
   }
 }
@@ -1496,6 +2180,126 @@ button, input {
 @keyframes sheetUpDesk {
   from { opacity: 0; transform: translateX(-50%) translateY(24px); }
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Fine overlay readable in landscape */
+body.layout-landscape .fine-card {
+  padding: 20px 32px;
+}
+
+body.layout-landscape .fine-value {
+  font-size: 36px;
+}
+
+/* Pure-CSS fallback when JS layout class is late / disabled */
+@media (min-width: 860px) and (min-height: 500px) {
+  #app {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--dock-w);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      "topbar topbar"
+      "stage  dock";
+  }
+
+  #app:has(.dock[hidden]) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "topbar"
+      "stage";
+  }
+
+  .topbar { grid-area: topbar; }
+
+  .stage {
+    grid-area: stage;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .dock {
+    grid-area: dock;
+    height: 100%;
+    max-height: none;
+    border-top: none;
+    border-left: 0.5px solid var(--separator);
+    padding-bottom: max(8px, var(--safe-bottom));
+    padding-right: max(0px, var(--safe-right));
+  }
+
+  .dock-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .tool-rail {
+    flex-shrink: 0;
+  }
+
+  .subpanel {
+    max-height: none;
+    overflow-y: auto;
+  }
+
+  .chips-scroll {
+    overflow-x: visible;
+  }
+
+  .chips {
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: center;
+    gap: 10px 12px;
+  }
+
+  .look-scroll {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  #mainCanvas.visible {
+    border-radius: 6px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  }
+
+  .canvas-area {
+    padding: 12px 16px;
+  }
+}
+
+/* Short landscape phones without JS class */
+@media (orientation: landscape) and (max-height: 480px) and (max-width: 859px) {
+  :root {
+    --topbar-h: 42px;
+    --dock-rail: 50px;
+  }
+
+  .dial-hint {
+    display: none;
+  }
+
+  .dial-row {
+    padding: 4px 12px 0;
+  }
+
+  .chips-scroll {
+    padding: 2px 8px 6px;
+  }
+
+  .chip-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .subpanel {
+    max-height: min(32vh, 150px);
+    padding: 6px 10px 4px;
+  }
+
+  .tool-btn span {
+    font-size: 9px;
+  }
 }
 
 @media (max-width: 360px) {

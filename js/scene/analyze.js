@@ -378,11 +378,69 @@
     });
   }
 
+  /**
+   * Bounding box of subject from person mask (normalized 0..1).
+   * @param {object} analysis
+   * @param {number} [thr=0.35]
+   * @returns {{x:number,y:number,w:number,h:number,cx:number,cy:number,coverage:number}|null}
+   */
+  function subjectBBox(analysis, thr) {
+    if (!analysis || !analysis.personMask) return null;
+    thr = thr != null ? thr : 0.35;
+    const w = analysis.width;
+    const h = analysis.height;
+    const m = analysis.personMask;
+    let minX = w;
+    let minY = h;
+    let maxX = -1;
+    let maxY = -1;
+    let count = 0;
+    let mass = 0;
+    let sumX = 0;
+    let sumY = 0;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const v = m[y * w + x];
+        if (v < thr) continue;
+        count++;
+        mass += v;
+        sumX += x * v;
+        sumY += y * v;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    }
+    if (count < 8 || maxX < minX || mass < 1e-6) return null;
+    // pad slightly
+    const padX = (maxX - minX + 1) * 0.04;
+    const padY = (maxY - minY + 1) * 0.04;
+    minX = Math.max(0, minX - padX);
+    minY = Math.max(0, minY - padY);
+    maxX = Math.min(w - 1, maxX + padX);
+    maxY = Math.min(h - 1, maxY + padY);
+    const bw = (maxX - minX + 1) / w;
+    const bh = (maxY - minY + 1) / h;
+    const bx = minX / w;
+    const by = minY / h;
+    return {
+      x: bx,
+      y: by,
+      w: bw,
+      h: bh,
+      cx: sumX / mass / w,
+      cy: sumY / mass / h,
+      coverage: count / (w * h)
+    };
+  }
+
   global.HermionaScene = {
     analyze,
     resizeAnalysis,
     preload,
     ensureSegmenter,
+    subjectBBox,
     PROXY_LONG
   };
 })(typeof window !== 'undefined' ? window : globalThis);

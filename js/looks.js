@@ -60,13 +60,13 @@
       id: 'none',
       name: 'Original',
       swatch: 'linear-gradient(135deg,#888,#444)',
-      desc: 'Bez filma'
+      desc: 'No film'
     },
     {
       id: 'portra400',
       name: 'Portra 400',
       swatch: 'linear-gradient(135deg,#e8c4a8,#c49a7a 40%,#8a9a88)',
-      desc: 'Topla koža, mek kontrast',
+      desc: 'Warm skin, soft contrast',
       curves: {
         r: [[0, 8], [64, 72], [128, 132], [192, 198], [255, 252]],
         g: [[0, 6], [64, 68], [128, 128], [192, 190], [255, 248]],
@@ -85,7 +85,7 @@
       id: 'fuji400h',
       name: 'Fuji 400H',
       swatch: 'linear-gradient(135deg,#b8d4c8,#9ab8b0 45%,#d4c8b0)',
-      desc: 'Vazdušasto, zeleno-cyan senke',
+      desc: 'Airy, green-cyan shadows',
       curves: {
         r: [[0, 10], [64, 66], [128, 124], [192, 188], [255, 245]],
         g: [[0, 8], [64, 74], [128, 134], [192, 196], [255, 250]],
@@ -105,7 +105,7 @@
       id: 'kodakgold',
       name: 'Kodak Gold',
       swatch: 'linear-gradient(135deg,#f0c060,#e09040 50%,#c07050)',
-      desc: 'Zasićeno, potrošački toplo',
+      desc: 'Saturated consumer warmth',
       curves: {
         r: [[0, 4], [64, 70], [128, 138], [192, 205], [255, 255]],
         g: [[0, 4], [64, 66], [128, 128], [192, 188], [255, 248]],
@@ -124,7 +124,7 @@
       id: 'cinestill800t',
       name: 'Cinestill 800T',
       swatch: 'linear-gradient(135deg,#1a2030,#4a6080 40%,#c04050)',
-      desc: 'Tungsten noć, crvena halo',
+      desc: 'Tungsten night, red halo',
       curves: {
         r: [[0, 6], [64, 62], [128, 125], [192, 200], [255, 255]],
         g: [[0, 10], [64, 68], [128, 122], [192, 175], [255, 230]],
@@ -144,7 +144,7 @@
       id: 'ilfordhp5',
       name: 'Ilford HP5',
       swatch: 'linear-gradient(135deg,#ddd,#888 50%,#222)',
-      desc: 'Klasični B&W grain',
+      desc: 'Classic B&W grain',
       curves: {
         r: [[0, 5], [64, 58], [128, 128], [192, 198], [255, 250]],
         g: [[0, 5], [64, 58], [128, 128], [192, 198], [255, 250]],
@@ -163,7 +163,7 @@
       id: 'superia800',
       name: 'Superia 800',
       swatch: 'linear-gradient(135deg,#60a060,#c0a060 50%,#d08070)',
-      desc: 'Punchy, blago zeleno',
+      desc: 'Punchy, slight green cast',
       curves: {
         r: [[0, 6], [64, 68], [128, 130], [192, 200], [255, 252]],
         g: [[0, 8], [64, 74], [128, 136], [192, 198], [255, 248]],
@@ -183,7 +183,7 @@
       id: 'expired',
       name: 'Expired',
       swatch: 'linear-gradient(135deg,#c0a090,#708090 40%,#906060)',
-      desc: 'Shift boja, teško zrno',
+      desc: 'Color shift, heavy grain',
       curves: {
         r: [[0, 18], [64, 78], [128, 135], [192, 195], [255, 245]],
         g: [[0, 12], [64, 62], [128, 118], [192, 175], [255, 230]],
@@ -207,28 +207,45 @@
   const CAMERAS = [
     {
       id: 'none',
-      name: 'Čisto',
+      name: 'Clean',
       swatch: 'linear-gradient(135deg,#555,#333)',
-      desc: 'Bez tela aparata'
+      desc: 'No camera body'
     },
     {
       id: 'holga',
       name: 'Holga',
       swatch: 'linear-gradient(135deg,#2a1810 0%,#8a6040 40%,#1a1008 100%)',
-      desc: 'Jaka vinjeta, meko, light leak',
+      desc: 'Strong vignette, soft, light leak',
       vignette: 0.72,
       vignettePower: 1.4,
       soft: 0.22,
       contrast: -0.12,
       lightLeak: 0.35,
       leakHue: 'warm',
-      edgeBlur: 0.15
+      edgeBlur: 0.15,
+      // I6 spatial character (0..1)
+      imperf: {
+        softCorners: 0.75,
+        leakEdge: 0.55,
+        dust: 0.18,
+        scratches: 0.12,
+        gate: 0.35,
+        uneven: 0.15,
+        barrel: 0.28,
+        lateralCA: 0.22,
+        ghost: 0.08,
+        stains: 0.06,
+        border: 0,
+        dateStamp: 0,
+        halationBlur: 0.05,
+        highlightRoll: 0.25
+      }
     },
     {
       id: 'lomo',
       name: 'Lomo LC-A',
       swatch: 'linear-gradient(135deg,#201030,#c04080 45%,#2060a0)',
-      desc: 'Cross-process, vinjeta',
+      desc: 'Cross-process, vignette',
       vignette: 0.55,
       vignettePower: 1.6,
       soft: 0.08,
@@ -236,20 +253,52 @@
       sat: 0.25,
       crossProcess: 0.35,
       lightLeak: 0.12,
-      leakHue: 'magenta'
+      leakHue: 'magenta',
+      imperf: {
+        softCorners: 0.45,
+        leakEdge: 0.35,
+        dust: 0.12,
+        scratches: 0.08,
+        gate: 0.22,
+        uneven: 0.12,
+        barrel: 0.12,
+        lateralCA: 0.18,
+        ghost: 0,
+        stains: 0.04,
+        border: 0,
+        dateStamp: 0,
+        halationBlur: 0.08,
+        highlightRoll: 0.2
+      }
     },
     {
       id: 'polaroid',
       name: 'Polaroid',
       swatch: 'linear-gradient(135deg,#e8e0d0,#c0b8a8 50%,#908878)',
-      desc: 'Izbledelo, cool senke',
+      desc: 'Faded, cool shadows',
       vignette: 0.2,
       soft: 0.18,
       contrast: -0.15,
       fade: 0.28,
       coolShadows: 0.12,
       warmth: 0.06,
-      sat: -0.15
+      sat: -0.15,
+      imperf: {
+        softCorners: 0.35,
+        leakEdge: 0.08,
+        dust: 0.1,
+        scratches: 0.04,
+        gate: 0.1,
+        uneven: 0.08,
+        barrel: 0.05,
+        lateralCA: 0.08,
+        ghost: 0,
+        stains: 0.2,
+        border: 0.85,
+        dateStamp: 0,
+        halationBlur: 0.12,
+        highlightRoll: 0.45
+      }
     },
     {
       id: 'disposable',
@@ -262,32 +311,80 @@
       sat: 0.08,
       cyanCast: 0.1,
       flashCenter: 0.18,
-      grainBoost: 0.15
+      grainBoost: 0.15,
+      imperf: {
+        softCorners: 0.4,
+        leakEdge: 0.1,
+        dust: 0.15,
+        scratches: 0.1,
+        gate: 0.18,
+        uneven: 0.2,
+        barrel: 0.15,
+        lateralCA: 0.12,
+        ghost: 0,
+        stains: 0.05,
+        border: 0,
+        dateStamp: 0.9,
+        halationBlur: 0.05,
+        highlightRoll: 0.22
+      }
     },
     {
       id: 'yashica',
       name: 'Yashica',
       swatch: 'linear-gradient(135deg,#3a3028,#c8b090 40%,#4a4038)',
-      desc: 'Toplo vintage staklo',
+      desc: 'Warm vintage glass',
       vignette: 0.38,
       vignettePower: 1.8,
       soft: 0.12,
       contrast: 0.05,
       warmth: 0.12,
       sat: -0.05,
-      fade: 0.08
+      fade: 0.08,
+      imperf: {
+        softCorners: 0.28,
+        leakEdge: 0.12,
+        dust: 0.08,
+        scratches: 0.05,
+        gate: 0.15,
+        uneven: 0.06,
+        barrel: 0.08,
+        lateralCA: 0.15,
+        ghost: 0,
+        stains: 0.04,
+        border: 0,
+        dateStamp: 0,
+        halationBlur: 0.06,
+        highlightRoll: 0.3
+      }
     },
     {
       id: 'contax',
       name: 'Contax T2',
       swatch: 'linear-gradient(135deg,#2a2a30,#d0d0d8 50%,#4a4a50)',
-      desc: 'Čisto, blaga vinjeta, premium',
+      desc: 'Clean, light vignette, premium',
       vignette: 0.22,
       vignettePower: 2.2,
       soft: 0.03,
       contrast: 0.04,
       sat: 0.04,
-      clarity: 0.06
+      clarity: 0.06,
+      imperf: {
+        softCorners: 0.08,
+        leakEdge: 0.04,
+        dust: 0.04,
+        scratches: 0.02,
+        gate: 0.08,
+        uneven: 0.03,
+        barrel: 0.02,
+        lateralCA: 0.06,
+        ghost: 0,
+        stains: 0,
+        border: 0,
+        dateStamp: 0,
+        halationBlur: 0.03,
+        highlightRoll: 0.35
+      }
     }
   ];
 
@@ -665,15 +762,15 @@
   const LENSES = [
     {
       id: 'none',
-      name: 'Bez objektiva',
+      name: 'No lens',
       swatch: 'linear-gradient(135deg,#666,#333)',
-      desc: 'Neutralno staklo'
+      desc: 'Neutral glass'
     },
     {
       id: 'standard',
       name: 'Standard',
       swatch: 'radial-gradient(circle,#c8c8c8 0%,#3a3a3a 100%)',
-      desc: 'Blaga optička vinjeta',
+      desc: 'Mild optical vignette',
       vignette: 0.28,
       vignettePower: 2.4,
       soft: 0.02,
@@ -685,7 +782,7 @@
       id: 'soft',
       name: 'Soft Focus',
       swatch: 'radial-gradient(circle,#f0e8e0 0%,#a09088 55%,#403830 100%)',
-      desc: 'Glow, smanjen mikrokontrast',
+      desc: 'Glow, reduced microcontrast',
       vignette: 0.12,
       vignettePower: 2.0,
       soft: 0.42,
@@ -698,7 +795,7 @@
       id: 'vintage',
       name: 'Vintage',
       swatch: 'radial-gradient(circle,#e0c8a0 0%,#806040 50%,#201810 100%)',
-      desc: 'Meko + toplo + CA',
+      desc: 'Soft + warm + CA',
       vignette: 0.48,
       vignettePower: 1.7,
       soft: 0.22,
@@ -711,7 +808,7 @@
       id: 'dream',
       name: 'Dream',
       swatch: 'radial-gradient(circle,#fff0f8 0%,#d0a0c0 40%,#302028 100%)',
-      desc: 'Jak bloom, ethereal',
+      desc: 'Strong bloom, ethereal',
       vignette: 0.18,
       vignettePower: 1.9,
       soft: 0.35,
@@ -739,7 +836,7 @@
       id: 'harsh',
       name: 'Clinical',
       swatch: 'radial-gradient(circle,#ffffff 0%,#b0b0b8 70%,#606068 100%)',
-      desc: 'Oštro, čisti uglovi',
+      desc: 'Sharp, clean corners',
       vignette: -0.08,
       vignettePower: 2.0,
       soft: 0,
@@ -753,6 +850,592 @@
 
   function lensById(id) {
     return LENSES.find((l) => l.id === id) || LENSES[0];
+  }
+
+  /**
+   * CURATED PRESETS — film + body + lens + light grade
+   * Globally familiar recipes for photo enthusiasts (VSCO / analog culture).
+   * params are relative base-grade tweaks applied on top of engine defaults.
+   */
+  const PRESET_CATEGORIES = [
+    { id: 'all', name: 'All' },
+    { id: 'portrait', name: 'Portrait' },
+    { id: 'street', name: 'Street' },
+    { id: 'night', name: 'Night' },
+    { id: 'film', name: 'Film' },
+    { id: 'bw', name: 'B&W' },
+    { id: 'retro', name: 'Retro' },
+    { id: 'clean', name: 'Clean' }
+  ];
+
+  const PRESETS = [
+    {
+      id: 'none',
+      name: 'Original',
+      category: 'clean',
+      desc: 'No look',
+      recipe: '—',
+      swatch: 'linear-gradient(135deg,#8a8a8e,#3a3a3c)',
+      film: 'none',
+      camera: 'none',
+      lens: 'none',
+      filmIntensity: 100,
+      cameraIntensity: 100,
+      lensIntensity: 100,
+      bloom: 0,
+      ca: 0,
+      params: {}
+    },
+    // —— PORTRAIT ——
+    {
+      id: 'portra-portrait',
+      name: 'Portra Portrait',
+      category: 'portrait',
+      desc: 'Classic warm skin',
+      recipe: 'Portra 400 · Contax · Soft',
+      swatch: 'linear-gradient(145deg,#f0d2bc 0%,#d4a888 45%,#8a9a88 100%)',
+      film: 'portra400',
+      camera: 'contax',
+      lens: 'soft',
+      filmIntensity: 100,
+      cameraIntensity: 55,
+      lensIntensity: 48,
+      bloom: 28,
+      ca: 6,
+      params: {
+        exposure: 0.08,
+        contrast: -8,
+        highlights: -18,
+        shadows: 12,
+        temperature: 10,
+        vibrance: 8,
+        clarity: -8,
+        sharpen: 5
+      }
+    },
+    {
+      id: 'fuji-wedding',
+      name: 'Fuji Wedding',
+      category: 'portrait',
+      desc: 'Airy pastel',
+      recipe: 'Fuji 400H · Contax · Soft',
+      swatch: 'linear-gradient(145deg,#d8ece4 0%,#b0c8c0 50%,#e8dcc8 100%)',
+      film: 'fuji400h',
+      camera: 'contax',
+      lens: 'soft',
+      filmIntensity: 100,
+      cameraIntensity: 45,
+      lensIntensity: 42,
+      bloom: 22,
+      ca: 5,
+      params: {
+        exposure: 0.12,
+        contrast: -12,
+        highlights: -12,
+        shadows: 15,
+        temperature: -4,
+        tint: 4,
+        vibrance: 6,
+        clarity: -10
+      }
+    },
+    {
+      id: 'soft-dream',
+      name: 'Soft Dream',
+      category: 'portrait',
+      desc: 'Romantic glow',
+      recipe: 'Portra · Polaroid · Dream',
+      swatch: 'linear-gradient(145deg,#fff0f4 0%,#e8c0c8 40%,#a88890 100%)',
+      film: 'portra400',
+      camera: 'polaroid',
+      lens: 'dream',
+      filmIntensity: 85,
+      cameraIntensity: 70,
+      lensIntensity: 75,
+      bloom: 55,
+      ca: 10,
+      params: {
+        exposure: 0.15,
+        contrast: -18,
+        highlights: -8,
+        shadows: 18,
+        temperature: 12,
+        vibrance: -5,
+        clarity: -18,
+        vignette: 12
+      }
+    },
+    // —— STREET / EVERYDAY ——
+    {
+      id: 'gold-hour',
+      name: 'Gold Hour',
+      category: 'film',
+      desc: 'Summer, saturated warm',
+      recipe: 'Kodak Gold · Yashica · Vintage',
+      swatch: 'linear-gradient(145deg,#ffd070 0%,#e88840 50%,#a05840 100%)',
+      film: 'kodakgold',
+      camera: 'yashica',
+      lens: 'vintage',
+      filmIntensity: 100,
+      cameraIntensity: 75,
+      lensIntensity: 70,
+      bloom: 18,
+      ca: 18,
+      params: {
+        exposure: 0.05,
+        contrast: 8,
+        highlights: -10,
+        shadows: 6,
+        temperature: 22,
+        saturation: 8,
+        vibrance: 12,
+        clarity: 5
+      }
+    },
+    {
+      id: 'superia-pop',
+      name: 'Superia Pop',
+      category: 'street',
+      desc: 'Punchy consumer color',
+      recipe: 'Superia 800 · Disposable',
+      swatch: 'linear-gradient(145deg,#70c070 0%,#e0b060 50%,#e07060 100%)',
+      film: 'superia800',
+      camera: 'disposable',
+      lens: 'standard',
+      filmIntensity: 100,
+      cameraIntensity: 85,
+      lensIntensity: 60,
+      bloom: 8,
+      ca: 8,
+      params: {
+        contrast: 12,
+        highlights: -5,
+        shadows: 5,
+        saturation: 10,
+        vibrance: 15,
+        clarity: 12,
+        sharpen: 10
+      }
+    },
+    {
+      id: 'analog-street',
+      name: 'Analog Street',
+      category: 'street',
+      desc: 'Everyday 35mm vibe',
+      recipe: 'Superia · Yashica · Standard',
+      swatch: 'linear-gradient(145deg,#6a8a60 0%,#c8a878 55%,#5a5048 100%)',
+      film: 'superia800',
+      camera: 'yashica',
+      lens: 'standard',
+      filmIntensity: 95,
+      cameraIntensity: 80,
+      lensIntensity: 65,
+      bloom: 10,
+      ca: 10,
+      params: {
+        contrast: 6,
+        highlights: -12,
+        shadows: 8,
+        temperature: 6,
+        vibrance: 8,
+        clarity: 8,
+        vignette: 10
+      }
+    },
+    {
+      id: 'disposable-flash',
+      name: 'Disposable Flash',
+      category: 'street',
+      desc: 'Party flash, cyan cast',
+      recipe: 'Gold · Disposable',
+      swatch: 'linear-gradient(145deg,#f8f0e0 0%,#90b8c8 45%,#806050 100%)',
+      film: 'kodakgold',
+      camera: 'disposable',
+      lens: 'standard',
+      filmIntensity: 90,
+      cameraIntensity: 100,
+      lensIntensity: 50,
+      bloom: 12,
+      ca: 6,
+      params: {
+        exposure: 0.1,
+        contrast: 15,
+        highlights: 5,
+        shadows: -5,
+        temperature: -6,
+        tint: -4,
+        saturation: 6,
+        clarity: 10,
+        grain: 8
+      }
+    },
+    // —— NIGHT / CINE ——
+    {
+      id: 'tokyo-night',
+      name: 'Tokyo Night',
+      category: 'night',
+      desc: 'Tungsten + red halo',
+      recipe: 'Cinestill 800T · Contax · Anamo',
+      swatch: 'linear-gradient(145deg,#121828 0%,#3a5080 40%,#c03040 100%)',
+      film: 'cinestill800t',
+      camera: 'contax',
+      lens: 'anamorphic',
+      filmIntensity: 100,
+      cameraIntensity: 40,
+      lensIntensity: 85,
+      bloom: 32,
+      ca: 22,
+      params: {
+        exposure: -0.1,
+        contrast: 10,
+        highlights: -8,
+        shadows: 10,
+        temperature: -18,
+        tint: 4,
+        vibrance: 10,
+        clarity: 5,
+        vignette: 18
+      }
+    },
+    {
+      id: 'cine-wide',
+      name: 'Cine Wide',
+      category: 'night',
+      desc: 'Cinematic wide look',
+      recipe: 'Cinestill · Anamorphic',
+      swatch: 'linear-gradient(90deg,#181420 0%,#60a0c0 35%,#f0f0f0 50%,#d06080 70%,#181018 100%)',
+      film: 'cinestill800t',
+      camera: 'none',
+      lens: 'anamorphic',
+      filmIntensity: 95,
+      cameraIntensity: 0,
+      lensIntensity: 100,
+      bloom: 40,
+      ca: 25,
+      params: {
+        exposure: -0.05,
+        contrast: 8,
+        highlights: -15,
+        shadows: 12,
+        temperature: -12,
+        saturation: -4,
+        clarity: -4,
+        vignette: 22
+      }
+    },
+    {
+      id: 'neon-lomo',
+      name: 'Neon Lomo',
+      category: 'night',
+      desc: 'Cross-process night',
+      recipe: 'Superia · Lomo · Dream',
+      swatch: 'linear-gradient(145deg,#201030 0%,#c040a0 40%,#2080c0 100%)',
+      film: 'superia800',
+      camera: 'lomo',
+      lens: 'dream',
+      filmIntensity: 90,
+      cameraIntensity: 100,
+      lensIntensity: 60,
+      bloom: 45,
+      ca: 14,
+      params: {
+        contrast: 18,
+        highlights: -5,
+        shadows: 8,
+        saturation: 20,
+        vibrance: 18,
+        clarity: 8,
+        vignette: 28
+      }
+    },
+    // —— B&W ——
+    {
+      id: 'hp5-street',
+      name: 'HP5 Street',
+      category: 'bw',
+      desc: 'Classic street B&W',
+      recipe: 'Ilford HP5 · Contax · Clinical',
+      swatch: 'linear-gradient(145deg,#f0f0f0 0%,#888 50%,#1a1a1a 100%)',
+      film: 'ilfordhp5',
+      camera: 'contax',
+      lens: 'harsh',
+      filmIntensity: 100,
+      cameraIntensity: 50,
+      lensIntensity: 55,
+      bloom: 0,
+      ca: 2,
+      params: {
+        contrast: 18,
+        highlights: -12,
+        shadows: 8,
+        clarity: 20,
+        sharpen: 18,
+        grain: 5,
+        vignette: 8
+      }
+    },
+    {
+      id: 'moody-bw',
+      name: 'Moody B&W',
+      category: 'bw',
+      desc: 'Dark, grain, vignette',
+      recipe: 'HP5 · Holga · Vintage',
+      swatch: 'linear-gradient(145deg,#c8c8c8 0%,#555 45%,#0e0e10 100%)',
+      film: 'ilfordhp5',
+      camera: 'holga',
+      lens: 'vintage',
+      filmIntensity: 100,
+      cameraIntensity: 90,
+      lensIntensity: 55,
+      bloom: 8,
+      ca: 12,
+      params: {
+        exposure: -0.15,
+        contrast: 22,
+        highlights: -20,
+        shadows: 5,
+        clarity: 15,
+        sharpen: 10,
+        vignette: 25
+      }
+    },
+    {
+      id: 'documentary-bw',
+      name: 'Documentary',
+      category: 'bw',
+      desc: 'Clean documentary B&W',
+      recipe: 'HP5 · Contax · Standard',
+      swatch: 'linear-gradient(145deg,#e8e8e8 0%,#9a9a9a 50%,#2c2c2c 100%)',
+      film: 'ilfordhp5',
+      camera: 'contax',
+      lens: 'standard',
+      filmIntensity: 90,
+      cameraIntensity: 40,
+      lensIntensity: 50,
+      bloom: 0,
+      ca: 4,
+      params: {
+        contrast: 10,
+        highlights: -8,
+        shadows: 10,
+        clarity: 12,
+        sharpen: 12,
+        vignette: 5
+      }
+    },
+    // —— RETRO / TOY ——
+    {
+      id: 'holga-dream',
+      name: 'Holga Dream',
+      category: 'retro',
+      desc: 'Toy camera, light leak',
+      recipe: 'Expired · Holga · Soft',
+      swatch: 'linear-gradient(145deg,#2a1810 0%,#a07050 40%,#1a1008 100%)',
+      film: 'expired',
+      camera: 'holga',
+      lens: 'soft',
+      filmIntensity: 90,
+      cameraIntensity: 100,
+      lensIntensity: 55,
+      bloom: 25,
+      ca: 10,
+      params: {
+        contrast: -10,
+        highlights: -5,
+        shadows: 10,
+        temperature: 14,
+        saturation: -8,
+        clarity: -12,
+        vignette: 15
+      }
+    },
+    {
+      id: 'lomo-party',
+      name: 'Lomo Party',
+      category: 'retro',
+      desc: 'Hypercolor LC-A',
+      recipe: 'Superia · Lomo · Dream',
+      swatch: 'linear-gradient(145deg,#301848 0%,#e04090 45%,#30a0e0 100%)',
+      film: 'superia800',
+      camera: 'lomo',
+      lens: 'dream',
+      filmIntensity: 85,
+      cameraIntensity: 100,
+      lensIntensity: 50,
+      bloom: 35,
+      ca: 12,
+      params: {
+        contrast: 20,
+        saturation: 22,
+        vibrance: 20,
+        clarity: 10,
+        vignette: 30
+      }
+    },
+    {
+      id: 'polaroid-fade',
+      name: 'Polaroid Fade',
+      category: 'retro',
+      desc: 'Instant film, faded',
+      recipe: 'Fuji 400H · Polaroid · Soft',
+      swatch: 'linear-gradient(145deg,#f0e8d8 0%,#c0b8a8 50%,#807868 100%)',
+      film: 'fuji400h',
+      camera: 'polaroid',
+      lens: 'soft',
+      filmIntensity: 80,
+      cameraIntensity: 100,
+      lensIntensity: 50,
+      bloom: 20,
+      ca: 6,
+      params: {
+        exposure: 0.1,
+        contrast: -20,
+        highlights: -5,
+        shadows: 15,
+        temperature: 8,
+        saturation: -12,
+        clarity: -15,
+        vignette: 8
+      }
+    },
+    {
+      id: 'expired-shift',
+      name: 'Expired Shift',
+      category: 'retro',
+      desc: 'Color shift, heavy grain',
+      recipe: 'Expired · Yashica · Vintage',
+      swatch: 'linear-gradient(145deg,#c8a898 0%,#708090 45%,#805050 100%)',
+      film: 'expired',
+      camera: 'yashica',
+      lens: 'vintage',
+      filmIntensity: 100,
+      cameraIntensity: 70,
+      lensIntensity: 75,
+      bloom: 15,
+      ca: 22,
+      params: {
+        contrast: -8,
+        temperature: 12,
+        tint: 10,
+        saturation: -10,
+        clarity: -8,
+        vignette: 16
+      }
+    },
+    // —— CLEAN / PRO ——
+    {
+      id: 'contax-clean',
+      name: 'Contax Clean',
+      category: 'clean',
+      desc: 'Premium point-and-shoot',
+      recipe: 'Portra · Contax · Standard',
+      swatch: 'linear-gradient(145deg,#e8e8ec 0%,#b0b0b8 50%,#4a4a50 100%)',
+      film: 'portra400',
+      camera: 'contax',
+      lens: 'standard',
+      filmIntensity: 70,
+      cameraIntensity: 80,
+      lensIntensity: 55,
+      bloom: 6,
+      ca: 6,
+      params: {
+        exposure: 0.05,
+        contrast: 4,
+        highlights: -10,
+        shadows: 8,
+        temperature: 4,
+        vibrance: 6,
+        clarity: 6,
+        sharpen: 8
+      }
+    },
+    {
+      id: 'clinical',
+      name: 'Clinical',
+      category: 'clean',
+      desc: 'Sharp, commercial',
+      recipe: 'No film · Clinical',
+      swatch: 'linear-gradient(145deg,#ffffff 0%,#c8c8d0 60%,#606068 100%)',
+      film: 'none',
+      camera: 'contax',
+      lens: 'harsh',
+      filmIntensity: 0,
+      cameraIntensity: 45,
+      lensIntensity: 90,
+      bloom: 0,
+      ca: 2,
+      params: {
+        contrast: 10,
+        highlights: -8,
+        shadows: 5,
+        saturation: 5,
+        vibrance: 10,
+        clarity: 22,
+        sharpen: 25
+      }
+    },
+    {
+      id: 'matte-film',
+      name: 'Matte Film',
+      category: 'film',
+      desc: 'Lifted blacks, film grade',
+      recipe: 'Portra · Polaroid · Standard',
+      swatch: 'linear-gradient(145deg,#e0d4c8 0%,#a89888 50%,#5a5048 100%)',
+      film: 'portra400',
+      camera: 'polaroid',
+      lens: 'standard',
+      filmIntensity: 85,
+      cameraIntensity: 75,
+      lensIntensity: 45,
+      bloom: 8,
+      ca: 5,
+      params: {
+        contrast: -15,
+        highlights: -10,
+        shadows: 18,
+        blacks: 12,
+        temperature: 6,
+        saturation: -6,
+        clarity: -6,
+        vignette: 10
+      }
+    },
+    {
+      id: 'teal-orange',
+      name: 'Teal & Orange',
+      category: 'film',
+      desc: 'Blockbuster grade vibe',
+      recipe: 'Cinestill · Contax · Standard',
+      swatch: 'linear-gradient(145deg,#1a4050 0%,#c07040 55%,#e8a060 100%)',
+      film: 'cinestill800t',
+      camera: 'contax',
+      lens: 'standard',
+      filmIntensity: 65,
+      cameraIntensity: 50,
+      lensIntensity: 55,
+      bloom: 12,
+      ca: 10,
+      params: {
+        contrast: 12,
+        highlights: -12,
+        shadows: 8,
+        temperature: 8,
+        tint: -12,
+        saturation: 8,
+        vibrance: 14,
+        clarity: 8,
+        vignette: 12
+      }
+    }
+  ];
+
+  function presetById(id) {
+    return PRESETS.find((p) => p.id === id) || PRESETS[0];
+  }
+
+  function presetsByCategory(cat) {
+    if (!cat || cat === 'all') return PRESETS.slice();
+    return PRESETS.filter((p) => p.category === cat || p.id === 'none');
   }
 
   function sampleBilinear(src, w, h, x, y, c) {
@@ -1144,8 +1827,19 @@
    * @param {'preview'|'export'} quality
    * @param {Float32Array|null} [cocMap] I5b
    */
-  function applyLooks(data, w, h, lookState, grainMode, quality, cocMap) {
+  /**
+   * @param {Uint8ClampedArray} data
+   * @param {number} w
+   * @param {number} h
+   * @param {object} lookState
+   * @param {'static'|'random'} grainMode
+   * @param {'preview'|'export'} quality
+   * @param {Float32Array|null} [cocMap]
+   * @param {{fast?:boolean}} [opts]
+   */
+  function applyLooks(data, w, h, lookState, grainMode, quality, cocMap, opts) {
     if (!lookState) return;
+    opts = opts || {};
 
     const filmId = lookState.film || 'none';
     const cameraId = lookState.camera || 'none';
@@ -1160,6 +1854,31 @@
 
     applyFilm(data, w, h, film, filmInt, grainMode || 'static');
     applyCamera(data, w, h, camera, camInt);
+
+    // I6 analog imperfections (spatial / mechanical) — between body and lens
+    const Imp = global.HermionaImperfections;
+    if (Imp && Imp.apply) {
+      const amounts = Imp.resolve(lookState, camera, camInt);
+      // Film soft highlight knee from stock when no explicit user roll
+      if (
+        film &&
+        film.id !== 'none' &&
+        amounts.highlightRoll < 0.05 &&
+        filmInt > 0.2
+      ) {
+        amounts.highlightRoll = Math.max(
+          amounts.highlightRoll,
+          0.15 * filmInt
+        );
+      }
+      Imp.apply(data, w, h, amounts, {
+        quality: quality || 'preview',
+        fast: !!opts.fast,
+        leakHue: camera && camera.leakHue ? camera.leakHue : 'warm',
+        unevenMode: camera && camera.unevenMode ? camera.unevenMode : 'h'
+      });
+    }
+
     applyLens(data, w, h, lens, lensInt, quality || 'preview', lookState, cocMap || null);
   }
 
@@ -1167,9 +1886,13 @@
     FILMS,
     CAMERAS,
     LENSES,
+    PRESETS,
+    PRESET_CATEGORIES,
     filmById,
     cameraById,
     lensById,
+    presetById,
+    presetsByCategory,
     applyFilm,
     applyCamera,
     applyLens,
