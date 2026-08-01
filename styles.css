@@ -72,8 +72,53 @@ button, input {
   height: 100dvh;
   background: var(--bg);
   overflow: hidden;
-  /* Used by layout-side grid */
   min-height: 0;
+  position: relative;
+}
+
+/*
+ * Mobile / bottom-toolbar layout:
+ * Stage and dock share the same grid cell — dock overlays the photo.
+ * Expanding Age/Presets never reflows or moves the image.
+ */
+body:not(.layout-side) #app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "topbar"
+    "workspace";
+}
+
+body:not(.layout-side) .topbar {
+  grid-area: topbar;
+}
+
+body:not(.layout-side) .stage {
+  grid-area: workspace;
+  min-height: 0;
+  z-index: 1;
+}
+
+body:not(.layout-side) .dock {
+  grid-area: workspace;
+  align-self: end;
+  justify-self: stretch;
+  width: 100%;
+  z-index: 50;
+  /* Overlay chrome — not part of stage flex height */
+  flex: none;
+  border-radius: 18px 18px 0 0;
+  box-shadow:
+    0 -8px 32px rgba(0, 0, 0, 0.5),
+    0 -1px 0 rgba(255, 255, 255, 0.06);
+  background: rgba(12, 12, 14, 0.82);
+  max-height: min(72vh, 560px);
+}
+
+/* Keep photo fit region stable: only reserve the tool-rail strip */
+body:not(.layout-side) .canvas-area {
+  padding-bottom: calc(var(--dock-rail) + var(--safe-bottom) + 10px);
 }
 
 /* ========== TOP BAR ========== */
@@ -439,8 +484,10 @@ button, input {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  /* smooth expand/collapse of sub areas */
-  transition: min-height 0.22s var(--ease-out), width 0.22s var(--ease-out);
+  transition:
+    max-height 0.32s var(--ease-out),
+    box-shadow 0.28s var(--ease-out),
+    background 0.28s ease;
 }
 
 .dock[hidden] {
@@ -457,6 +504,27 @@ button, input {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  /* Animate expand/collapse without reflowing the photo stage */
+  max-height: min(28vh, 220px);
+  transition: max-height 0.34s var(--ease-out);
+}
+
+/* Tall dock for Age / Presets / Crop — grows upward over the image */
+.dock.dock-tall .dock-body {
+  max-height: min(52vh, 420px);
+}
+
+.dock.dock-tall[data-tool="looks"] .dock-body,
+.dock.dock-tall[data-tool="age"] .dock-body {
+  max-height: min(56vh, 460px);
+}
+
+/* Slightly stronger glass when expanded over the photo */
+body:not(.layout-side) .dock.dock-tall {
+  background: rgba(10, 10, 12, 0.9);
+  box-shadow:
+    0 -16px 48px rgba(0, 0, 0, 0.55),
+    0 -1px 0 rgba(255, 255, 255, 0.07);
 }
 
 /* Dial row */
@@ -727,9 +795,16 @@ button, input {
 .subpanel {
   padding: 10px 12px 8px;
   animation: dockIn 0.22s var(--ease-out);
-  max-height: 38vh;
+  max-height: min(42vh, 340px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+/* When dock is tall (Presets), let panel use full dock-body height */
+.dock.dock-tall .subpanel {
+  max-height: none;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .subpanel[hidden] {
@@ -741,20 +816,32 @@ button, input {
   background: rgba(255, 255, 255, 0.08);
   border-radius: 9px;
   padding: 2px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.subpanel-seg::-webkit-scrollbar {
+  display: none;
 }
 
 .seg-btn {
-  flex: 1;
-  height: 30px;
+  flex: 1 1 0;
+  min-width: 64px;
+  height: 32px;
   border: none;
   border-radius: 7px;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 550;
   cursor: pointer;
   transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+  white-space: nowrap;
+  padding: 0 8px;
 }
 
 .seg-btn.active {
@@ -847,6 +934,7 @@ button, input {
   flex-direction: column;
   gap: 8px;
   min-height: 0;
+  flex: 1 1 auto;
 }
 
 .presets-pane[hidden] {
@@ -859,7 +947,11 @@ button, input {
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  padding: 0 2px 2px;
+  padding: 0 2px 4px;
+  flex-shrink: 0;
+  /* edge fade hint for scroll */
+  mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 28px), transparent 100%);
 }
 
 .preset-cats::-webkit-scrollbar {
@@ -868,8 +960,8 @@ button, input {
 
 .preset-cat {
   flex: 0 0 auto;
-  height: 28px;
-  padding: 0 12px;
+  height: 30px;
+  padding: 0 14px;
   border: none;
   border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.07);
@@ -892,13 +984,16 @@ button, input {
 
 .preset-scroll {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding: 2px 2px 6px;
-  scroll-snap-type: x proximity;
+  padding: 4px 4px 10px;
+  scroll-snap-type: x mandatory;
+  flex: 0 0 auto;
+  /* keep cards fully visible — don't clip bottoms */
+  min-height: 118px;
 }
 
 .preset-scroll::-webkit-scrollbar {
@@ -907,7 +1002,7 @@ button, input {
 
 .preset-card {
   flex: 0 0 auto;
-  width: 104px;
+  width: 110px;
   border: none;
   background: transparent;
   padding: 0;
@@ -925,8 +1020,8 @@ button, input {
 
 .preset-swatch {
   display: block;
-  width: 104px;
-  height: 72px;
+  width: 110px;
+  height: 76px;
   border-radius: 12px;
   border: 2px solid transparent;
   margin-bottom: 6px;
@@ -962,6 +1057,7 @@ button, input {
   overflow: hidden;
   text-overflow: ellipsis;
   color: inherit;
+  max-width: 110px;
 }
 
 .preset-card-recipe {
@@ -974,6 +1070,7 @@ button, input {
   text-overflow: ellipsis;
   margin-top: 1px;
   line-height: 1.25;
+  max-width: 110px;
 }
 
 .preset-card.active .preset-card-recipe {
@@ -985,13 +1082,17 @@ button, input {
   color: var(--text-tertiary);
   text-align: center;
   letter-spacing: 0.01em;
-  padding: 0 4px 2px;
+  padding: 0 4px 4px;
+  flex-shrink: 0;
 }
 
+/* Side dock only: wrap preset grid */
 body.layout-side .preset-scroll {
   flex-wrap: wrap;
   overflow-x: visible;
   gap: 12px 10px;
+  min-height: 0;
+  scroll-snap-type: none;
 }
 
 body.layout-side .preset-card {
@@ -1003,23 +1104,39 @@ body.layout-side .preset-swatch {
   height: 64px;
 }
 
+body.layout-side .preset-card-name,
+body.layout-side .preset-card-recipe {
+  max-width: 100%;
+}
+
+/* Compact landscape: still readable — do not crush presets */
 body.layout-compact .preset-swatch {
-  width: 88px;
-  height: 56px;
+  width: 96px;
+  height: 64px;
 }
 
 body.layout-compact .preset-card {
-  width: 88px;
+  width: 96px;
+}
+
+body.layout-compact .preset-card-name,
+body.layout-compact .preset-card-recipe {
+  max-width: 96px;
 }
 
 body.layout-compact .preset-hint {
   display: none;
 }
 
-/* 4-segment looks tab — slightly tighter */
+body.layout-compact .preset-scroll {
+  min-height: 100px;
+  padding-bottom: 8px;
+}
+
+/* Looks segment: readable on narrow phones */
 #looksSeg .seg-btn {
   font-size: 12px;
-  padding: 0 2px;
+  padding: 0 6px;
 }
 
 /* Crop tools */
@@ -1249,11 +1366,19 @@ body.layout-compact .preset-hint {
   padding: 0 4px;
   border-top: 0.5px solid var(--separator);
   flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tool-rail::-webkit-scrollbar {
+  display: none;
 }
 
 .tool-btn {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 0;
+  min-width: 48px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1263,7 +1388,7 @@ body.layout-compact .preset-hint {
   background: transparent;
   color: var(--text-tertiary);
   cursor: pointer;
-  padding: 6px 2px;
+  padding: 6px 4px;
   transition: color 0.15s, transform 0.12s var(--ease-spring);
 }
 
@@ -1274,13 +1399,142 @@ body.layout-compact .preset-hint {
   white-space: nowrap;
 }
 
-/* 7 tools — slightly tighter labels */
-.tool-rail .tool-btn span {
-  font-size: 9.5px;
-}
 .tool-rail .tool-btn svg {
   width: 22px;
   height: 22px;
+  flex-shrink: 0;
+}
+
+/* Age chips need room — ensure horizontal strip is fully tappable */
+.dock[data-tool="age"] .chips-scroll {
+  padding: 8px 12px 12px;
+  /* extra bottom so labels aren't clipped */
+  min-height: 78px;
+}
+
+.dock[data-tool="age"] .chip {
+  min-width: 58px;
+}
+
+.dock[data-tool="age"] .chip-icon {
+  width: 44px;
+  height: 44px;
+}
+
+.dock[data-tool="age"] .chip-label {
+  max-width: 62px;
+  font-size: 10.5px;
+}
+
+.dock[data-tool="age"] .dial-hint {
+  display: none; /* reclaim vertical space on all sizes for Age */
+}
+
+.dock[data-tool="age"] .dial-row {
+  padding-bottom: 2px;
+}
+
+/* Mobile / narrow phones */
+@media (max-width: 480px) {
+  .tool-rail {
+    justify-content: flex-start;
+    gap: 0;
+    padding: 0 6px;
+    height: auto;
+    min-height: var(--dock-rail);
+  }
+
+  .tool-btn {
+    flex: 0 0 auto;
+    min-width: 58px;
+    padding: 8px 10px 6px;
+  }
+
+  .tool-btn span {
+    font-size: 11px;
+  }
+
+  .tool-rail .tool-btn svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  body:not(.layout-side) .dock.dock-tall .dock-body {
+    max-height: min(58vh, 480px);
+  }
+
+  body:not(.layout-side) .dock.dock-tall[data-tool="looks"] .dock-body,
+  body:not(.layout-side) .dock.dock-tall[data-tool="age"] .dock-body {
+    max-height: min(60vh, 500px);
+  }
+
+  #looksSeg .seg-btn {
+    font-size: 12px;
+    min-width: 70px;
+    height: 34px;
+  }
+
+  .preset-card {
+    width: 120px;
+  }
+
+  .preset-swatch {
+    width: 120px;
+    height: 82px;
+  }
+
+  .preset-card-name,
+  .preset-card-recipe {
+    max-width: 120px;
+  }
+
+  .preset-scroll {
+    min-height: 130px;
+    gap: 14px;
+    padding: 6px 8px 14px;
+  }
+
+  .preset-cats {
+    padding-bottom: 6px;
+  }
+
+  .preset-cat {
+    height: 32px;
+    padding: 0 14px;
+    font-size: 13px;
+  }
+
+  .dock[data-tool="age"] .chips-scroll {
+    min-height: 88px;
+    padding: 6px 10px 14px;
+  }
+
+  .dock[data-tool="age"] .chip {
+    min-width: 62px;
+  }
+
+  .dock[data-tool="age"] .chip-icon {
+    width: 46px;
+    height: 46px;
+  }
+
+  .look-card {
+    width: 76px;
+  }
+
+  .look-swatch {
+    width: 76px;
+    height: 76px;
+  }
+
+  .look-scroll {
+    padding: 4px 4px 12px;
+    gap: 12px;
+  }
+
+  .subpanel {
+    padding: 12px 12px 10px;
+  }
 }
 
 .tool-btn:active {
@@ -1874,10 +2128,12 @@ body.layout-side .stage {
   margin: 0;
   min-width: 0;
   min-height: 0;
+  z-index: auto;
 }
 
 body.layout-side .dock {
   grid-area: dock;
+  align-self: stretch;
   width: 100%;
   max-width: none;
   height: 100%;
@@ -1886,9 +2142,22 @@ body.layout-side .dock {
   border-top: none;
   border-left: 0.5px solid var(--separator);
   border-radius: 0;
+  box-shadow: none;
   padding-bottom: max(8px, var(--safe-bottom));
   padding-right: max(0px, var(--safe-right));
   background: rgba(12, 12, 14, 0.94);
+}
+
+/* Side layout: dock-body uses full column height, no overlay max-height cap */
+body.layout-side .dock-body {
+  max-height: none;
+  flex: 1 1 auto;
+  transition: none;
+}
+
+body.layout-side .canvas-area {
+  /* Side panel: full padding, not overlay reserve */
+  padding: 16px 20px;
 }
 
 body.layout-side .dock-body {
@@ -1952,13 +2221,13 @@ body.layout-side .canvas-area {
   padding: 16px 20px;
 }
 
-/* Portrait phone: guarantee stage still shows full photo above dock */
-body.layout-portrait .canvas-area {
-  padding: 6px 8px;
+/* Portrait phone: stable fit area above tool-rail (dock overlays, doesn't reflow) */
+body.layout-portrait:not(.layout-side) .canvas-area {
+  padding: 6px 8px calc(var(--dock-rail) + var(--safe-bottom) + 10px);
 }
 
-body.layout-portrait.layout-compact .canvas-area {
-  padding: 4px 6px;
+body.layout-portrait.layout-compact:not(.layout-side) .canvas-area {
+  padding: 4px 6px calc(var(--dock-rail) + var(--safe-bottom) + 6px);
 }
 
 body.layout-side #mainCanvas.visible {
@@ -2068,17 +2337,17 @@ body.layout-compact .ios-dial::-webkit-slider-thumb {
 }
 
 body.layout-compact .chips-scroll {
-  padding: 2px 8px 6px;
+  padding: 4px 8px 8px;
 }
 
 body.layout-compact .chip {
-  min-width: 48px;
+  min-width: 52px;
   gap: 4px;
 }
 
 body.layout-compact .chip-icon {
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
 }
 
 body.layout-compact .chip-icon svg {
@@ -2088,21 +2357,45 @@ body.layout-compact .chip-icon svg {
 
 body.layout-compact .chip-label {
   font-size: 10px;
-  max-width: 52px;
+  max-width: 56px;
 }
 
+/* Age still needs larger chips in compact landscape */
+body.layout-compact .dock[data-tool="age"] .chip-icon {
+  width: 40px;
+  height: 40px;
+}
+
+body.layout-compact .dock[data-tool="age"] .chips-scroll {
+  min-height: 72px;
+  padding-bottom: 10px;
+}
+
+/* Critical fix: was min(32vh, 160px) — crushed Presets/Film strips */
 body.layout-compact .subpanel {
-  max-height: min(32vh, 160px);
-  padding: 6px 10px 4px;
+  max-height: min(40vh, 220px);
+  padding: 8px 10px 6px;
+}
+
+body.layout-compact .dock.dock-tall .subpanel {
+  max-height: none;
+}
+
+body.layout-compact:not(.layout-side) .dock.dock-tall .dock-body {
+  max-height: min(50vh, 300px);
+}
+
+body.layout-compact:not(.layout-side) .canvas-area {
+  padding-bottom: calc(var(--dock-rail) + var(--safe-bottom) + 6px);
 }
 
 body.layout-compact .look-swatch {
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
 }
 
 body.layout-compact .look-card {
-  width: 56px;
+  width: 64px;
 }
 
 body.layout-compact .tool-btn {
@@ -2125,8 +2418,7 @@ body.layout-compact .dock {
   padding-right: var(--safe-right);
 }
 
-body.layout-compact .canvas-area {
-  /* give photo every free pixel */
+body.layout-compact:not(.layout-side) .canvas-area {
   min-height: 0;
 }
 
@@ -2191,82 +2483,8 @@ body.layout-landscape .fine-value {
   font-size: 36px;
 }
 
-/* Pure-CSS fallback when JS layout class is late / disabled */
-@media (min-width: 860px) and (min-height: 500px) {
-  #app {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--dock-w);
-    grid-template-rows: auto minmax(0, 1fr);
-    grid-template-areas:
-      "topbar topbar"
-      "stage  dock";
-  }
-
-  #app:has(.dock[hidden]) {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "topbar"
-      "stage";
-  }
-
-  .topbar { grid-area: topbar; }
-
-  .stage {
-    grid-area: stage;
-    min-width: 0;
-    min-height: 0;
-  }
-
-  .dock {
-    grid-area: dock;
-    height: 100%;
-    max-height: none;
-    border-top: none;
-    border-left: 0.5px solid var(--separator);
-    padding-bottom: max(8px, var(--safe-bottom));
-    padding-right: max(0px, var(--safe-right));
-  }
-
-  .dock-body {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-  }
-
-  .tool-rail {
-    flex-shrink: 0;
-  }
-
-  .subpanel {
-    max-height: none;
-    overflow-y: auto;
-  }
-
-  .chips-scroll {
-    overflow-x: visible;
-  }
-
-  .chips {
-    flex-wrap: wrap;
-    width: 100%;
-    justify-content: center;
-    gap: 10px 12px;
-  }
-
-  .look-scroll {
-    flex-wrap: wrap;
-    overflow-x: visible;
-  }
-
-  #mainCanvas.visible {
-    border-radius: 6px;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
-  }
-
-  .canvas-area {
-    padding: 12px 16px;
-  }
-}
+/* Wide screens without layout-side: still use bottom overlay (photo stays fixed).
+   Side dock is owned entirely by body.layout-side rules above. */
 
 /* Short landscape phones without JS class */
 @media (orientation: landscape) and (max-height: 480px) and (max-width: 859px) {

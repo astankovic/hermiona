@@ -2556,6 +2556,22 @@
       b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
 
+    // Expand dock for content-heavy tools (mobile readability)
+    if (dock) {
+      dock.classList.toggle(
+        'dock-tall',
+        tool === 'looks' || tool === 'age' || tool === 'crop' || tool === 'portrait'
+      );
+      dock.dataset.tool = tool || '';
+      // Keep active tool rail button visible on narrow screens
+      const activeBtn = dock.querySelector('.tool-btn.active');
+      if (activeBtn && activeBtn.scrollIntoView) {
+        requestAnimationFrame(() => {
+          activeBtn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+        });
+      }
+    }
+
     const isAdj =
       tool === 'adjust' ||
       tool === 'color' ||
@@ -2569,6 +2585,19 @@
     if (panelLooks) panelLooks.hidden = tool !== 'looks';
     if (panelCrop) panelCrop.hidden = tool !== 'crop';
     if (panelPortrait) panelPortrait.hidden = tool !== 'portrait';
+
+    // Age: hide long hint on small screens (CSS also hides), scroll chips into view
+    if (tool === 'age' && chipsScroll) {
+      requestAnimationFrame(() => {
+        chipsScroll.scrollLeft = 0;
+      });
+    }
+    if (tool === 'looks' && presetsPane) {
+      requestAnimationFrame(() => {
+        const sc = document.getElementById('presetLooks');
+        if (sc) sc.scrollLeft = 0;
+      });
+    }
 
     setCropMode(tool === 'crop');
 
