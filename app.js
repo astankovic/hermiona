@@ -4563,43 +4563,176 @@
     showToast(adj.label + ' reset', 900);
   }
 
-  // Dial input — Photos-like continuous scrub (capture + rAF-coalesced paint)
-  if (activeDial) {
-    activeDial.addEventListener('pointerdown', (e) => {
+  /**
+   * Photos-style dial scrub — finger 1:1 with the ruler.
+   * - Touch near the indicator: relative drag (no jump)
+   * - Touch elsewhere on the track: absolute jump, then track finger
+   * - rAF-coalesced value apply; soft haptic on major ticks
+   * Native range stays for a11y/keyboard; pointer path is owned by the wrap.
+   */
+  function bindPhotosDialScrub(input, { onInput, onEnd } = {}) {
+    if (!input) return null;
+    const wrap = input.closest('.dial-track-wrap') || input.parentElement;
+    if (!wrap) return null;
+
+    const EDGE = 12; // px inset so ends stay reachable
+    const NEAR_PX = 30; // grab-near-thumb threshold
+    let active = false;
+    let mode = 'absolute';
+    let startX = 0;
+    let startVal = 0;
+    let lastMajor = null;
+    let raf = 0;
+    let pending = null;
+
+    function rangeMeta() {
+      const min = parseFloat(input.min);
+      const max = parseFloat(input.max);
+      let step = parseFloat(input.step);
+      if (!(step > 0)) step = 1;
+      const span = max - min || 1;
+      return { min, max, step, span };
+    }
+
+    function snap(val) {
+      const { min, max, step } = rangeMeta();
+      let v = min + Math.round((val - min) / step) * step;
+      // Avoid float dust (e.g. 0.30000000004)
+      const decimals = (String(step).split('.')[1] || '').length;
+      if (decimals) v = parseFloat(v.toFixed(decimals));
+      return clamp(v, min, max);
+    }
+
+    function valueFromX(clientX) {
+      const rect = wrap.getBoundingClientRect();
+      const usable = Math.max(1, rect.width - EDGE * 2);
+      let t = (clientX - rect.left - EDGE) / usable;
+      t = clamp(t, 0, 1);
+      const { min, span } = rangeMeta();
+      return snap(min + t * span);
+    }
+
+    function thumbX() {
+      const rect = wrap.getBoundingClientRect();
+      const { min, span } = rangeMeta();
+      const t = (parseFloat(input.value) - min) / span;
+      return rect.left + EDGE + clamp(t, 0, 1) * Math.max(1, rect.width - EDGE * 2);
+    }
+
+    function commit(val, isFinal) {
+      const v = snap(val);
+      if (String(v) !== input.value) input.value = String(v);
+      if (onInput) onInput(v, { final: !!isFinal });
+
+      // Soft tick when crossing major marks (~every 10 steps)
+      const { step } = rangeMeta();
+      const majorStep = step * 10;
+      if (majorStep > 0) {
+        const bucket = Math.round(v / majorStep);
+        if (lastMajor != null && bucket !== lastMajor) {
+          try {
+            if (navigator.vibrate) navigator.vibrate(5);
+          } catch (_) { /* ignore */ }
+        }
+        lastMajor = bucket;
+      }
+    }
+
+    function flush() {
+      raf = 0;
+      if (pending == null) return;
+      const v = pending;
+      pending = null;
+      commit(v, false);
+    }
+
+    function queue(val) {
+      pending = val;
+      if (!raf) raf = requestAnimationFrame(flush);
+    }
+
+    function onDown(e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      active = true;
+      wrap.classList.add('is-scrubbing');
       beginScrub();
+      startX = e.clientX;
+      startVal = parseFloat(input.value);
+      lastMajor = null;
+      mode = Math.abs(e.clientX - thumbX()) <= NEAR_PX ? 'relative' : 'absolute';
       try {
-        if (e.pointerId != null) activeDial.setPointerCapture(e.pointerId);
-      } catch (_) { /* Safari may throw if not primary */ }
+        if (e.pointerId != null) wrap.setPointerCapture(e.pointerId);
+      } catch (_) { /* Safari non-primary */ }
+      if (mode === 'absolute') queue(valueFromX(e.clientX));
+      if (e.cancelable) e.preventDefault();
+    }
+
+    function onMove(e) {
+      if (!active) return;
+      if (e.cancelable) e.preventDefault();
+      if (mode === 'relative') {
+        const rect = wrap.getBoundingClientRect();
+        const usable = Math.max(1, rect.width - EDGE * 2);
+        const { span } = rangeMeta();
+        queue(startVal + ((e.clientX - startX) / usable) * span);
+      } else {
+        queue(valueFromX(e.clientX));
+      }
+    }
+
+    function onUp() {
+      if (!active) return;
+      active = false;
+      wrap.classList.remove('is-scrubbing');
+      if (raf) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+      if (pending != null) {
+        commit(pending, true);
+        pending = null;
+      }
+      if (onEnd) onEnd(parseFloat(input.value));
+    }
+
+    wrap.addEventListener('pointerdown', onDown, { passive: false });
+    wrap.addEventListener('pointermove', onMove, { passive: false });
+    wrap.addEventListener('pointerup', onUp);
+    wrap.addEventListener('pointercancel', onUp);
+    wrap.addEventListener('lostpointercapture', onUp);
+
+    // Keyboard / assistive: native input still works
+    input.addEventListener('input', () => {
+      if (active) return;
+      if (onInput) onInput(parseFloat(input.value), { final: false });
     });
-    activeDial.addEventListener('input', () => {
+    input.addEventListener('change', () => {
+      if (active) return;
+      if (onEnd) onEnd(parseFloat(input.value));
+    });
+
+    return { wrap };
+  }
+
+  // Active adjust dial
+  bindPhotosDialScrub(activeDial, {
+    onInput(val) {
       const adj = findAdj(state.ui.activeAdj);
       if (!adj) return;
-      const val = parseFloat(activeDial.value);
       setAdjValue(adj, val, { silent: true });
       if (dialValue) {
         dialValue.textContent = formatAdjValue(adj, val);
         dialValue.classList.toggle('neutral', !isAdjModified(adj));
       }
       if (dialReset) dialReset.hidden = !isAdjModified(adj);
-      // Defer chip/dot chrome to end of scrub — keeps the dial buttery
       scheduleRender(true);
-    });
-    activeDial.addEventListener('change', () => {
+    },
+    onEnd() {
       markChipModified();
       updateToolDots();
       endScrub();
-    });
-    activeDial.addEventListener('pointerup', () => {
-      markChipModified();
-      updateToolDots();
-      endScrub();
-    });
-    activeDial.addEventListener('pointercancel', () => {
-      markChipModified();
-      updateToolDots();
-      endScrub();
-    });
-  }
+    }
+  });
 
   if (dialReset) {
     dialReset.addEventListener('click', () => {
@@ -4644,16 +4777,9 @@
     btn.addEventListener('click', () => setLooksTab(btn.dataset.looks));
   });
 
-  if (lookIntensity) {
-    lookIntensity.addEventListener('pointerdown', (e) => {
-      beginScrub();
-      try {
-        if (e.pointerId != null) lookIntensity.setPointerCapture(e.pointerId);
-      } catch (_) {}
-    });
-    lookIntensity.addEventListener('input', () => {
+  bindPhotosDialScrub(lookIntensity, {
+    onInput(val) {
       const tab = state.ui.looksTab || 'presets';
-      const val = parseFloat(lookIntensity.value);
       if (tab === 'presets') {
         // Live rescale full preset recipe (fast scrub path)
         if (state.look.preset && state.look.preset !== 'none') {
@@ -4677,19 +4803,13 @@
       state.lookQuality = 'preview';
       if (lookIntensityValue) lookIntensityValue.textContent = String(Math.round(val));
       scheduleRender(true);
-    });
-    lookIntensity.addEventListener('change', () => {
+    },
+    onEnd() {
       updateLookChip();
       updateToolDots();
       endScrub();
-    });
-    lookIntensity.addEventListener('pointerup', () => {
-      updateLookChip();
-      updateToolDots();
-      endScrub();
-    });
-    lookIntensity.addEventListener('pointercancel', () => endScrub());
-  }
+    }
+  });
 
   // ========== LONG PRESS / FINE ADJUST ==========
   function bindLongPress(el, { onLongPress, onDoubleTap }) {
@@ -5126,22 +5246,56 @@
     });
   });
 
-  // Borders framing sliders
-  function bindBorderSlider(el, key, scale, formatVal) {
+  // Borders framing sliders — hybrid relative/absolute scrub like dials
+  function bindBorderSlider(el, key) {
     if (!el) return;
-    el.addEventListener('pointerdown', (e) => {
-      beginScrub();
-      try {
-        if (e.pointerId != null) el.setPointerCapture(e.pointerId);
-      } catch (_) {}
-    });
-    el.addEventListener('input', () => {
+
+    const EDGE = 14;
+    const NEAR_PX = 28;
+    let active = false;
+    let mode = 'absolute';
+    let startX = 0;
+    let startVal = 0;
+    let raf = 0;
+    let pending = null;
+
+    function meta() {
+      const min = parseFloat(el.min);
+      const max = parseFloat(el.max);
+      let step = parseFloat(el.step);
+      if (!(step > 0)) step = 1;
+      return { min, max, step, span: max - min || 1 };
+    }
+
+    function snap(val) {
+      const { min, max, step } = meta();
+      let v = min + Math.round((val - min) / step) * step;
+      return clamp(v, min, max);
+    }
+
+    function valueFromX(clientX) {
+      const rect = el.getBoundingClientRect();
+      const usable = Math.max(1, rect.width - EDGE * 2);
+      let t = (clientX - rect.left - EDGE) / usable;
+      t = clamp(t, 0, 1);
+      const { min, span } = meta();
+      return snap(min + t * span);
+    }
+
+    function thumbX() {
+      const rect = el.getBoundingClientRect();
+      const { min, span } = meta();
+      const t = (parseFloat(el.value) - min) / span;
+      return rect.left + EDGE + clamp(t, 0, 1) * Math.max(1, rect.width - EDGE * 2);
+    }
+
+    function applyRaw(raw) {
       if (!state.border) return;
-      const raw = parseFloat(el.value);
-      if (key === 'zoom') state.border.zoom = clamp(raw / 100, 1, 2.5);
-      else if (key === 'panX') state.border.panX = clamp(raw / 100, -1, 1);
-      else if (key === 'panY') state.border.panY = clamp(raw / 100, -1, 1);
-      // Update values only — full syncBorderUI rebuilds chips and feels sticky
+      const v = snap(raw);
+      el.value = String(v);
+      if (key === 'zoom') state.border.zoom = clamp(v / 100, 1, 2.5);
+      else if (key === 'panX') state.border.panX = clamp(v / 100, -1, 1);
+      else if (key === 'panY') state.border.panY = clamp(v / 100, -1, 1);
       if (key === 'zoom' && borderZoomVal) {
         borderZoomVal.textContent = (state.border.zoom || 1).toFixed(2) + '×';
       } else if (key === 'panX' && borderPanXVal) {
@@ -5150,13 +5304,73 @@
         borderPanYVal.textContent = String(Math.round((state.border.panY || 0) * 100));
       }
       scheduleRender(true);
-    });
-    el.addEventListener('change', () => {
+    }
+
+    function flush() {
+      raf = 0;
+      if (pending == null) return;
+      const v = pending;
+      pending = null;
+      applyRaw(v);
+    }
+
+    function queue(val) {
+      pending = val;
+      if (!raf) raf = requestAnimationFrame(flush);
+    }
+
+    el.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      active = true;
+      el.classList.add('is-scrubbing');
+      beginScrub();
+      startX = e.clientX;
+      startVal = parseFloat(el.value);
+      mode = Math.abs(e.clientX - thumbX()) <= NEAR_PX ? 'relative' : 'absolute';
+      try {
+        if (e.pointerId != null) el.setPointerCapture(e.pointerId);
+      } catch (_) {}
+      if (mode === 'absolute') queue(valueFromX(e.clientX));
+      if (e.cancelable) e.preventDefault();
+    }, { passive: false });
+
+    el.addEventListener('pointermove', (e) => {
+      if (!active) return;
+      if (e.cancelable) e.preventDefault();
+      if (mode === 'relative') {
+        const rect = el.getBoundingClientRect();
+        const usable = Math.max(1, rect.width - EDGE * 2);
+        const { span } = meta();
+        queue(startVal + ((e.clientX - startX) / usable) * span);
+      } else {
+        queue(valueFromX(e.clientX));
+      }
+    }, { passive: false });
+
+    const finish = () => {
+      if (!active) return;
+      active = false;
+      el.classList.remove('is-scrubbing');
+      if (raf) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+      if (pending != null) {
+        applyRaw(pending);
+        pending = null;
+      }
       endScrub();
       scheduleHistoryPush();
+    };
+
+    el.addEventListener('pointerup', finish);
+    el.addEventListener('pointercancel', finish);
+    el.addEventListener('lostpointercapture', finish);
+    // Fallback if browser still fires native input (rare with capture)
+    el.addEventListener('input', () => {
+      if (active) return;
+      applyRaw(parseFloat(el.value));
     });
-    el.addEventListener('pointerup', () => endScrub());
-    el.addEventListener('pointercancel', () => endScrub());
   }
   bindBorderSlider(borderZoom, 'zoom');
   bindBorderSlider(borderPanX, 'panX');
