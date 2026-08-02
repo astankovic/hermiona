@@ -1979,18 +1979,7 @@ body:not(.layout-side) .dial-hint {
 }
 
 /* Adjust / Age: denser dial + chips */
-body:not(.layout-side) .dial-row {
-  padding: 4px 12px 2px;
-  gap: 6px;
-}
-
-body:not(.layout-side) .chips-scroll {
-  padding: 4px 10px 8px;
-}
-
-body:not(.layout-side) .enhance-bar {
-  padding: 4px 10px 2px;
-}
+/* dial / chips / enhance mobile density: see Photos blocks below enhance + dial */
 
 /* Portrait: one compact stack */
 body:not(.layout-side) .dock[data-tool="portrait"] .portrait-actions {
@@ -2125,14 +2114,13 @@ body.layout-side .dock[data-tool="border"] #panelBorder {
   background: linear-gradient(135deg, #3a3a3c 0%, #1c1c1e 55%, #ffd60a33 100%);
 }
 
-/* One-tap enhance (wand) */
+/* One-tap enhance — base (desktop side can stay pill-like) */
 .enhance-bar {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 10px 14px 2px;
-  /* enter motion only via .is-panel-enter (avoids double blink on tool switch) */
 }
 
 .enhance-bar[hidden] {
@@ -2158,12 +2146,15 @@ body.layout-side .dock[data-tool="border"] #panelBorder {
     background 0.15s var(--ease-out),
     color 0.15s,
     border-color 0.15s,
-    transform 0.12s var(--ease-spring);
+    transform 0.12s var(--ease-spring),
+    box-shadow 0.15s;
 }
 
-.enhance-btn .enhance-wand {
+.enhance-btn .enhance-wand,
+.enhance-btn .enhance-ico {
   flex-shrink: 0;
   opacity: 0.9;
+  display: inline-flex;
 }
 
 .enhance-btn:hover {
@@ -2181,7 +2172,8 @@ body.layout-side .dock[data-tool="border"] #panelBorder {
   color: var(--accent);
 }
 
-.enhance-btn.active .enhance-wand {
+.enhance-btn.active .enhance-wand,
+.enhance-btn.active .enhance-ico {
   opacity: 1;
 }
 
@@ -2194,6 +2186,89 @@ body.layout-compact .enhance-btn {
   height: 28px;
   padding: 0 11px;
   font-size: 12px;
+}
+
+/*
+ * Mobile Photos: secondary tools = floating circular icons above dial card.
+ * Lives outside #dockBody so photo shows around them.
+ */
+body:not(.layout-side) .enhance-bar {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 340px;
+  margin: 0 auto;
+  padding: 0;
+  gap: 18px;
+  background: transparent;
+  pointer-events: auto;
+}
+
+body:not(.layout-side) .enhance-bar[hidden] {
+  display: none !important;
+}
+
+/* Hide secondary row when panels collapsed / immersive */
+body.chrome-hidden:not(.layout-side) .enhance-bar,
+body.ui-immersive:not(.layout-side) .enhance-bar {
+  display: none !important;
+}
+
+body:not(.layout-side) .enhance-btn {
+  flex-direction: column;
+  width: 52px;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  gap: 5px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+body:not(.layout-side) .enhance-btn .enhance-ico {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  background: rgba(28, 28, 30, 0.5);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  transition: background 0.15s, border-color 0.15s, transform 0.12s, box-shadow 0.15s;
+}
+
+body:not(.layout-side) .enhance-btn .enhance-label {
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: -0.01em;
+}
+
+body:not(.layout-side) .enhance-btn:active .enhance-ico {
+  transform: scale(0.92);
+}
+
+body:not(.layout-side) .enhance-btn.active {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+}
+
+body:not(.layout-side) .enhance-btn.active .enhance-ico {
+  background: rgba(255, 214, 10, 0.18);
+  border-color: rgba(255, 214, 10, 0.55);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.35),
+    0 0 0 3px rgba(255, 214, 10, 0.12);
+  color: var(--accent);
+}
+
+body:not(.layout-side) .enhance-btn.active .enhance-label {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 /* Dial row */
@@ -2249,6 +2324,10 @@ body.layout-compact .enhance-btn {
   padding: 4px 0 2px;
 }
 
+.dial-ticks {
+  display: none; /* mobile Photos ruler only */
+}
+
 .dial-center-mark {
   position: absolute;
   left: 50%;
@@ -2259,6 +2338,176 @@ body.layout-compact .enhance-btn {
   background: rgba(255, 255, 255, 0.22);
   pointer-events: none;
   transform: translateX(-50%);
+}
+
+/* Mobile Photos tick dial */
+body:not(.layout-side) .dial-row {
+  padding: 6px 8px 2px;
+  gap: 2px;
+}
+
+body:not(.layout-side) .dial-meta {
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-height: 0;
+}
+
+body:not(.layout-side) .dial-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  order: 1;
+}
+
+body:not(.layout-side) .dial-value {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  color: #fff;
+  min-width: 0;
+  order: 0;
+}
+
+body:not(.layout-side) .dial-value.neutral {
+  color: #fff;
+}
+
+body:not(.layout-side) .dial-track-wrap {
+  padding: 10px 0 6px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+body:not(.layout-side) .dial-ticks {
+  display: block;
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  height: 28px;
+  margin-top: -14px;
+  pointer-events: none;
+  /* Fine tick ruler (Photos-style) */
+  background:
+    repeating-linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.22) 0,
+      rgba(255, 255, 255, 0.22) 1px,
+      transparent 1px,
+      transparent 8px
+    );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    #000 8%,
+    #000 92%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    #000 8%,
+    #000 92%,
+    transparent 100%
+  );
+  opacity: 0.85;
+}
+
+/* Major ticks every 5th — thicker via second layer */
+body:not(.layout-side) .dial-ticks::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.45) 0,
+    rgba(255, 255, 255, 0.45) 1.5px,
+    transparent 1.5px,
+    transparent 40px
+  );
+}
+
+body:not(.layout-side) .dial-center-mark {
+  height: 18px;
+  margin-top: -9px;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.55);
+  z-index: 2;
+}
+
+body:not(.layout-side) .ios-dial {
+  height: 44px;
+  position: relative;
+  z-index: 1;
+}
+
+body:not(.layout-side) .ios-dial::-webkit-slider-runnable-track {
+  height: 0;
+  background: transparent;
+}
+
+body:not(.layout-side) .ios-dial::-moz-range-track {
+  height: 0;
+  background: transparent;
+}
+
+body:not(.layout-side) .ios-dial::-webkit-slider-thumb {
+  width: 4px;
+  height: 28px;
+  border-radius: 2px;
+  background: #fff;
+  margin-top: 0;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.25),
+    0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+body:not(.layout-side) .ios-dial:active::-webkit-slider-thumb {
+  transform: scaleY(1.08) scaleX(1.2);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.25),
+    0 2px 12px rgba(0, 0, 0, 0.45),
+    0 0 0 4px rgba(255, 214, 10, 0.2);
+}
+
+body:not(.layout-side) .ios-dial::-moz-range-thumb {
+  width: 4px;
+  height: 28px;
+  border-radius: 2px;
+  background: #fff;
+}
+
+body:not(.layout-side) .dial-reset {
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+body:not(.layout-side) .chips-scroll {
+  padding: 2px 4px 6px;
+}
+
+body:not(.layout-side) .chip-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+}
+
+body:not(.layout-side) .chip.active .chip-icon {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+body:not(.layout-side) .chip.modified .chip-icon {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a1400;
 }
 
 .dial-reset {

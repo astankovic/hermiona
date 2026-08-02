@@ -21,7 +21,7 @@
         if (p.has("fresh") || p.get("nocache") === "1") return String(Date.now());
         if (p.get("v")) return p.get("v");
       } catch (e) {}
-      return "202608022710"; // ← bump this when you push JS/CSS changes
+      return "202608022800"; // ← bump this when you push JS/CSS changes
     })();
     document.write(
       '<link rel="stylesheet" href="styles.css?v=' +
@@ -217,21 +217,34 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
         </span>
       </button>
-      <div class="dock-body" id="dockBody">
-        <!-- One-tap enhance (iPhone Photos wand style) -->
-        <div class="enhance-bar" id="enhanceBar" hidden>
-          <button type="button" class="enhance-btn" data-enhance="auto" id="btnEnhanceAuto" title="Auto enhance">
-            <svg class="enhance-wand" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+
+      <!-- Secondary floating tools (Photos: wand row above dial / rail) — outside dock-body card -->
+      <div class="enhance-bar" id="enhanceBar" hidden>
+        <button type="button" class="enhance-btn" data-enhance="auto" id="btnEnhanceAuto" title="Auto enhance">
+          <span class="enhance-ico" aria-hidden="true">
+            <svg class="enhance-wand" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
               <path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/>
               <path d="M17.8 11.8 19 13"/><path d="M15 9h.01"/><path d="m12.2 6.2 1.2-1.2"/>
               <path d="m3 21 9-9"/><path d="M12.2 11.8 10 14"/>
             </svg>
-            <span>Auto</span>
-          </button>
-          <button type="button" class="enhance-btn" data-enhance="soft" title="Soft optimize">Soft</button>
-          <button type="button" class="enhance-btn" data-enhance="vivid" title="Vivid optimize">Vivid</button>
-        </div>
+          </span>
+          <span class="enhance-label">Auto</span>
+        </button>
+        <button type="button" class="enhance-btn" data-enhance="soft" title="Soft optimize">
+          <span class="enhance-ico" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" opacity="0.55"/></svg>
+          </span>
+          <span class="enhance-label">Soft</span>
+        </button>
+        <button type="button" class="enhance-btn" data-enhance="vivid" title="Vivid optimize">
+          <span class="enhance-ico" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 3l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z"/></svg>
+          </span>
+          <span class="enhance-label">Vivid</span>
+        </button>
+      </div>
 
+      <div class="dock-body" id="dockBody">
         <!-- Portrait / scene first so Analyze · DoF stay visible (esp. desktop side dock) -->
         <div class="subpanel subpanel-compact" id="panelPortrait" hidden>
           <div class="acc-group open" data-acc="dof">
@@ -292,7 +305,7 @@
           </div>
         </div>
 
-        <!-- Active dial row (adjust tools) -->
+        <!-- Active dial row (Photos-style tick ruler on mobile) -->
         <div class="dial-row" id="dialRow" hidden>
           <button type="button" class="dial-reset" id="dialReset" title="Reset to default" hidden>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
@@ -302,6 +315,7 @@
             <span class="dial-value" id="dialValue">0</span>
           </div>
           <div class="dial-track-wrap" id="dialTrackWrap">
+            <div class="dial-ticks" aria-hidden="true"></div>
             <input type="range" id="activeDial" class="ios-dial" min="-100" max="100" step="1" value="0" />
             <div class="dial-center-mark" aria-hidden="true"></div>
           </div>
