@@ -2,7 +2,8 @@
  * AI / CDN models (MediaPipe, etc.) are network-only and never precached. */
 /* eslint-disable no-restricted-globals */
 
-var CACHE_NAME = "hermione-shell-v2";
+// Bump when shell assets change (activate purges older shell caches)
+var CACHE_NAME = "hermione-shell-v3";
 
 var PRECACHE = [
   "./",
@@ -63,12 +64,20 @@ function isSameOrigin(url) {
   }
 }
 
+/** Match cached shell files even when request has ?v= cache-bust */
+function matchShell(cache, request) {
+  return cache.match(request).then(function (hit) {
+    if (hit) return hit;
+    // Page always requests app.js?v=… / styles.css?v=… — precache is unversioned
+    return cache.match(request, { ignoreSearch: true });
+  });
+}
+
 self.addEventListener("install", function (event) {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
       .then(function (cache) {
-        // Precache individually so missing optional files (e.g. histogram.js) do not fail install.
         return Promise.all(
           PRECACHE.map(function (url) {
             return cache.add(url).catch(function (err) {
@@ -97,6 +106,25 @@ self.addEventListener("activate", function (event) {
         );
       })
       .then(function () {
+        // Drop versioned runtime entries that pile up (?v=) while keeping shell keys
+        return caches.open(CACHE_NAME).then(function (cache) {
+          return cache.keys().then(function (reqs) {
+            return Promise.all(
+              reqs.map(function (req) {
+                try {
+                  var u = new URL(req.url);
+                  if (u.search && u.search.indexOf("v=") >= 0) {
+                    // Keep only if we revalidate soon; purge old query variants
+                    return cache.delete(req);
+                  }
+                } catch (e) { /* ignore */ }
+                return null;
+              })
+            );
+          });
+        });
+      })
+      .then(function () {
         return self.clients.claim();
       })
   );
@@ -105,14 +133,12 @@ self.addEventListener("activate", function (event) {
 self.addEventListener("fetch", function (event) {
   var request = event.request;
 
-  // Ignore non-GET and extension schemes.
   if (request.method !== "GET") return;
   var url = request.url;
   if (url.indexOf("chrome-extension:") === 0 || url.indexOf("moz-extension:") === 0) {
     return;
   }
 
-  // Cross-origin CDN / AI models: network-only, do not cache.
   if (!isSameOrigin(url) || isCrossOriginCdn(url)) {
     if (!isSameOrigin(url)) {
       event.respondWith(
@@ -124,7 +150,6 @@ self.addEventListener("fetch", function (event) {
     }
   }
 
-  // Navigations: network-first, fallback to cached shell index.html.
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
@@ -154,14 +179,15 @@ self.addEventListener("fetch", function (event) {
     return;
   }
 
-  // Same-origin static assets: stale-while-revalidate.
+  // Same-origin static assets: stale-while-revalidate with ignoreSearch fallback
   if (isSameOrigin(url)) {
     event.respondWith(
       caches.open(CACHE_NAME).then(function (cache) {
-        return cache.match(request).then(function (cached) {
+        return matchShell(cache, request).then(function (cached) {
           var networkFetch = fetch(request)
             .then(function (response) {
               if (response && response.ok && response.type === "basic") {
+                // Store with the request URL (includes ?v=) for precise SWR
                 cache.put(request, response.clone());
               }
               return response;

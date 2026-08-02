@@ -71,13 +71,14 @@ self.onmessage = function (ev) {
       grain: msg.grain !== false,
       grainMode: msg.grainMode || 'static',
       look: msg.look || null,
-      quality: 'export',
+      quality: msg.quality || 'export',
       exportRes: true,
       scene: reviveScene(msg.scene),
       border: msg.border || null,
       optics: msg.optics || null,
+      roi: msg.roi || null,
       debugScene: null,
-      fast: false
+      fast: !!msg.fast
     });
     if (!processed) throw new Error('Process returned null');
 

@@ -12,7 +12,17 @@
   'use strict';
 
   /** Absolute safety cap (browser memory). Above this we must downscale. */
-  const HARD_MAX_LONG_EDGE = 8192;
+  function isIOSLike() {
+    try {
+      const ua = navigator.userAgent || '';
+      if (/iPad|iPhone|iPod/.test(ua)) return true;
+      // iPadOS desktop UA
+      if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
+    } catch (e) { /* ignore */ }
+    return false;
+  }
+  /** iOS canvas budget is tight — keep full export under ~6k long edge */
+  const HARD_MAX_LONG_EDGE = isIOSLike() ? 6144 : 8192;
   /** Soft label for UI; full uses natural size up to HARD_MAX */
   const MAX_EXPORT_LONG_EDGE = HARD_MAX_LONG_EDGE;
 
@@ -257,7 +267,10 @@
           border: processOpts.border || null,
           scene: scenePack,
           grain: processOpts.grain,
-          grainMode: processOpts.grainMode
+          grainMode: processOpts.grainMode,
+          quality: processOpts.quality || 'export',
+          roi: processOpts.roi || null,
+          fast: !!processOpts.fast
         },
         transfer
       );
@@ -679,8 +692,8 @@
             fileName: built.fileName
           }))
           .catch((err) => {
-            // User cancelled share → still offer download only if not abort
-            if (err && (err.name === 'AbortError' || err.name === 'NotAllowedError')) {
+            // User dismissed the sheet
+            if (err && err.name === 'AbortError') {
               return {
                 width: built.width,
                 height: built.height,
@@ -688,6 +701,19 @@
                 fallbackFrom: built.fallbackFrom,
                 shared: false,
                 cancelled: true,
+                fileName: built.fileName
+              };
+            }
+            // NotAllowedError = lost transient activation after long export — still save
+            if (err && err.name === 'NotAllowedError') {
+              triggerDownload(built.blob, built.ext);
+              return {
+                width: built.width,
+                height: built.height,
+                pipeline: built.pipeline,
+                fallbackFrom: built.fallbackFrom,
+                shared: false,
+                activationFallback: true,
                 fileName: built.fileName
               };
             }

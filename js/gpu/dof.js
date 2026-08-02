@@ -162,12 +162,34 @@
         depth: false,
         antialias: false,
         premultipliedAlpha: false,
-        preserveDrawingBuffer: true
+        preserveDrawingBuffer: false
       });
       if (!gl) {
         failed = true;
         return false;
       }
+      canvas.addEventListener(
+        'webglcontextlost',
+        function (e) {
+          e.preventDefault();
+          gl = null;
+          progBlur = null;
+          progComp = null;
+          console.warn('[HermioneGpuDoF] context lost');
+        },
+        false
+      );
+      canvas.addEventListener(
+        'webglcontextrestored',
+        function () {
+          failed = false;
+          gl = null;
+          progBlur = null;
+          progComp = null;
+          console.info('[HermioneGpuDoF] context restored — will re-init');
+        },
+        false
+      );
       maxTex = gl.getParameter(gl.MAX_TEXTURE_SIZE) || 4096;
 
       progBlur = link(VS, FS_BLUR);
@@ -273,6 +295,12 @@
     if (!data || !coc || !w || !h) return false;
     if (w > maxTex || h > maxTex) return false;
     if (!ensure()) return false;
+    if (gl.isContextLost && gl.isContextLost()) {
+      gl = null;
+      progBlur = null;
+      progComp = null;
+      return false;
+    }
     opts = opts || {};
 
     var strength = opts.strength != null ? opts.strength : 1;

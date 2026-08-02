@@ -1821,16 +1821,122 @@
     });
   }
 
+  let settleToken = 0;
+
   function scheduleFullSettle() {
     clearTimeout(settleTimer);
     settleTimer = setTimeout(() => {
       state.ui.scrubbing = false;
       if (canvasArea) canvasArea.classList.remove('scrubbing');
-      scheduleRender(false);
+      // Prefer worker for full settle when available (keeps UI responsive)
+      renderSettleAsync();
       scheduleLookHQ();
       // After filter settles, rebuild real detail at current zoom
       scheduleDetailRender(200);
     }, 140);
+  }
+
+  /**
+   * Full-quality settle off the main thread when Export.processOnWorker is available.
+   * Falls back to sync render(false) for small frames / no worker.
+   */
+  async function renderSettleAsync() {
+    if (!state.hasImage || state.isComparing) {
+      scheduleRender(false);
+      return;
+    }
+    const Export = window.HermioneExport;
+    const srcData = state.originalData;
+    if (!srcData || !Export || typeof Export.processOnWorker !== 'function') {
+      scheduleRender(false);
+      return;
+    }
+    // Small frames stay sync — worker overhead not worth it
+    if (srcData.width * srcData.height < 700 * 700) {
+      scheduleRender(false);
+      return;
+    }
+
+    const token = ++settleToken;
+    const straighten = state.crop.active ? state.params.rotation : 0;
+    const quality = state.lookQuality || 'preview';
+    const gradeKey = buildGradeKey(
+      srcData,
+      state.params,
+      state.look,
+      quality,
+      false
+    );
+    const needAfterLooks =
+      state.optics.enabled ||
+      (state.params.vignette || 0) > 0 ||
+      (state.params.grain || 0) > 0 ||
+      state.debugScene !== 'off';
+    const canReuseLooks =
+      pipeCache.afterLooks &&
+      pipeCache.gradeKey === gradeKey &&
+      pipeCache.w === srcData.width &&
+      pipeCache.h === srcData.height;
+
+    // Worker path does not ship fromAfterLooks — reuse path stays on main
+    if (canReuseLooks) {
+      scheduleRender(false);
+      return;
+    }
+
+    const processOpts = {
+      grain: state.params.grain > 0,
+      grainMode: 'static',
+      look: state.look,
+      quality: quality,
+      fast: false,
+      scene: state.scene,
+      border: currentBorderOpts(),
+      optics: {
+        enabled: state.optics.enabled && state.debugScene === 'off',
+        strength: state.optics.strength,
+        apertureStrength: state.optics.apertureStrength,
+        focusDepth: state.optics.focusDepth,
+        focalRecipe: state.optics.focalRecipe || '50',
+        bokehShape: state.optics.bokehShape || 'auto',
+        bokehAmount:
+          state.optics.bokehAmount != null ? state.optics.bokehAmount : 0.55,
+        skinSoft: state.optics.skinSoft || 0,
+        subjectPunch: state.optics.subjectPunch || 0
+      },
+      debugScene: state.debugScene === 'off' ? null : state.debugScene,
+      fromAfterLooks: null,
+      // Snapshot only when something downstream can reuse it (B6)
+      onAfterLooks: needAfterLooks
+        ? function (data, w, h) {
+            pipeCache.gradeKey = gradeKey;
+            captureAfterLooks(data, w, h);
+          }
+        : null
+    };
+
+    try {
+      const processed = await Export.processOnWorker(
+        srcData,
+        state.params,
+        processOpts
+      );
+      if (token !== settleToken) return;
+      if (state.ui.scrubbing || state.isComparing) return;
+      if (processed) {
+        drawToMain(processed, straighten);
+        scheduleHistogram(processed);
+      }
+      layoutViewport();
+      updateCropOverlay();
+      updateLookChip();
+      if (state.view.zoom > DETAIL_ZOOM_MIN) {
+        scheduleDetailRender(200);
+      }
+    } catch (e) {
+      console.warn('settle worker failed, main-thread fallback', e);
+      if (token === settleToken) scheduleRender(false);
+    }
   }
 
   function beginScrub() {
@@ -2284,7 +2390,7 @@
 
       const straighten = state.crop.active ? state.params.rotation : 0;
       // Crop active + straighten: full frame (ROI off). Border off for tile path.
-      const processed = Engine.process(srcData, state.params, {
+      const detailOpts = {
         grain: true,
         grainMode: 'static',
         look: state.look,
@@ -2313,7 +2419,27 @@
           subjectPunch: state.optics.subjectPunch || 0
         },
         debugScene: state.debugScene === 'off' ? null : state.debugScene
-      });
+      };
+
+      let processed = null;
+      const ExportApi = window.HermioneExport;
+      if (
+        ExportApi &&
+        typeof ExportApi.processOnWorker === 'function' &&
+        srcData.width * srcData.height >= 700 * 700
+      ) {
+        try {
+          processed = await ExportApi.processOnWorker(
+            srcData,
+            state.params,
+            detailOpts
+          );
+        } catch (e) {
+          processed = Engine.process(srcData, state.params, detailOpts);
+        }
+      } else {
+        processed = Engine.process(srcData, state.params, detailOpts);
+      }
 
       if (!processed || token !== detailToken) return;
 
@@ -2517,6 +2643,13 @@
       pipeCache.w === srcData.width &&
       pipeCache.h === srcData.height;
 
+    const needAfterLooks =
+      !useFast &&
+      (state.optics.enabled ||
+        (state.params.vignette || 0) > 0 ||
+        (state.params.grain || 0) > 0 ||
+        state.debugScene !== 'off');
+
     const processOpts = {
       grain: !useFast && state.params.grain > 0,
       grainMode: 'static',
@@ -2539,12 +2672,13 @@
       },
       debugScene: useFast || state.debugScene === 'off' ? null : state.debugScene,
       fromAfterLooks: canReuseLooks ? pipeCache.afterLooks : null,
-      onAfterLooks: useFast
-        ? null
-        : function (data, w, h) {
+      // B6: only snapshot when optics/vignette/grain/debug can consume it
+      onAfterLooks: needAfterLooks
+        ? function (data, w, h) {
             pipeCache.gradeKey = gradeKey;
             captureAfterLooks(data, w, h);
           }
+        : null
     };
 
     const processed = Engine.process(srcData, state.params, processOpts);
@@ -4897,6 +5031,8 @@
       });
       if (result.cancelled) {
         showToast('Share cancelled', 900);
+      } else if (result.activationFallback) {
+        showToast('Saved · ' + result.width + '×' + result.height);
       } else if (result.shared) {
         showToast('Shared · ' + result.width + '×' + result.height);
       } else if (result.fallbackFrom) {

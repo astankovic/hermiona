@@ -184,12 +184,33 @@
         depth: false,
         antialias: false,
         premultipliedAlpha: false,
-        preserveDrawingBuffer: true
+        // false avoids extra full-surface copy on tile GPUs (iOS)
+        preserveDrawingBuffer: false
       });
       if (!gl) {
         failed = true;
         return false;
       }
+      canvas.addEventListener(
+        'webglcontextlost',
+        function (e) {
+          e.preventDefault();
+          gl = null;
+          program = null;
+          console.warn('[HermioneGpuGrade] context lost');
+        },
+        false
+      );
+      canvas.addEventListener(
+        'webglcontextrestored',
+        function () {
+          failed = false;
+          gl = null;
+          program = null;
+          console.info('[HermioneGpuGrade] context restored — will re-init');
+        },
+        false
+      );
       maxTex = gl.getParameter(gl.MAX_TEXTURE_SIZE) || 4096;
 
       var vs = compile(gl.VERTEX_SHADER, VS);
@@ -333,6 +354,11 @@
     if (!data || !w || !h) return false;
     if (w > maxTex || h > maxTex) return false;
     if (!ensure()) return false;
+    if (gl.isContextLost && gl.isContextLost()) {
+      gl = null;
+      program = null;
+      return false;
+    }
 
     p = p || {};
     var exp = Math.pow(2, p.exposure || 0);

@@ -625,6 +625,15 @@
     return dest;
   }
 
+  /** Release canvas backing store (helps iOS stay under canvas memory budget). */
+  function releaseCanvas(c) {
+    if (!c) return;
+    try {
+      c.width = 0;
+      c.height = 0;
+    } catch (e) { /* ignore */ }
+  }
+
   /**
    * Rebuild geometry from original image + op stack.
    * @param {HTMLImageElement} originalImage
@@ -636,6 +645,7 @@
     let c = imageToCanvas(originalImage, maxLongEdge || 0);
     const list = ops || [];
     for (let i = 0; i < list.length; i++) {
+      const prev = c;
       const op = list[i];
       if (op.type === 'rotate') {
         c = rotate90Canvas(c, op.deg);
@@ -645,7 +655,11 @@
         c = rotateCoverCanvas(c, op.deg);
       } else if (op.type === 'crop') {
         c = cropCanvas(c, op.x, op.y, op.w, op.h);
+      } else {
+        continue;
       }
+      // Free intermediate canvases so iOS doesn't silently blank over budget
+      if (prev && prev !== c) releaseCanvas(prev);
     }
     return c;
   }
