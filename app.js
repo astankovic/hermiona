@@ -2314,16 +2314,21 @@
     }
   }
 
-  async function runSceneAnalysis() {
+  async function runSceneAnalysis(opts) {
+    opts = opts || {};
+    const quiet = !!opts.quiet;
     if (!state.hasImage || !state.workingCanvas || !Scene) return;
     const token = ++analyzeToken;
     state.sceneStatus = 'loading';
     setSceneStatus('Loading AI model…', 'busy');
     setButtonBusy(btnSceneAnalyze, true, '…', 'Analyze');
-    busyStart('scene', 'Loading AI model…', 'On-device · first run may take longer');
+    // quiet = crop/subject framing — never steal the whole UI with busy overlay
+    if (!quiet) {
+      busyStart('scene', 'Loading AI model…', 'On-device · first run may take longer');
+    }
 
     try {
-      busyUpdate('scene', 'Analyzing scene…', 'Segmentation · depth');
+      if (!quiet) busyUpdate('scene', 'Analyzing scene…', 'Segmentation · depth');
       state.sceneStatus = 'analyzing';
       setSceneStatus('Analyzing…', 'busy');
       const analysis = await Scene.analyze(state.workingCanvas);
@@ -2359,7 +2364,7 @@
       setSceneStatus('Error: ' + (err.message || err), 'error');
     } finally {
       if (token === analyzeToken) {
-        busyEnd('scene');
+        if (!quiet) busyEnd('scene');
         setButtonBusy(btnSceneAnalyze, false, '…', 'Analyze');
       }
     }
@@ -2975,15 +2980,24 @@
 
   /**
    * Main edit chrome vs crop session Cancel / Done (iPhone Photos).
-   * body.tool-session-crop drives layout; rail mode hides topbar separately.
+   * body.tool-session-crop drives layout via CSS !important (tb-cluster display
+   * otherwise wins over [hidden]). Re-query nodes in case cache was stale.
    */
   function syncToolChrome() {
     const cropMode = !!(state.hasImage && state.ui.tool === 'crop');
     document.body.classList.toggle('tool-session-crop', cropMode);
-    if (btnToolCancel) btnToolCancel.hidden = !cropMode;
-    if (btnToolDone) btnToolDone.hidden = !cropMode;
-    if (tbClusterMain) tbClusterMain.hidden = cropMode;
-    if (tbClusterExport) tbClusterExport.hidden = cropMode;
+    const cancel = btnToolCancel || document.getElementById('btnToolCancel');
+    const done = btnToolDone || document.getElementById('btnToolDone');
+    const main = tbClusterMain || document.getElementById('tbClusterMain');
+    const exp = tbClusterExport || document.getElementById('tbClusterExport');
+    if (cancel) cancel.hidden = !cropMode;
+    if (done) done.hidden = !cropMode;
+    if (main) main.hidden = cropMode;
+    if (exp) exp.hidden = cropMode;
+    // Keep title as "Crop" while session is active (header-busy must not steal it)
+    if (cropMode && topbarTitle) {
+      setTopbarToolTitle('Crop');
+    }
   }
 
   function cancelCropAndExit() {
@@ -3090,10 +3104,10 @@
       }
       return Promise.resolve(state.crop.subject);
     }
-    // Quiet analyze for framing (does not enable DoF)
+    // Quiet analyze for framing — no full-screen busy (crop stays interactive)
     if (!state.hasImage || !Scene) return Promise.resolve(null);
-    if (cropHint) cropHint.textContent = 'Detecting subject for studio frame…';
-    return runSceneAnalysis()
+    if (cropHint) cropHint.textContent = 'Detecting subject…';
+    return runSceneAnalysis({ quiet: true })
       .then(() => {
         refreshSubjectBBox();
         if (cropHint) {
@@ -3374,15 +3388,19 @@
       if (state.crop.aspect && state.crop.aspect !== 'free') {
         applyAspectToCrop(state.crop.aspect);
       }
-      // Fit full image first so portrait is fully visible in crop studio
+      // Fit full image — do NOT auto-run AI here (busy modal kills crop UX).
+      // Subject frames analyze lazily when the user taps Subject / Portrait / etc.
       fitView();
-      ensureSubjectForCrop().then(() => {
-        if (state.crop.active && state.crop.frame && state.crop.frame !== 'full') {
+      if (state.crop.frame && state.crop.frame !== 'full' && state.crop.frame !== 'custom') {
+        if (state.crop.subject) {
           applyStudioFrame(state.crop.frame);
         } else {
+          // Apply composition without blocking UI; AI only if already warm
           updateCropOverlay();
         }
-      });
+      } else {
+        updateCropOverlay();
+      }
       requestAnimationFrame(() => {
         layoutViewport();
         updateCropOverlay();
@@ -3705,10 +3723,12 @@
 
     const isAdj = tool === 'adjust' || tool === 'portrait' || tool === 'age';
     // Border has its own panel (no dial row / no crop handles)
+    // Crop: dial only (straighten) — no redundant single-chip strip
     const showDial = isAdj || tool === 'crop';
+    const showChips = isAdj;
 
     if (dialRow) dialRow.hidden = !showDial;
-    if (chipsScroll) chipsScroll.hidden = !showDial;
+    if (chipsScroll) chipsScroll.hidden = !showChips;
     if (panelLooks) panelLooks.hidden = tool !== 'looks';
     if (panelCrop) panelCrop.hidden = tool !== 'crop';
     if (panelBorder) panelBorder.hidden = tool !== 'border';
@@ -3760,7 +3780,9 @@
       const list = TOOL_ADJUSTMENTS[tool] || TOOL_ADJUSTMENTS.adjust;
       const prefer = state.ui.activeAdj;
       const next = list.find((a) => a.id === prefer) || list[0];
-      buildChips(list, next.id);
+      if (showChips) {
+        buildChips(list, next.id);
+      }
       selectAdj(next.id, true);
     }
 

@@ -428,9 +428,32 @@ body.ui-immersive:not(.layout-side) .compare-hint {
   display: none !important;
 }
 
-body.tool-session-crop .topbar-title:not(.topbar-title--brand) {
+/*
+ * Crop session topbar — must win over body:not(.layout-side) .tb-cluster { display:inline-flex }
+ * and over [hidden] edge cases so Cancel/Done are the ONLY chrome.
+ */
+body.tool-session-crop #tbClusterMain,
+body.tool-session-crop #tbClusterExport {
+  display: none !important;
+}
+
+body.tool-session-crop #btnToolCancel,
+body.tool-session-crop #btnToolDone {
+  display: inline-flex !important;
+  align-items: center;
+}
+
+/* Show "Crop" title on mobile during session (normally titles are hidden) */
+body.tool-session-crop:not(.layout-side).has-image .topbar-title {
+  display: inline-flex !important;
   font-weight: 600;
   letter-spacing: -0.02em;
+  font-size: 15px;
+}
+
+/* Hide header-busy pill during crop so it doesn't replace Cancel/Done context */
+body.tool-session-crop #headerBusy {
+  display: none !important;
 }
 
 /* Mobile: topbar Done/Cancel own the crop commit — hide dock Apply */
@@ -439,12 +462,38 @@ body:not(.layout-side).tool-session-crop #btnCropApply {
 }
 
 body:not(.layout-side).tool-session-crop .crop-apply-row {
-  /* Reset alone when Apply is hidden */
   display: flex;
 }
 
 body:not(.layout-side).tool-session-crop .crop-apply-row .btn-ghost-wide {
   flex: 1;
+}
+
+/* Crop / portrait panel structure (heights live with dock-body rules below) */
+body:not(.layout-side) #panelCrop {
+  padding: 0 10px 2px;
+  overflow: hidden;
+}
+
+/* Aspect + rotate only on phone — hide studio frame dump (Subject via chip when shown on desktop) */
+body:not(.layout-side) #panelCrop .acc-group[data-acc="frame"] {
+  display: none;
+}
+
+body:not(.layout-side) #panelCrop .crop-tools {
+  justify-content: space-around;
+  gap: 4px;
+}
+
+body:not(.layout-side) #panelCrop .crop-apply-row {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+body:not(.layout-side) #panelPortrait {
+  padding: 0 10px 2px;
+  max-height: 72px;
+  overflow: hidden;
 }
 
 /* ========== TOP BAR ========== */
@@ -1730,22 +1779,46 @@ body:not(.layout-side) .bokeh-scroll {
   max-height: min(40dvh, 320px);
 }
 
-/* Overlay mobile: tighter caps so the photo stays hero */
+/*
+ * Overlay mobile: FIXED tool-surface height (iPhone Photos stability).
+ * !important wins over .dock-tall max-height ladder so tool switches don't leap.
+ */
 body:not(.layout-side) .dock-body {
-  flex: 0 1 auto;
-  max-height: min(26dvh, 200px);
+  flex: 0 0 auto;
+  height: 152px !important;
+  min-height: 152px !important;
+  max-height: 152px !important;
+  overflow-x: hidden;
+  overflow-y: auto;
+  transition: height 0.2s var(--ease-out), max-height 0.2s var(--ease-out), min-height 0.2s var(--ease-out);
 }
 
+/* Default tall tools */
 body:not(.layout-side) .dock.dock-tall .dock-body {
-  max-height: min(34dvh, 260px);
+  height: 196px !important;
+  min-height: 196px !important;
+  max-height: 196px !important;
 }
 
-body:not(.layout-side) .dock.dock-tall[data-tool="looks"] .dock-body,
-body:not(.layout-side) .dock.dock-tall[data-tool="age"] .dock-body,
+/* Per-tool shells — same specificity family, later + attribute wins */
+body:not(.layout-side) .dock.dock-tall[data-tool="looks"] .dock-body {
+  height: 210px !important;
+  min-height: 210px !important;
+  max-height: 210px !important;
+}
+
 body:not(.layout-side) .dock.dock-tall[data-tool="crop"] .dock-body,
-body:not(.layout-side) .dock.dock-tall[data-tool="border"] .dock-body,
-body:not(.layout-side) .dock.dock-tall[data-tool="portrait"] .dock-body {
-  max-height: min(36dvh, 280px);
+body:not(.layout-side) .dock.dock-tall[data-tool="border"] .dock-body {
+  height: 168px !important;
+  min-height: 168px !important;
+  max-height: 168px !important;
+}
+
+body:not(.layout-side) .dock.dock-tall[data-tool="portrait"] .dock-body,
+body:not(.layout-side) .dock.dock-tall[data-tool="age"] .dock-body {
+  height: 196px !important;
+  min-height: 196px !important;
+  max-height: 196px !important;
 }
 
 /* Filters: iPhone-style horizontal filmstrip */
