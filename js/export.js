@@ -254,6 +254,7 @@
           params: params,
           look: processOpts.look,
           optics: processOpts.optics,
+          border: processOpts.border || null,
           scene: scenePack,
           grain: processOpts.grain,
           grainMode: processOpts.grainMode
@@ -281,6 +282,7 @@
       quality: 'export',
       exportRes: true,
       scene: opts.scene || null,
+      border: opts.border || null,
       optics: opts.optics || null,
       debugScene: null
     };
@@ -369,6 +371,7 @@
       quality: 'export',
       exportRes: true,
       scene: opts.scene || null,
+      border: opts.border || null,
       optics: opts.optics || null,
       debugScene: null
     };

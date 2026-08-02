@@ -320,7 +320,7 @@
         lateralCA: 0.08,
         ghost: 0,
         stains: 0.2,
-        border: 0.85,
+        border: 0,
         dateStamp: 0,
         halationBlur: 0.12,
         highlightRoll: 0.45

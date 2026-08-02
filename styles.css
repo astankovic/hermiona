@@ -1549,6 +1549,49 @@ body:not(.layout-side) .dock.dock-tall {
     0 -1px 0 rgba(255, 255, 255, 0.07);
 }
 
+/* Crop · Borders framing */
+.border-framing {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 0.5px solid var(--separator);
+}
+
+.border-framing[hidden] {
+  display: none !important;
+}
+
+.border-slider-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 8px 2px 2px;
+}
+
+.border-slider-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.border-slider-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  min-width: 2.8em;
+  text-align: right;
+}
+
+.border-framing .ios-dial {
+  width: 100%;
+  margin-bottom: 2px;
+}
+
+.border-chip.active {
+  border-color: rgba(255, 214, 10, 0.45);
+  color: var(--accent);
+}
+
 /* User saved looks */
 .user-looks-bar {
   display: flex;

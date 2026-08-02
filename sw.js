@@ -20,6 +20,7 @@ var PRECACHE = [
   "./js/auto.js",
   "./js/user-presets.js",
   "./js/draft.js",
+  "./js/borders.js",
   "./js/errors.js",
   "./js/perf.js",
   "./js/buffers.js",

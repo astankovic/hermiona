@@ -16,6 +16,7 @@ importScripts(
   'buffers.js',
   'looks.js',
   'imperfections.js',
+  'borders.js',
   'scene/depth-pseudo.js',
   'scene/coc.js',
   'scene/bokeh.js',
@@ -73,6 +74,7 @@ self.onmessage = function (ev) {
       quality: 'export',
       exportRes: true,
       scene: reviveScene(msg.scene),
+      border: msg.border || null,
       optics: msg.optics || null,
       debugScene: null,
       fast: false

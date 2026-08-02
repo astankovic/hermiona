@@ -21,7 +21,7 @@
         if (p.has("fresh") || p.get("nocache") === "1") return String(Date.now());
         if (p.get("v")) return p.get("v");
       } catch (e) {}
-      return "202608021120"; // ← bump this when you push JS/CSS changes
+      return "202608021200"; // ← bump this when you push JS/CSS changes
     })();
     document.write(
       '<link rel="stylesheet" href="styles.css?v=' +
@@ -407,6 +407,37 @@
             </div>
           </div>
 
+          <!-- Instant / print borders (not a filter) -->
+          <div class="acc-group open" data-acc="borders">
+            <button type="button" class="acc-head" data-acc-toggle="borders">
+              <span>Borders</span>
+              <span class="acc-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="acc-body">
+              <div class="frame-scroll" id="borderFormatScroll" role="listbox" aria-label="Border formats">
+                <!-- filled by app.js -->
+              </div>
+              <div class="border-framing" id="borderFraming" hidden>
+                <div class="border-slider-row">
+                  <label class="border-slider-label" for="borderZoom">Crop zoom</label>
+                  <span class="border-slider-val" id="borderZoomVal">1.0×</span>
+                </div>
+                <input type="range" id="borderZoom" class="ios-dial" min="100" max="250" step="1" value="100" />
+                <div class="border-slider-row">
+                  <label class="border-slider-label" for="borderPanX">Pan H</label>
+                  <span class="border-slider-val" id="borderPanXVal">0</span>
+                </div>
+                <input type="range" id="borderPanX" class="ios-dial" min="-100" max="100" step="1" value="0" />
+                <div class="border-slider-row">
+                  <label class="border-slider-label" for="borderPanY">Pan V</label>
+                  <span class="border-slider-val" id="borderPanYVal">0</span>
+                </div>
+                <input type="range" id="borderPanY" class="ios-dial" min="-100" max="100" step="1" value="0" />
+                <p class="crop-hint">Zoom &amp; pan the photo inside the frame</p>
+              </div>
+            </div>
+          </div>
+
           <div class="crop-apply-row">
             <button type="button" class="btn-ghost-wide" id="btnCropReset">Reset</button>
             <button type="button" class="btn-accent-wide" id="btnCropApply">Apply</button>
@@ -524,6 +555,7 @@
         "js/auto.js",
         "js/user-presets.js",
         "js/draft.js",
+        "js/borders.js",
         "js/scene/depth-pseudo.js",
         "js/scene/coc.js",
         "js/scene/bokeh.js",

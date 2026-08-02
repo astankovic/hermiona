@@ -430,16 +430,42 @@
       applyGrain(data, w, h, grainAmt, options.grainMode || 'static');
     }
 
+    // Print / instant borders (Crop · Borders) — last step; may change size
+    var outW = w;
+    var outH = h;
+    var outData = data;
+    const Borders = global.HermionaBorders;
+    if (
+      !fast &&
+      Borders &&
+      options.border &&
+      options.border.id &&
+      options.border.id !== 'none'
+    ) {
+      const perfB = Perf && Perf.isEnabled() ? Perf.start('border') : null;
+      const framed = Borders.apply(
+        new ImageData(data, w, h),
+        options.border,
+        { maxLong: Math.max(w, h) }
+      );
+      if (framed && framed.data) {
+        outData = framed.data;
+        outW = framed.width;
+        outH = framed.height;
+      }
+      if (perfB) perfB.end();
+    }
+
     if (perfAll) {
       perfAll.end({
-        w: w,
-        h: h,
+        w: outW,
+        h: outH,
         fast: fast,
         fromLooks: !!fromLooks
       });
     }
 
-    return new ImageData(data, w, h);
+    return new ImageData(outData, outW, outH);
   }
 
   /** Scale canvas so longest edge === longEdge. Never upscales. 1:1 uses no smoothing. */

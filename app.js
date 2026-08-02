@@ -12,6 +12,7 @@
   const Scene = window.HermionaScene;
   const UserPresets = window.HermionaUserPresets;
   const Draft = window.HermionaDraft;
+  const Borders = window.HermionaBorders;
 
   if (!Engine || !Export) {
     console.error('Hermiona: engine/export modules missing');
@@ -154,7 +155,6 @@
       { id: 'lateralCA', label: 'Edge CA', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
       { id: 'ghost', label: 'Ghost', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
       { id: 'stains', label: 'Stains', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
-      { id: 'border', label: 'Polaroid', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
       { id: 'dateStamp', label: 'Date stamp', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
       { id: 'halationBlur', label: 'Halation', min: 0, max: 100, step: 1, def: 0, store: 'imperf' },
       { id: 'highlightRoll', label: 'Film knee', min: 0, max: 100, step: 1, def: 0, store: 'imperf' }
@@ -172,7 +172,6 @@
     'lateralCA',
     'ghost',
     'stains',
-    'border',
     'dateStamp',
     'halationBlur',
     'highlightRoll'
@@ -289,6 +288,13 @@
       aspect: 'free',
       frame: 'full', // studio suggestion id
       subject: null // cached bbox {x,y,w,h,cx,cy}
+    },
+    /** Print / instant borders (Crop · Borders) — not Age filter */
+    border: {
+      id: 'none',
+      zoom: 1,
+      panX: 0,
+      panY: 0
     },
     /** CSS viewport — zoom/pan without reprocessing pixels */
     view: {
@@ -532,6 +538,14 @@
 
   const panelLooks = $('#panelLooks');
   const panelCrop = $('#panelCrop');
+  const borderFormatScroll = $('#borderFormatScroll');
+  const borderFraming = $('#borderFraming');
+  const borderZoom = $('#borderZoom');
+  const borderPanX = $('#borderPanX');
+  const borderPanY = $('#borderPanY');
+  const borderZoomVal = $('#borderZoomVal');
+  const borderPanXVal = $('#borderPanXVal');
+  const borderPanYVal = $('#borderPanYVal');
   const panelPortrait = $('#panelPortrait');
   const filmLooksEl = $('#filmLooks');
   const cameraLooksEl = $('#cameraLooks');
@@ -865,6 +879,12 @@
         h: state.crop.h,
         aspect: state.crop.aspect
       },
+      border: {
+        id: state.border.id,
+        zoom: state.border.zoom,
+        panX: state.border.panX,
+        panY: state.border.panY
+      },
       uiPresetCategory: state.ui.presetCategory
     };
   }
@@ -877,6 +897,12 @@
     Object.assign(state.optics, snap.optics);
     state.enhanceMode =
       snap.enhanceMode !== undefined ? snap.enhanceMode : null;
+    if (snap.border) {
+      state.border.id = snap.border.id || 'none';
+      state.border.zoom = snap.border.zoom != null ? snap.border.zoom : 1;
+      state.border.panX = snap.border.panX || 0;
+      state.border.panY = snap.border.panY || 0;
+    }
     if (snap.crop) {
       state.crop.x = snap.crop.x;
       state.crop.y = snap.crop.y;
@@ -894,6 +920,7 @@
     markChipModified();
     updateToolDots();
     updateEnhanceBarUI();
+    if (typeof syncBorderUI === 'function') syncBorderUI();
     history.lock = false;
     scheduleRender(false);
   }
@@ -1549,6 +1576,94 @@
     pipeCache.afterLooks = null;
   }
 
+  function currentBorderOpts() {
+    if (!state.border || !state.border.id || state.border.id === 'none') {
+      return null;
+    }
+    return {
+      id: state.border.id,
+      zoom: state.border.zoom != null ? state.border.zoom : 1,
+      panX: state.border.panX || 0,
+      panY: state.border.panY || 0
+    };
+  }
+
+  // ========== BORDERS (Crop) ==========
+  function buildBorderFormats() {
+    if (!borderFormatScroll || !Borders || !Borders.FORMATS) return;
+    borderFormatScroll.innerHTML = '';
+    Borders.FORMATS.forEach((fmt) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className =
+        'ratio-chip frame-chip border-chip' +
+        (fmt.id === (state.border && state.border.id) ? ' active' : '');
+      btn.dataset.border = fmt.id;
+      btn.title = fmt.desc || fmt.name;
+      btn.textContent = fmt.name;
+      btn.addEventListener('click', () => setBorderFormat(fmt.id));
+      borderFormatScroll.appendChild(btn);
+    });
+  }
+
+  function syncBorderUI() {
+    if (!state.border) state.border = { id: 'none', zoom: 1, panX: 0, panY: 0 };
+    const id = state.border.id || 'none';
+    if (borderFormatScroll) {
+      borderFormatScroll.querySelectorAll('.border-chip').forEach((b) => {
+        b.classList.toggle('active', b.dataset.border === id);
+      });
+    }
+    const on = id !== 'none';
+    if (borderFraming) borderFraming.hidden = !on;
+    if (borderZoom) {
+      borderZoom.value = String(Math.round((state.border.zoom || 1) * 100));
+    }
+    if (borderPanX) {
+      borderPanX.value = String(Math.round((state.border.panX || 0) * 100));
+    }
+    if (borderPanY) {
+      borderPanY.value = String(Math.round((state.border.panY || 0) * 100));
+    }
+    if (borderZoomVal) {
+      borderZoomVal.textContent =
+        ((state.border.zoom || 1).toFixed(2).replace(/\.?0+$/, '') || '1') + '×';
+      // nicer: 1.00×
+      borderZoomVal.textContent = (state.border.zoom || 1).toFixed(2) + '×';
+    }
+    if (borderPanXVal) {
+      borderPanXVal.textContent = String(Math.round((state.border.panX || 0) * 100));
+    }
+    if (borderPanYVal) {
+      borderPanYVal.textContent = String(Math.round((state.border.panY || 0) * 100));
+    }
+  }
+
+  function setBorderFormat(id) {
+    if (!state.border) state.border = { id: 'none', zoom: 1, panX: 0, panY: 0 };
+    const prev = state.border.id;
+    state.border.id = id || 'none';
+    if (state.border.id === 'none') {
+      state.border.zoom = 1;
+      state.border.panX = 0;
+      state.border.panY = 0;
+    } else if (prev === 'none') {
+      // sensible start: slight zoom so pan has room
+      state.border.zoom = 1.05;
+    }
+    // Border framing uses its own window — not Age filter
+    if (state.look && state.look.imperf) state.look.imperf.border = 0;
+    syncBorderUI();
+    scheduleHistoryPush();
+    scheduleRender(false);
+    if (id && id !== 'none') {
+      const fmt = Borders && Borders.byId ? Borders.byId(id) : null;
+      showToast((fmt && fmt.name) || 'Border', 900);
+    } else {
+      showToast('No border', 800);
+    }
+  }
+
   // ========== RENDER (RAF + scrub fast path) ==========
   let renderPending = false;
   let renderFast = false;
@@ -1826,6 +1941,7 @@
         quality: 'export',
         fast: false,
         scene: state.scene,
+        border: currentBorderOpts(),
         optics: {
           enabled: state.optics.enabled && state.debugScene === 'off',
           strength: state.optics.strength,
@@ -2003,6 +2119,7 @@
       quality: quality,
       fast: useFast,
       scene: useFast ? null : state.scene,
+      border: useFast ? null : currentBorderOpts(),
       optics: {
         enabled: !useFast && state.optics.enabled && state.debugScene === 'off',
         strength: state.optics.strength,
@@ -3865,6 +3982,8 @@
     state.optics.bokehAmount = 0.55;
     state.optics.skinSoft = 0;
     state.optics.subjectPunch = 0;
+    state.border = { id: 'none', zoom: 1, panX: 0, panY: 0 };
+    if (typeof syncBorderUI === 'function') syncBorderUI();
     state.optics.focusManual = false;
     state.optics.focusDepth = 0.3;
     state.optics.focalRecipe = '50';
@@ -3956,6 +4075,24 @@
       scheduleHistoryPush();
     });
   });
+
+  // Borders framing sliders
+  function bindBorderSlider(el, key, scale, formatVal) {
+    if (!el) return;
+    el.addEventListener('input', () => {
+      if (!state.border) return;
+      const raw = parseFloat(el.value);
+      if (key === 'zoom') state.border.zoom = clamp(raw / 100, 1, 2.5);
+      else if (key === 'panX') state.border.panX = clamp(raw / 100, -1, 1);
+      else if (key === 'panY') state.border.panY = clamp(raw / 100, -1, 1);
+      syncBorderUI();
+      scheduleRender(false);
+    });
+    el.addEventListener('change', () => scheduleHistoryPush());
+  }
+  bindBorderSlider(borderZoom, 'zoom');
+  bindBorderSlider(borderPanX, 'panX');
+  bindBorderSlider(borderPanY, 'panY');
 
   // ========== EXPORT ==========
   function estimateExportDims() {
@@ -4094,6 +4231,7 @@
         params: state.params,
         look: state.look,
         scene: state.scene,
+        border: currentBorderOpts(),
         optics: {
           enabled: state.optics.enabled,
           strength: state.optics.strength,
@@ -4503,6 +4641,8 @@
 
   // Init
   buildLookCards();
+  buildBorderFormats();
+  syncBorderUI();
   updateUserLooksHint();
   const apInit = apertureFromSlider(55);
   state.optics.apertureStrength = apInit.strength;
