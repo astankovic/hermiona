@@ -280,13 +280,12 @@ body:not(.layout-side) {
   --photos-rail-h: 56px;
   --photos-rail-gap: 10px;
   /* One shell height for every tool — content fits inside, never grows */
-  --photos-panel-h: 148px;
+  --photos-panel-h: 156px;
   --photos-panel-pad-y: 8px;
   /* Shared dial band (value + sliding tape) — identical on Adjust/Age/Crop/Portrait/Filters */
   --photos-dial-value-h: 22px;
   --photos-dial-track-h: 44px;
   --photos-dial-band-h: calc(var(--photos-dial-value-h) + var(--photos-dial-track-h));
-  --photos-panel-h: 156px;
   --photos-enhance-h: 68px;
   --photos-side: 18px;
   --photos-safe: max(14px, var(--safe-bottom));
