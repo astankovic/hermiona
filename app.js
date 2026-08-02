@@ -684,6 +684,13 @@
     } catch (_) { /* ignore */ }
   }
 
+  /** Slightly stronger tick for tool / mode changes */
+  function hapticSelect() {
+    try {
+      if (navigator.vibrate) navigator.vibrate(12);
+    } catch (_) { /* ignore */ }
+  }
+
   function apertureFromSlider(v) {
     v = clamp(v, 0, 100);
     for (let i = 0; i < FSTOPS.length - 1; i++) {
@@ -3843,9 +3850,23 @@
     });
   }
 
-  // Tool rail
+  // Tool rail — re-tap active tool toggles panels (full ↔ rail) like iOS Photos
   $$('.tool-btn').forEach((btn) => {
-    btn.addEventListener('click', () => setTool(btn.dataset.tool));
+    btn.addEventListener('click', () => {
+      const tool = normalizeToolId(btn.dataset.tool);
+      if (
+        isOverlayChrome() &&
+        state.hasImage &&
+        tool === state.ui.tool &&
+        chromeState.mode !== 'immersive'
+      ) {
+        setChromeHidden(chromeState.mode !== 'rail');
+        hapticSelect();
+        return;
+      }
+      setTool(tool);
+      hapticSelect();
+    });
   });
 
   // Looks segment
