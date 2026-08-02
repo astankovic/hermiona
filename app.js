@@ -1498,7 +1498,7 @@
       updateDialUI();
       markChipModified();
       updateToolDots();
-      scheduleHistory();
+      scheduleHistoryPush();
       render(false);
       if (typeof showToast === 'function') showToast('Enhance off');
       return;
@@ -1513,7 +1513,7 @@
     updateDialUI();
     markChipModified();
     updateToolDots();
-    scheduleHistory();
+    scheduleHistoryPush();
     render(false);
     if (typeof showToast === 'function') {
       showToast(result.label + ' enhance');
