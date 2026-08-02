@@ -21,7 +21,7 @@
         if (p.has("fresh") || p.get("nocache") === "1") return String(Date.now());
         if (p.get("v")) return p.get("v");
       } catch (e) {}
-      return "202608022900"; // ← bump this when you push JS/CSS changes
+      return "202608023000"; // ← bump this when you push JS/CSS changes
     })();
     document.write(
       '<link rel="stylesheet" href="styles.css?v=' +
@@ -163,29 +163,8 @@
           </div>
         </div>
 
-        <!-- Zoom HUD + optional tools -->
-        <div class="zoom-hud" id="zoomHud" hidden>
-          <button type="button" class="zoom-btn" id="btnHistoToggle" title="Histogram" aria-pressed="false" aria-label="Toggle histogram">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-              <path d="M4 20V10M9 20V4M14 20v-8M19 20V8"/>
-            </svg>
-          </button>
-          <button type="button" class="zoom-btn" id="btnZoomOut" title="Zoom out">−</button>
-          <button type="button" class="zoom-btn zoom-label" id="btnZoomFit" title="Fit to screen">100%</button>
-          <button type="button" class="zoom-btn" id="btnZoomIn" title="Zoom in">+</button>
-        </div>
-
         <!-- Hold-to-compare hint -->
         <div class="compare-hint" id="compareHint" hidden>Hold for original</div>
-
-        <!-- Histogram — optional tool (off by default; toggle in zoom HUD) -->
-        <div class="histo-panel" id="histoPanel" hidden>
-          <canvas id="histoCanvas" width="240" height="64" aria-label="Histogram"></canvas>
-          <div class="histo-meta">
-            <span id="histoClipLow"></span>
-            <span id="histoClipHigh"></span>
-          </div>
-        </div>
 
         <!-- Look badge -->
         <div class="look-chip" id="lookChip" hidden></div>

@@ -1387,11 +1387,8 @@
   }
 
   function updateZoomHud() {
-    if (zoomHud) zoomHud.hidden = !state.hasImage;
-    if (btnZoomFit) {
-      const pct = Math.round(state.view.zoom * 100);
-      btnZoomFit.textContent = pct + '%';
-    }
+    // Zoom / histogram toolbar removed from UI (pinch + double-tap still work)
+    if (zoomHud) zoomHud.hidden = true;
   }
 
   function setZoom(next, anchorClientX, anchorClientY, animate) {
@@ -2181,13 +2178,14 @@
     if (!on && histoPanel) histoPanel.hidden = true;
   }
 
-  function setHistoVisible(on) {
-    if (!histoPanel) return;
-    // Only show panel when user opted in AND we have content to draw
-    histoPanel.hidden = !(on && state.ui.showHistogram && state.hasImage);
+  function setHistoVisible(_on) {
+    if (histoPanel) histoPanel.hidden = true;
   }
 
   function scheduleHistogram(imageData) {
+    // Histogram UI removed — skip work
+    if (histoPanel) histoPanel.hidden = true;
+    return;
     // Skip work entirely when tool is off
     if (!state.ui.showHistogram) {
       if (histoPanel) histoPanel.hidden = true;
@@ -2222,16 +2220,10 @@
   }
 
   function toggleHistogram() {
-    state.ui.showHistogram = !state.ui.showHistogram;
+    // Histogram UI removed
+    state.ui.showHistogram = false;
+    setHistoVisible(false);
     syncHistoToggleUI();
-    if (state.ui.showHistogram && state.hasImage) {
-      // Refresh from last process on next render
-      scheduleRender(false);
-      showToast('Histogram on', 800);
-    } else {
-      setHistoVisible(false);
-      showToast('Histogram off', 800);
-    }
   }
 
   function render(fast) {
