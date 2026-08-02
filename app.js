@@ -390,12 +390,15 @@
     }
   }
 
-  /** Hero boot / return — Iris finds focus */
+  /** Hero boot: layout settles first, then body.hero-ready reveals by beat */
   function playHeroEnter() {
-    document.body.classList.remove('is-entering', 'is-exiting');
-    document.body.classList.remove('hero-ready');
-    void document.body.offsetWidth;
-    document.body.classList.add('hero-ready');
+    document.body.classList.remove('is-entering', 'is-exiting', 'hero-ready');
+    // Double rAF so flex geometry is painted before opacity reveals fire
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.body.classList.add('hero-ready');
+      });
+    });
   }
 
   /**

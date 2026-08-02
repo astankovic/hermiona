@@ -21,7 +21,7 @@
         if (p.has("fresh") || p.get("nocache") === "1") return String(Date.now());
         if (p.get("v")) return p.get("v");
       } catch (e) {}
-      return "202608020920"; // ← bump this when you push JS/CSS changes
+      return "202608020950"; // ← bump this when you push JS/CSS changes
     })();
     document.write(
       '<link rel="stylesheet" href="styles.css?v=' +
@@ -85,47 +85,39 @@
     <main class="stage" id="stage">
       <div class="canvas-area" id="canvasArea">
         <div class="drop-overlay" id="dropOverlay">
+          <!--
+            Layout is fully reserved first (all nodes take final space).
+            body.hero-ready then reveals by beat — not a top-to-bottom stack.
+            Beats: iris → wordmark → title → sub → cta → foot
+          -->
           <div class="drop-content">
-            <!-- Single brand moment (topbar stays quiet on idle) -->
             <div class="drop-mark" aria-hidden="true">
-              <!-- Iris: ring draws closed · diamond flips open · pupil finds focus -->
-              <svg class="drop-iris" width="72" height="72" viewBox="0 0 64 64" fill="none">
-                <!-- soft ambient orbit -->
-                <circle class="iris-orbit" cx="32" cy="32" r="26" />
-                <!-- outer ring draws shut like a lens barrel -->
-                <circle class="iris-ring" cx="32" cy="32" r="22.5" />
-                <!-- diamond: scale + 90° flip (film gate / crystal) -->
-                <g class="iris-diamond-g">
-                  <path
-                    class="iris-diamond"
-                    d="M32 14.5 L49.5 32 L32 49.5 L14.5 32 Z"
-                  />
-                </g>
-                <!-- second diamond, counter-rotated ghost -->
-                <g class="iris-diamond-ghost-g">
-                  <path
-                    class="iris-diamond-ghost"
-                    d="M32 14.5 L49.5 32 L32 49.5 L14.5 32 Z"
-                  />
-                </g>
-                <!-- pupil / focus point -->
-                <circle class="iris-pupil" cx="32" cy="32" r="2.2" />
-                <!-- accent spark -->
-                <circle class="iris-spark" cx="40" cy="24" r="1" />
-              </svg>
-              <p class="drop-wordmark">
-                <span class="wm-letter">H</span><span class="wm-letter">E</span><span class="wm-letter">R</span><span class="wm-letter">M</span><span class="wm-letter">I</span><span class="wm-letter">O</span><span class="wm-letter">N</span><span class="wm-letter">A</span>
-              </p>
+              <div class="hero-slot hero-slot--iris" data-hero="iris">
+                <svg class="drop-iris" width="72" height="72" viewBox="0 0 64 64" fill="none">
+                  <circle class="iris-orbit" cx="32" cy="32" r="26" />
+                  <circle class="iris-ring" cx="32" cy="32" r="22.5" />
+                  <g class="iris-diamond-g">
+                    <path class="iris-diamond" d="M32 14.5 L49.5 32 L32 49.5 L14.5 32 Z" />
+                  </g>
+                  <g class="iris-diamond-ghost-g">
+                    <path class="iris-diamond-ghost" d="M32 14.5 L49.5 32 L32 49.5 L14.5 32 Z" />
+                  </g>
+                  <circle class="iris-pupil" cx="32" cy="32" r="2.2" />
+                  <circle class="iris-spark" cx="40" cy="24" r="1" />
+                </svg>
+              </div>
+              <p class="drop-wordmark hero-slot hero-slot--word" data-hero="word">HERMIONA</p>
             </div>
 
             <div class="drop-invite">
-              <p class="drop-title">Add a photo</p>
-              <p class="drop-sub">Tap or drop · stays on this device</p>
-              <button type="button" class="btn-pill" id="btnUpload">Upload</button>
+              <p class="drop-title hero-slot hero-slot--title" data-hero="title">Add a photo</p>
+              <p class="drop-sub hero-slot hero-slot--sub" data-hero="sub">Tap or drop · stays on this device</p>
+              <div class="hero-slot hero-slot--cta" data-hero="cta">
+                <button type="button" class="btn-pill" id="btnUpload">Upload</button>
+              </div>
             </div>
 
-            <!-- Session restore (IndexedDB draft) -->
-            <div class="draft-resume" id="draftResume" hidden>
+            <div class="draft-resume hero-slot hero-slot--draft" id="draftResume" data-hero="draft" hidden>
               <p class="draft-resume-title">Continue last edit?</p>
               <p class="draft-resume-sub" id="draftResumeSub">Saved on this device</p>
               <div class="draft-resume-actions">
@@ -134,7 +126,7 @@
               </div>
             </div>
 
-            <p class="fine-print"><a href="privacy.html">Privacy</a></p>
+            <p class="fine-print hero-slot hero-slot--foot" data-hero="foot"><a href="privacy.html">Privacy</a></p>
           </div>
         </div>
 
@@ -523,6 +515,7 @@
         "js/scene/dof.js",
         "js/scene/selective.js",
         "js/scene/analyze.js",
+        "js/gpu/grade.js",
         "js/engine.js",
         "js/export.js",
         "app.js",

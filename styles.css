@@ -606,23 +606,51 @@ body.layout-side.is-entering #mainCanvas.visible {
   filter: blur(10px);
 }
 
+/*
+ * Hero composition — fixed vertical rhythm (final layout always reserved).
+ *   iris 72 + gap 18 + word ~14  → brand block
+ *   + 40 gap
+ *   title 20 + 8 + sub ~18 + 28 + cta 40  → invite
+ *   + 28 gap
+ *   privacy ~14
+ * Reveal only fades/scales in place — never translateY stack.
+ */
 .drop-content {
+  --hero-gap-brand: 18px;
+  --hero-gap-block: 40px;
+  --hero-gap-invite: 8px;
+  --hero-gap-cta: 28px;
+  --hero-gap-foot: 28px;
   text-align: center;
   padding: 32px 28px;
   max-width: 300px;
+  width: min(100%, 300px);
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  /* Hold composition centered; no reflow when opacity toggles */
+  min-height: min(62vh, 440px);
 }
 
-/* Iris + wordmark as one mark */
+/* Iris + wordmark as one brand block (always occupies space) */
 .drop-mark {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
-  margin-bottom: 36px;
+  gap: var(--hero-gap-brand);
+  margin: 0 0 var(--hero-gap-block);
   color: var(--brand-ink);
+  flex-shrink: 0;
+}
+
+.hero-slot--iris {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .drop-iris {
@@ -857,7 +885,7 @@ body.layout-side.is-entering #mainCanvas.visible {
   }
 }
 
-/* Pause when hero is gone (editing) */
+/* Pause iris loops when editing or before layout reveal */
 .drop-overlay.hidden .drop-iris .iris-orbit,
 .drop-overlay.hidden .drop-iris .iris-ring,
 .drop-overlay.hidden .drop-iris .iris-diamond-g,
@@ -865,13 +893,17 @@ body.layout-side.is-entering #mainCanvas.visible {
 .drop-overlay.hidden .drop-iris .iris-diamond-ghost-g,
 .drop-overlay.hidden .drop-iris .iris-pupil,
 .drop-overlay.hidden .drop-iris .iris-spark,
-.drop-overlay.hidden .drop-wordmark .wm-letter {
+body:not(.hero-ready) .drop-iris .iris-orbit,
+body:not(.hero-ready) .drop-iris .iris-ring,
+body:not(.hero-ready) .drop-iris .iris-diamond-g,
+body:not(.hero-ready) .drop-iris .iris-diamond,
+body:not(.hero-ready) .drop-iris .iris-diamond-ghost-g,
+body:not(.hero-ready) .drop-iris .iris-pupil,
+body:not(.hero-ready) .drop-iris .iris-spark {
   animation-play-state: paused;
 }
 
 .drop-wordmark {
-  display: flex;
-  justify-content: center;
   font-size: 12px;
   font-weight: 300;
   letter-spacing: 0.48em;
@@ -879,43 +911,9 @@ body.layout-side.is-entering #mainCanvas.visible {
   margin: 0;
   padding-right: 0.32em;
   line-height: 1;
-  opacity: 0.9;
-}
-
-.drop-wordmark .wm-letter {
-  display: inline-block;
-  letter-spacing: 0.48em;
-  animation: wmLetterIn 0.55s var(--ease-cinematic) both;
-}
-
-.drop-wordmark .wm-letter:nth-child(1) { animation-delay: 0.35s; }
-.drop-wordmark .wm-letter:nth-child(2) { animation-delay: 0.4s; }
-.drop-wordmark .wm-letter:nth-child(3) { animation-delay: 0.45s; }
-.drop-wordmark .wm-letter:nth-child(4) { animation-delay: 0.5s; }
-.drop-wordmark .wm-letter:nth-child(5) { animation-delay: 0.55s; }
-.drop-wordmark .wm-letter:nth-child(6) { animation-delay: 0.6s; }
-.drop-wordmark .wm-letter:nth-child(7) { animation-delay: 0.65s; }
-.drop-wordmark .wm-letter:nth-child(8) { animation-delay: 0.7s; }
-
-@keyframes wmLetterIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Only stagger letters once hero is ready */
-body:not(.hero-ready) .drop-wordmark .wm-letter {
-  animation: none;
-  opacity: 0;
-}
-
-body.hero-ready .drop-wordmark .wm-letter {
-  animation-name: wmLetterIn;
+  min-height: 1em;
+  /* Reserve full word width so letters never reflow the block */
+  white-space: nowrap;
 }
 
 .drop-invite {
@@ -923,24 +921,36 @@ body.hero-ready .drop-wordmark .wm-letter {
   flex-direction: column;
   align-items: center;
   width: 100%;
+  gap: 0;
+  flex-shrink: 0;
 }
 
 .drop-title {
   font-size: 20px;
   font-weight: 500;
   letter-spacing: -0.03em;
-  margin: 0 0 8px;
+  margin: 0 0 var(--hero-gap-invite);
   color: var(--text);
+  line-height: 1.25;
+  min-height: 1.25em;
 }
 
 .drop-sub {
   font-size: 13px;
   font-weight: 400;
   color: var(--text-secondary);
-  margin: 0 0 28px;
+  margin: 0 0 var(--hero-gap-cta);
   letter-spacing: -0.01em;
   line-height: 1.35;
   max-width: 22em;
+  min-height: calc(1.35em * 1);
+}
+
+.hero-slot--cta {
+  display: flex;
+  justify-content: center;
+  min-height: 40px;
+  width: 100%;
 }
 
 .drop-invite .btn-pill {
@@ -953,10 +963,61 @@ body.hero-ready .drop-wordmark .wm-letter {
 }
 
 .fine-print {
-  margin-top: 28px;
+  margin: var(--hero-gap-foot) 0 0;
   font-size: 11px;
   color: var(--text-tertiary);
   letter-spacing: 0.02em;
+  min-height: 1.2em;
+  flex-shrink: 0;
+}
+
+/* —— Hero reveal orchestration ——
+   1) Layout paints with all slots reserved
+   2) body.hero-ready → fade/scale in place by beat (no vertical stack) */
+.hero-slot {
+  /* Final geometry always on; only visibility animates */
+  opacity: 0;
+  transform: scale(0.985);
+  transform-origin: center center;
+  will-change: opacity, transform;
+  pointer-events: none;
+}
+
+body.hero-ready .hero-slot {
+  animation: heroRevealIn 0.55s var(--ease-cinematic) both;
+  pointer-events: auto;
+}
+
+/* Beat table (ms after hero-ready) — composition order, not page order */
+body.hero-ready .hero-slot--iris  { animation-delay: 0.06s; }  /* center first */
+body.hero-ready .hero-slot--word  { animation-delay: 0.48s; }  /* after iris settles */
+body.hero-ready .hero-slot--title { animation-delay: 0.72s; }  /* invite headline */
+body.hero-ready .hero-slot--sub   { animation-delay: 0.88s; }  /* support line */
+body.hero-ready .hero-slot--cta   { animation-delay: 1.06s; }  /* primary action */
+body.hero-ready .hero-slot--draft { animation-delay: 1.14s; }  /* optional resume */
+body.hero-ready .hero-slot--foot  { animation-delay: 1.28s; }  /* quiet legal last */
+
+@keyframes heroRevealIn {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Draft may be [hidden] — keep slot rules from fighting display:none */
+.draft-resume.hero-slot[hidden] {
+  display: none !important;
+  animation: none !important;
+}
+
+.draft-resume.hero-slot:not([hidden]) {
+  /* restore normal draft block layout when shown */
+  width: 100%;
+  max-width: 280px;
 }
 
 .fine-print a {
@@ -980,7 +1041,7 @@ body.hero-ready .drop-wordmark .wm-letter {
 
 /* Session draft resume */
 .draft-resume {
-  margin: 22px auto 0;
+  margin: 0 auto;
   max-width: 280px;
   padding: 14px 16px;
   border-radius: 14px;
@@ -3138,29 +3199,10 @@ body.layout-compact .zoom-btn.zoom-label {
   to { transform: rotate(360deg); }
 }
 
-/* Hero boot — Iris finds focus */
-@keyframes heroMarkIn {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.94);
-    filter: blur(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
-}
-
+/* legacy names kept for busy-card etc. */
 @keyframes heroInviteIn {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes heroPrintIn {
@@ -3306,22 +3348,7 @@ body.layout-compact .zoom-btn.zoom-label {
   }
 }
 
-/* —— Hero ready (boot / return) —— */
-body.hero-ready .drop-mark {
-  animation: heroMarkIn 0.75s var(--ease-cinematic) both;
-}
-
-body.hero-ready .drop-invite {
-  animation: heroInviteIn 0.6s 0.12s var(--ease-cinematic) both;
-}
-
-body.hero-ready .fine-print {
-  animation: heroPrintIn 0.5s 0.32s var(--ease-soft) both;
-}
-
-body.hero-ready .draft-resume:not([hidden]) {
-  animation: heroInviteIn 0.5s 0.2s var(--ease-cinematic) both;
-}
+/* Hero entrance is owned by .hero-slot + body.hero-ready (see drop-content block) */
 
 /* —— Enter editor —— */
 /* No fill-mode "both/forwards" on dock — avoids sticky transform floating the menu */
@@ -3534,10 +3561,12 @@ body:not(.layout-side).has-image .topbar {
     opacity: 0 !important;
   }
 
-  body:not(.hero-ready) .drop-wordmark .wm-letter,
-  body.hero-ready .drop-wordmark .wm-letter {
+  /* Instant hero — full composition, no staggered beats */
+  .hero-slot {
     opacity: 1 !important;
     transform: none !important;
+    animation: none !important;
+    pointer-events: auto !important;
   }
 }
 
