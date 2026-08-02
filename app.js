@@ -433,21 +433,36 @@
       dock.style.transform = '';
       dock.style.opacity = '';
     }
-    // Fresh edit session always starts with full chrome (not rail/immersive)
+    // Mobile: photo-first — start in immersive (chrome hidden). Tap photo or a tool to work.
+    // Desktop side: always full chrome.
     if (typeof cropSession !== 'undefined') {
       cropSession.open = false;
       cropSession.committing = false;
     }
     if (typeof setChromeMode === 'function') {
-      chromeState.mode = 'full';
-      chromeState.beforeImmersive = 'full';
       chromeState.sheetOpen = false;
+      const overlay =
+        typeof isOverlayChrome === 'function'
+          ? isOverlayChrome()
+          : !document.body.classList.contains('layout-side');
+      if (overlay) {
+        // Restore target after enter anim: rail is the editing home; immersive is pure photo
+        chromeState.mode = 'immersive';
+        chromeState.beforeImmersive = 'rail';
+      } else {
+        chromeState.mode = 'full';
+        chromeState.beforeImmersive = 'full';
+      }
       applyChromeUI();
     } else if (typeof setImmersive === 'function') {
       setImmersive(false);
     }
     if (typeof syncToolChrome === 'function') syncToolChrome();
     canvas.classList.add('visible');
+    // Refit after chrome mode so photo uses full viewport under glass
+    requestAnimationFrame(() => {
+      if (typeof layoutViewport === 'function') layoutViewport();
+    });
 
     if (prefersReducedMotion()) {
       document.body.classList.remove('is-entering');
@@ -1313,7 +1328,15 @@
   function layoutViewport() {
     if (!state.hasImage || !state.workingCanvas || !canvasArea) return;
     const area = canvasArea.getBoundingClientRect();
-    const pad = state.crop.active ? 12 : 8;
+    // Mobile overlay: edge-to-edge photo (chrome floats over it). Crop keeps a little pad for handles.
+    const overlay =
+      typeof isOverlayChrome === 'function'
+        ? isOverlayChrome()
+        : !document.body.classList.contains('layout-side');
+    const immersive = document.body.classList.contains('ui-immersive');
+    let pad = 8;
+    if (state.crop.active) pad = 14;
+    else if (overlay) pad = immersive ? 0 : 0; // full-bleed under glass chrome
     const availW = Math.max(40, area.width - pad * 2);
     const availH = Math.max(40, area.height - pad * 2);
     const iw = state.workingCanvas.width;
@@ -3713,12 +3736,15 @@
       }
     }
 
-    // Selecting a tool always reveals full chrome (never stay immersive in a tool)
-    if (typeof revealChromeForTool === 'function') {
-      revealChromeForTool(tool);
-    } else if (typeof setChromeHidden === 'function' && isOverlayChrome && isOverlayChrome()) {
-      setChromeHidden(false);
-      if (typeof setImmersive === 'function') setImmersive(false);
+    // User-driven tool change leaves pure immersive and shows the tool surface.
+    // Initial setTool on load keeps photo-first immersive (toolChanged === false).
+    if (toolChanged) {
+      if (typeof revealChromeForTool === 'function') {
+        revealChromeForTool(tool);
+      } else if (typeof setChromeHidden === 'function' && isOverlayChrome && isOverlayChrome()) {
+        setChromeHidden(false);
+        if (typeof setImmersive === 'function') setImmersive(false);
+      }
     }
 
     const isAdj = tool === 'adjust' || tool === 'portrait' || tool === 'age';
@@ -4859,6 +4885,8 @@
 
     document.body.classList.toggle('ui-immersive', mode === 'immersive');
     document.body.classList.toggle('chrome-hidden', mode === 'rail');
+    // Photo-first shell marker (glass chrome, full-bleed fit)
+    document.body.classList.toggle('ui-photo-first', overlay);
 
     const bodyEl = document.getElementById('dockBody');
     if (bodyEl) {
@@ -4875,11 +4903,17 @@
         panelsOpen ? 'Hide tool panels' : 'Show tool panels'
       );
       handle.setAttribute('title', panelsOpen ? 'Hide panels' : 'Show panels');
+      // Immersive: handle is off-screen with dock — keep a11y quiet
+      handle.tabIndex = mode === 'immersive' ? -1 : 0;
     }
 
     if (state.view.zoom > 1.02) clampPan();
     applyViewTransform();
     if (state.crop && state.crop.active) updateCropOverlay();
+    // Refit photo to full viewport whenever chrome mode changes
+    requestAnimationFrame(() => {
+      layoutViewport();
+    });
   }
 
   /** Set chrome mode. Invalid / guarded transitions no-op or fall back. */
@@ -4955,13 +4989,13 @@
   }
 
   /**
-   * Entering a tool always exits immersive and shows panels.
-   * Crop/border force full chrome (handles + controls need space).
+   * Entering a tool exits pure immersive and shows the tool surface.
+   * beforeImmersive stays 'rail' so tap-to-hide returns to photo-first rail.
    */
   function revealChromeForTool(_tool) {
     if (!isOverlayChrome() || !state.hasImage) return;
     chromeState.mode = 'full';
-    chromeState.beforeImmersive = 'full';
+    chromeState.beforeImmersive = 'rail';
     applyChromeUI();
   }
 

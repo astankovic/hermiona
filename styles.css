@@ -270,6 +270,10 @@ body:not(.layout-side) .stage {
   height: 100%;
 }
 
+/*
+ * Photo-first mobile dock — translucent glass OVER the photo (iPhone Photos).
+ * Photo is always full-bleed in the stage; chrome never steals layout rows.
+ */
 body:not(.layout-side) .dock {
   grid-area: workspace;
   align-self: end;
@@ -279,39 +283,55 @@ body:not(.layout-side) .dock {
   flex: none;
   /* Natural stack: handle → panels → rail (rail always last / bottom) */
   justify-content: flex-start;
-  border-radius: 16px 16px 0 0;
-  box-shadow:
-    0 -8px 32px rgba(0, 0, 0, 0.5),
-    0 -1px 0 rgba(255, 255, 255, 0.06);
-  background: rgba(12, 12, 14, 0.92);
+  border-radius: 18px 18px 0 0;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.28);
+  /* See the photo through controls */
+  background: rgba(8, 8, 10, 0.52);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
   /* Cap relative to visible viewport (not layout viewport / address bar) */
   max-height: min(58dvh, calc(var(--vvh, 100dvh) * 0.58), 480px);
   overflow: hidden;
   transform: none;
   padding-bottom: max(var(--safe-bottom), 10px);
   transition:
+    transform 0.34s var(--ease-cinematic),
+    opacity 0.3s ease,
     box-shadow 0.28s var(--ease-out),
-    background 0.28s ease;
+    background 0.28s ease,
+    max-height 0.38s var(--ease-cinematic);
   touch-action: pan-y;
 }
 
-/* Full-bleed photo — no padding that depends on dock height */
+/* Full-bleed photo — chrome floats on top; never pad for dock height */
 body:not(.layout-side) .canvas-area {
   padding: 0;
   position: absolute;
   inset: 0;
+  background: #000;
 }
 
 body:not(.layout-side) .stage {
   position: relative;
+  background: #000;
 }
 
-/* Chrome collapsed: panels gone, handle + tool rail stay flush to bottom */
+body:not(.layout-side) .canvas-wrap,
+body:not(.layout-side) #mainCanvas {
+  /* Keep GPU layer for smooth immersive transitions */
+  will-change: transform;
+}
+
+/* Rail-only: thinner glass strip — photo dominates */
 body.chrome-hidden:not(.layout-side) .dock {
   transform: none;
-  background: rgba(12, 12, 14, 0.88);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+  background: rgba(8, 8, 10, 0.42);
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.25);
   max-height: none;
+  border-radius: 16px 16px 0 0;
 }
 
 /* JS also sets dockBody.hidden — display:none is the reliable collapse on iOS */
@@ -350,28 +370,22 @@ body:not(.layout-side) .zoom-hud {
 }
 
 /*
- * Full immersive (tap photo): ALL chrome slides away — topbar up, dock down.
- * Tap again / Escape restores. Only on overlay (mobile) layout.
+ * Full immersive: ONLY the photo. Topbar up, dock down, HUDs off.
+ * Tap photo again → rail (tools). Pick a tool → glass surface.
  */
 body:not(.layout-side) .dock {
   will-change: transform;
-  transition:
-    transform 0.34s var(--ease-cinematic),
-    max-height 0.38s var(--ease-cinematic),
-    box-shadow 0.32s var(--ease-out),
-    background 0.32s ease,
-    opacity 0.3s ease;
 }
 
 body.ui-immersive:not(.layout-side) .topbar {
-  transform: translate3d(0, calc(-100% - var(--safe-top)), 0);
+  transform: translate3d(0, calc(-100% - var(--safe-top) - 8px), 0);
   opacity: 0;
   pointer-events: none;
 }
 
-/* Rail-only: hide topbar so photo + tool menu breathe (iPhone intermediate view) */
+/* Rail-only: hide topbar so photo + tool menu breathe */
 body.chrome-hidden:not(.layout-side):not(.ui-immersive):not(.tool-session-crop) .topbar {
-  transform: translate3d(0, calc(-100% - var(--safe-top)), 0);
+  transform: translate3d(0, calc(-100% - var(--safe-top) - 8px), 0);
   opacity: 0;
   pointer-events: none;
 }
@@ -384,7 +398,7 @@ body.tool-session-crop:not(.layout-side).chrome-hidden .topbar {
 }
 
 body.ui-immersive:not(.layout-side) .dock {
-  transform: translate3d(0, 110%, 0);
+  transform: translate3d(0, calc(100% + 28px), 0);
   opacity: 0;
   pointer-events: none;
 }
@@ -395,6 +409,10 @@ body.ui-immersive:not(.layout-side) .look-chip,
 body.ui-immersive:not(.layout-side) .compare-hint {
   opacity: 0;
   pointer-events: none;
+}
+
+body.ui-immersive:not(.layout-side) .topbar .tb-cluster {
+  opacity: 0;
 }
 
 /* Crop session: Cancel · Crop · Done (replaces undo/export clusters) */
@@ -1976,12 +1994,10 @@ body:not(.layout-side) .tool-rail .tool-btn svg {
   height: 20px;
 }
 
-/* Slightly stronger glass when expanded over the photo */
+/* Expanded tool surface — still glass, photo remains visible through it */
 body:not(.layout-side) .dock.dock-tall {
-  background: rgba(10, 10, 12, 0.9);
-  box-shadow:
-    0 -16px 48px rgba(0, 0, 0, 0.55),
-    0 -1px 0 rgba(255, 255, 255, 0.07);
+  background: rgba(8, 8, 10, 0.62);
+  box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.32);
 }
 
 /* Border tool panel */
@@ -3933,8 +3949,9 @@ body.layout-compact .zoom-btn.zoom-label {
 /* Hero entrance is owned by .hero-slot + body.hero-ready (see drop-content block) */
 
 /* —— Enter editor —— */
-/* No fill-mode "both/forwards" on dock — avoids sticky transform floating the menu */
-body.is-entering:not(.layout-side) .dock:not([hidden]) {
+/* No fill-mode "both/forwards" on dock — avoids sticky transform floating the menu.
+   Skip dock rise when photo-first immersive (chrome stays off-screen). */
+body.is-entering:not(.layout-side):not(.ui-immersive) .dock:not([hidden]) {
   animation: dockRise 0.7s var(--ease-cinematic);
 }
 
@@ -3952,16 +3969,16 @@ body.is-exiting .dock {
     opacity 0.35s var(--ease-soft) !important;
 }
 
-body.is-entering .topbar-left,
-body.is-entering .topbar-right {
+body.is-entering:not(.ui-immersive) .topbar-left,
+body.is-entering:not(.ui-immersive) .topbar-right {
   animation: chromeIn 0.5s var(--ease-cinematic) both;
 }
 
-body.is-entering .topbar-left {
+body.is-entering:not(.ui-immersive) .topbar-left {
   animation-delay: 0.1s;
 }
 
-body.is-entering .topbar-right {
+body.is-entering:not(.ui-immersive) .topbar-right {
   animation-delay: 0.16s;
 }
 
@@ -3969,8 +3986,16 @@ body.is-entering.layout-side .topbar {
   animation: chromeIn 0.45s var(--ease-cinematic) both;
 }
 
-body.is-entering .tool-btn {
+body.is-entering:not(.ui-immersive) .tool-btn {
   animation: railBtnIn 0.42s var(--ease-cinematic) both;
+}
+
+/* Photo-first: only the image settles in */
+body.is-entering.ui-immersive .dock,
+body.is-entering.ui-immersive .topbar-left,
+body.is-entering.ui-immersive .topbar-right,
+body.is-entering.ui-immersive .tool-btn {
+  animation: none !important;
 }
 
 body.is-entering .tool-btn:nth-child(1) { animation-delay: 0.22s; }
