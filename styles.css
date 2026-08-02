@@ -413,37 +413,115 @@ body:not(.layout-side) .tool-btn.has-edits::after {
   background: var(--accent);
 }
 
-/* —— Submenu card: FIXED height shell above rail (same for every tool) —— */
+/* —— Submenu: full-bleed glass strip (transparent, edge-to-edge rows) —— */
 body:not(.layout-side) .dock-body {
   position: fixed !important;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: var(--photos-panel-bottom);
-  transform: translateX(-50%);
+  transform: none;
   z-index: 55;
-  width: min(340px, calc(100% - (var(--photos-side) * 2)));
-  max-width: min(340px, calc(100% - (var(--photos-side) * 2)));
+  width: 100%;
+  max-width: none;
   height: var(--photos-panel-h) !important;
   min-height: var(--photos-panel-h) !important;
   max-height: var(--photos-panel-h) !important;
   margin: 0 !important;
-  padding: 8px 12px 6px !important;
-  border-radius: 22px;
-  border: 0.5px solid rgba(255, 255, 255, 0.14);
-  background: rgba(18, 18, 20, 0.52);
-  backdrop-filter: blur(40px) saturate(210%);
-  -webkit-backdrop-filter: blur(40px) saturate(210%);
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.42),
-    inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
+  /* Side padding only for non-scrolling blocks; filmstrips bleed full width */
+  padding: 10px 0 8px !important;
+  border-radius: 0;
+  border: none;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(0, 0, 0, 0.28) 45%,
+    rgba(0, 0, 0, 0.1) 78%,
+    transparent 100%
+  );
+  backdrop-filter: blur(36px) saturate(190%);
+  -webkit-backdrop-filter: blur(36px) saturate(190%);
+  box-shadow: none;
   overflow-x: hidden;
   overflow-y: hidden; /* no vertical scroll — content is designed to fit */
   -webkit-overflow-scrolling: auto;
   display: flex !important;
   flex-direction: column !important;
   justify-content: center;
-  gap: 2px;
+  gap: 4px;
   flex: none !important;
   transition: opacity 0.28s ease, transform 0.34s var(--ease-cinematic);
+}
+
+/*
+ * Infinite-strip fade: horizontal option rows go edge → edge.
+ * Content can scroll under the soft mask so the list feels endless.
+ */
+body:not(.layout-side) .h-fade,
+body:not(.layout-side) .chips-scroll,
+body:not(.layout-side) .preset-scroll,
+body:not(.layout-side) .look-scroll,
+body:not(.layout-side) .ratio-scroll,
+body:not(.layout-side) .frame-scroll,
+body:not(.layout-side) .focal-scroll,
+body:not(.layout-side) .bokeh-scroll,
+body:not(.layout-side) .preset-cats {
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 22px,
+    #000 calc(100% - 22px),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 22px,
+    #000 calc(100% - 22px),
+    transparent 100%
+  );
+}
+
+/* Inset first/last items so they rest under the soft edge fade */
+body:not(.layout-side) {
+  --photos-edge: max(16px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  --photos-edge-x: max(16px, env(safe-area-inset-left, 0px));
+  --photos-edge-r: max(16px, env(safe-area-inset-right, 0px));
+}
+
+body:not(.layout-side) .chips,
+body:not(.layout-side) .preset-scroll,
+body:not(.layout-side) .look-scroll,
+body:not(.layout-side) .ratio-scroll,
+body:not(.layout-side) .frame-scroll,
+body:not(.layout-side) .focal-scroll,
+body:not(.layout-side) .bokeh-scroll,
+body:not(.layout-side) .preset-cats {
+  padding-left: var(--photos-edge-x) !important;
+  padding-right: var(--photos-edge-r) !important;
+}
+
+/* Dial / meta / compact rows keep readable side inset */
+body:not(.layout-side) .dial-row,
+body:not(.layout-side) .look-intensity.dial-row,
+body:not(.layout-side) #panelBorder .border-framing,
+body:not(.layout-side) .looks-source-seg {
+  padding-left: max(18px, env(safe-area-inset-left, 0px)) !important;
+  padding-right: max(18px, env(safe-area-inset-right, 0px)) !important;
+}
+
+body:not(.layout-side) #panelBorder .slider-line {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+body:not(.layout-side) #panelCrop .crop-tools {
+  padding-left: max(14px, env(safe-area-inset-left, 0px));
+  padding-right: max(14px, env(safe-area-inset-right, 0px));
+}
+
+body:not(.layout-side) #panelPortrait {
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
 }
 
 /* Kill per-tool height variants — they caused the jump */
@@ -494,8 +572,16 @@ body.ui-immersive:not(.layout-side) .enhance-bar {
   opacity: 0 !important;
   pointer-events: none !important;
   visibility: hidden !important;
-  /* Keep translateX(-50%) so un-hide does not jump horizontally */
+}
+
+/* Rail stays centered; submenu is full-bleed so no X-shift on hide */
+body.ui-immersive:not(.layout-side) .tool-rail,
+body.ui-immersive:not(.layout-side) .enhance-bar {
   transform: translateX(-50%) !important;
+}
+
+body.ui-immersive:not(.layout-side) .dock-body {
+  transform: none !important;
 }
 
 body.chrome-hidden:not(.layout-side) .zoom-hud,
@@ -626,7 +712,7 @@ body:not(.layout-side).tool-session-crop .crop-apply-row {
 }
 
 /* Crop / portrait panel structure (heights live with dock-body rules below) */
-body:not(.layout-side) #panelCrop {
+body:not(.layout-side) .dock[data-tool="crop"] #panelCrop {
   padding: 0;
   overflow: hidden;
   flex: 0 0 auto;
@@ -677,7 +763,7 @@ body:not(.layout-side) #panelCrop .ratio-chip {
   background: rgba(255, 255, 255, 0.08);
 }
 
-body:not(.layout-side) #panelPortrait {
+body:not(.layout-side) .dock[data-tool="portrait"] #panelPortrait {
   padding: 0;
   max-height: none;
   overflow: visible;
@@ -1939,156 +2025,216 @@ body:not(.layout-side) .bokeh-scroll {
 
 /* Mobile dock-body / rail sizes live in the Photos floating-island block above */
 
-/* ========== Filters — Photos filmstrip (fits fixed shell, no V-scroll) ========== */
-body:not(.layout-side) .dock[data-tool="looks"] .subpanel {
+/* Hidden subpanels must stay gone (beat per-tool display:flex rules) */
+body:not(.layout-side) .subpanel[hidden],
+body:not(.layout-side) .subpanel-compact[hidden],
+body:not(.layout-side) #panelLooks[hidden],
+body:not(.layout-side) #panelCrop[hidden],
+body:not(.layout-side) #panelPortrait[hidden],
+body:not(.layout-side) #panelBorder[hidden] {
+  display: none !important;
+}
+
+/* ========== Filters — Strength dial top · filmstrip · tiny source tabs ========== */
+body:not(.layout-side) .dock[data-tool="looks"] #panelLooks {
   max-height: none;
-  overflow: visible;
+  overflow: hidden;
   padding: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
   flex: 1 1 auto;
   min-height: 0;
+  height: 100%;
+  width: 100%;
+  justify-content: flex-start;
+  box-sizing: border-box;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .preset-hint {
   display: none;
 }
 
-body:not(.layout-side) .dock[data-tool="looks"] .subpanel-seg {
+/* Strength — same dial language as Adjust (pinned top) */
+body:not(.layout-side) .dock[data-tool="looks"] .look-intensity {
+  flex: 0 0 auto;
   margin: 0;
-  padding: 2px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.08);
-  flex-shrink: 0;
+  gap: 0;
+  order: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-body:not(.layout-side) .dock[data-tool="looks"] .seg-btn {
-  min-width: 0;
-  height: 28px;
-  font-size: 12px;
-  font-weight: 560;
-  padding: 0 6px;
-  border-radius: 8px;
+body:not(.layout-side) .dock[data-tool="looks"] .look-intensity[hidden] {
+  display: none !important;
 }
 
-body:not(.layout-side) .dock[data-tool="looks"] .seg-btn.active {
-  background: rgba(255, 255, 255, 0.16);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+body:not(.layout-side) .dock[data-tool="looks"] .look-intensity .dial-value {
+  font-size: 17px;
 }
 
-/* Save look is secondary on phone — hide to free filmstrip height */
+body:not(.layout-side) .dock[data-tool="looks"] .look-intensity .dial-name {
+  font-size: 10.5px;
+}
+
+body:not(.layout-side) .dock[data-tool="looks"] .look-intensity .dial-track-wrap {
+  height: 26px;
+}
+
+body:not(.layout-side) .dock[data-tool="looks"] .look-intensity .ios-dial {
+  height: 26px;
+}
+
+body:not(.layout-side) .dock[data-tool="looks"] .look-intensity .dial-ticks {
+  height: 20px;
+  margin-top: -10px;
+}
+
+body:not(.layout-side) .dock[data-tool="looks"] .look-intensity .ios-dial::-webkit-slider-thumb {
+  height: 22px;
+}
+
+/* Save look is secondary on phone */
 body:not(.layout-side) .dock[data-tool="looks"] .user-looks-bar {
   display: none;
 }
 
+/* Middle band: categories + swatches */
 body:not(.layout-side) .dock[data-tool="looks"] .presets-pane {
   gap: 6px;
-  min-height: 0;
+  min-height: 52px;
   flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  order: 1;
+  overflow: visible;
+  width: 100%;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .preset-cats {
-  padding: 0;
   margin: 0;
   gap: 6px;
-  mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 20px), transparent 100%);
-  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 20px), transparent 100%);
+  flex: 0 0 auto;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .preset-cat {
-  height: 26px;
+  height: 24px;
   padding: 0 11px;
   font-size: 11px;
   font-weight: 550;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .preset-scroll,
 body:not(.layout-side) .dock[data-tool="looks"] .look-scroll {
   min-height: 0;
-  gap: 10px;
-  padding: 2px 0 0;
+  gap: 12px;
+  padding-top: 0;
+  padding-bottom: 0;
+  flex: 0 0 auto;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  order: 1;
+}
+
+/* Film / Camera / Lens strips sit in the same middle band */
+body:not(.layout-side) .dock[data-tool="looks"] .look-scroll {
   flex: 1 1 auto;
-  align-items: flex-start;
+  display: flex;
+  align-items: center;
 }
 
-body:not(.layout-side) .dock[data-tool="looks"] .preset-card {
-  width: 56px;
+body:not(.layout-side) .dock[data-tool="looks"] .look-scroll[hidden] {
+  display: none !important;
 }
 
-body:not(.layout-side) .dock[data-tool="looks"] .preset-swatch {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  margin-bottom: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
-}
-
-body:not(.layout-side) .dock[data-tool="looks"] .preset-card-name {
-  max-width: 56px;
-  font-size: 10px;
-  font-weight: 500;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.72);
-}
-
-body:not(.layout-side) .dock[data-tool="looks"] .preset-card.active .preset-card-name,
-body:not(.layout-side) .dock[data-tool="looks"] .look-card.active .look-card-name {
-  color: #fff;
-  font-weight: 600;
-}
-
-body:not(.layout-side) .dock[data-tool="looks"] .preset-card-recipe {
-  display: none;
-}
-
+body:not(.layout-side) .dock[data-tool="looks"] .preset-card,
 body:not(.layout-side) .dock[data-tool="looks"] .look-card {
   width: 56px;
 }
 
+body:not(.layout-side) .dock[data-tool="looks"] .preset-swatch,
 body:not(.layout-side) .dock[data-tool="looks"] .look-swatch {
   width: 56px;
   height: 56px;
   border-radius: 12px;
-  margin-bottom: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  margin-bottom: 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
-body:not(.layout-side) .dock[data-tool="looks"] .look-card-name {
-  font-size: 10px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.72);
+/* Phone: swatch-only filmstrip (names collide with bottom tabs) */
+body:not(.layout-side) .dock[data-tool="looks"] .preset-card-name,
+body:not(.layout-side) .dock[data-tool="looks"] .look-card-name,
+body:not(.layout-side) .dock[data-tool="looks"] .preset-card-recipe {
+  display: none;
 }
 
-body:not(.layout-side) .dock[data-tool="looks"] .look-intensity {
-  padding: 0;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-/* When strength slider is open, shrink filmstrip so everything fits */
+/* When strength is open: smaller swatches, hide category chips */
 body:not(.layout-side) .dock[data-tool="looks"] #panelLooks:has(#lookIntensityWrap:not([hidden])) .preset-swatch,
 body:not(.layout-side) .dock[data-tool="looks"] #panelLooks:has(#lookIntensityWrap:not([hidden])) .look-swatch {
-  width: 48px;
-  height: 48px;
+  width: 50px;
+  height: 50px;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] #panelLooks:has(#lookIntensityWrap:not([hidden])) .preset-card,
 body:not(.layout-side) .dock[data-tool="looks"] #panelLooks:has(#lookIntensityWrap:not([hidden])) .look-card {
-  width: 48px;
+  width: 50px;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] #panelLooks:has(#lookIntensityWrap:not([hidden])) .preset-cats {
-  display: none; /* free vertical space while tuning strength */
+  display: none;
 }
 
-body:not(.layout-side) .dock[data-tool="looks"] .look-intensity .slider-line {
-  grid-template-columns: 58px 1fr 32px;
+/* Source tabs — small chips pinned under filmstrip */
+body:not(.layout-side) .dock[data-tool="looks"] .looks-source-seg {
+  margin: 0;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  background: transparent !important;
+  border-radius: 0;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  flex: 0 0 auto;
+  order: 2;
+  overflow: visible;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 26px;
 }
 
-body:not(.layout-side) .dock[data-tool="looks"] .look-intensity .slider-line-label {
+body:not(.layout-side) .dock[data-tool="looks"] .looks-source-seg .seg-btn {
+  flex: 0 0 auto;
+  min-width: 0;
+  height: 24px;
   font-size: 11px;
+  font-weight: 550;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.65);
+  box-shadow: none;
+}
+
+body:not(.layout-side) .dock[data-tool="looks"] .looks-source-seg .seg-btn.active {
+  background: rgba(255, 255, 255, 0.24);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+/* Active look swatch ring */
+body:not(.layout-side) .dock[data-tool="looks"] .preset-card.active .preset-swatch,
+body:not(.layout-side) .dock[data-tool="looks"] .look-card.active .look-swatch {
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 body:not(.layout-side) .dial-hint {
@@ -2307,18 +2453,19 @@ body:not(.layout-side) .dock[data-tool="crop"] .ratio-chip {
   margin-bottom: 0;
 }
 
-body:not(.layout-side) #panelBorder {
+body:not(.layout-side) .dock[data-tool="border"] #panelBorder {
   display: flex;
   flex-direction: column;
   gap: 8px;
   justify-content: center;
   height: 100%;
+  width: 100%;
 }
 
 body:not(.layout-side) #panelBorder .frame-scroll {
-  padding: 0;
   margin: 0;
-  gap: 6px;
+  gap: 8px;
+  width: 100%;
 }
 
 body:not(.layout-side) #panelBorder .ratio-chip {
@@ -2776,7 +2923,9 @@ body:not(.layout-side) .enhance-btn.active .enhance-label {
 
 /* ========== Mobile Photos tick dial (Adjust / Age / Crop / Portrait) ========== */
 body:not(.layout-side) .dial-row {
-  padding: 0 2px;
+  padding-top: 0;
+  padding-bottom: 0;
+  /* horizontal inset set in full-bleed block above */
   gap: 0;
   flex: 0 0 auto;
 }
@@ -2930,15 +3079,18 @@ body:not(.layout-side) .dial-reset {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* Chips filmstrip under dial */
+/* Chips filmstrip under dial — full bleed + edge fade */
 body:not(.layout-side) .chips-scroll {
   padding: 4px 0 0;
   flex: 0 0 auto;
+  width: 100%;
 }
 
 body:not(.layout-side) .chips {
-  gap: 12px;
-  padding: 2px 2px 0;
+  gap: 14px;
+  padding-top: 2px;
+  padding-bottom: 0;
+  /* L/R from full-bleed edge inset rule */
 }
 
 body:not(.layout-side) .chip {

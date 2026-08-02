@@ -21,7 +21,7 @@
         if (p.has("fresh") || p.get("nocache") === "1") return String(Date.now());
         if (p.get("v")) return p.get("v");
       } catch (e) {}
-      return "202608023200"; // ← bump this when you push JS/CSS changes
+      return "202608023300"; // ← bump this when you push JS/CSS changes
     })();
     document.write(
       '<link rel="stylesheet" href="styles.css?v=' +
@@ -306,13 +306,18 @@
           <div class="chips" id="chips" role="listbox" aria-label="Adjustments"></div>
         </div>
 
-        <!-- Looks panel: Presets + film / camera / lens -->
+        <!-- Looks panel: Strength dial (top) · filmstrip · small source tabs -->
         <div class="subpanel" id="panelLooks" hidden>
-          <div class="subpanel-seg" id="looksSeg" role="tablist">
-            <button type="button" class="seg-btn active" data-looks="presets">Presets</button>
-            <button type="button" class="seg-btn" data-looks="film">Film</button>
-            <button type="button" class="seg-btn" data-looks="camera">Camera</button>
-            <button type="button" class="seg-btn" data-looks="lens">Lens</button>
+          <!-- Same Photos dial language as Adjust / Age -->
+          <div class="look-intensity dial-row" id="lookIntensityWrap" hidden>
+            <div class="dial-meta">
+              <span class="dial-value" id="lookIntensityValue">100</span>
+              <span class="dial-name" id="lookIntensityName">Strength</span>
+            </div>
+            <div class="dial-track-wrap">
+              <div class="dial-ticks" aria-hidden="true"></div>
+              <input type="range" id="lookIntensity" class="ios-dial" min="0" max="100" step="1" value="100" />
+            </div>
           </div>
 
           <!-- Curated recipes + user saved looks -->
@@ -323,20 +328,21 @@
               </button>
               <span class="user-looks-hint" id="userLooksHint">On this device only</span>
             </div>
-            <div class="preset-cats" id="presetCats" role="tablist" aria-label="Categories"></div>
-            <div class="preset-scroll" id="presetLooks"></div>
+            <div class="preset-cats h-fade" id="presetCats" role="tablist" aria-label="Categories"></div>
+            <div class="preset-scroll h-fade" id="presetLooks"></div>
             <p class="preset-hint" id="presetHint">Ready looks · film + camera + lens</p>
           </div>
 
-          <div class="look-scroll" id="filmLooks" hidden></div>
-          <div class="look-scroll" id="cameraLooks" hidden></div>
-          <div class="look-scroll" id="lensLooks" hidden></div>
-          <div class="look-intensity" id="lookIntensityWrap" hidden>
-            <div class="slider-line">
-              <label class="slider-line-label" id="lookIntensityName" for="lookIntensity">Strength</label>
-              <input type="range" id="lookIntensity" class="compact-range" min="0" max="100" step="1" value="100" />
-              <span class="slider-line-val" id="lookIntensityValue">100</span>
-            </div>
+          <div class="look-scroll h-fade" id="filmLooks" hidden></div>
+          <div class="look-scroll h-fade" id="cameraLooks" hidden></div>
+          <div class="look-scroll h-fade" id="lensLooks" hidden></div>
+
+          <!-- Source tabs as small bottom chips (Presets / Film / Camera / Lens) -->
+          <div class="subpanel-seg looks-source-seg" id="looksSeg" role="tablist">
+            <button type="button" class="seg-btn active" data-looks="presets">Presets</button>
+            <button type="button" class="seg-btn" data-looks="film">Film</button>
+            <button type="button" class="seg-btn" data-looks="camera">Camera</button>
+            <button type="button" class="seg-btn" data-looks="lens">Lens</button>
           </div>
         </div>
 
