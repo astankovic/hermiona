@@ -282,10 +282,11 @@ body:not(.layout-side) {
   /* One shell height for every tool — content fits inside, never grows */
   --photos-panel-h: 148px;
   --photos-panel-pad-y: 8px;
-  /* Shared dial band (value + tick ruler) — identical on Adjust/Age/Crop/Portrait/Filters */
-  --photos-dial-value-h: 20px;
-  --photos-dial-track-h: 40px;
+  /* Shared dial band (value + sliding tape) — identical on Adjust/Age/Crop/Portrait/Filters */
+  --photos-dial-value-h: 22px;
+  --photos-dial-track-h: 44px;
   --photos-dial-band-h: calc(var(--photos-dial-value-h) + var(--photos-dial-track-h));
+  --photos-panel-h: 156px;
   --photos-enhance-h: 68px;
   --photos-side: 18px;
   --photos-safe: max(14px, var(--safe-bottom));
@@ -3310,13 +3311,18 @@ body:not(.layout-side) .enhance-btn.active .enhance-label {
   transform: translateX(-50%);
 }
 
-/* ========== Unified Photos dial (all tools share one chrome) ========== */
+/* ========== Sliding-tape dial (concept C) ========== */
 /*
- * Layout band (fixed):
- *   value  18px
- *   track  40px  (tall hit target; thin visual ticks + bar)
- * Total    58px  — same on Adjust / Age / Crop / Portrait / Filters strength
+ * Fixed center needle · tick tape slides under the finger · light value.
+ * Layout band: value 22px + track 44px = 66px
  */
+body:not(.layout-side) {
+  --photos-dial-value-h: 22px;
+  --photos-dial-track-h: 44px;
+  --photos-dial-band-h: calc(var(--photos-dial-value-h) + var(--photos-dial-track-h));
+  --dial-minor: 7px; /* JS must match MINOR_PX */
+}
+
 body:not(.layout-side) .dial-row,
 body:not(.layout-side) .look-intensity.dial-row {
   padding-top: 0;
@@ -3328,7 +3334,6 @@ body:not(.layout-side) .look-intensity.dial-row {
   height: var(--photos-dial-band-h);
   box-sizing: border-box;
   justify-content: flex-start;
-  /* Floating air — no card behind the dial */
   background: transparent;
 }
 
@@ -3340,10 +3345,10 @@ body:not(.layout-side) .dial-meta {
   min-height: var(--photos-dial-value-h);
   height: var(--photos-dial-value-h);
   margin: 0;
-  pointer-events: none; /* value is display-only; scrub is the track */
+  pointer-events: none;
 }
 
-/* Value only — label is redundant (chip / title already name the control) */
+/* Value only — light, not bold (user preference) */
 body:not(.layout-side) .dial-name,
 body:not(.layout-side) #dialName,
 body:not(.layout-side) #lookIntensityName,
@@ -3353,9 +3358,9 @@ body:not(.layout-side) .look-intensity .dial-name {
 
 body:not(.layout-side) .dial-value,
 body:not(.layout-side) .look-intensity .dial-value {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.03em;
+  font-size: 17px;
+  font-weight: 400; /* intentionally not bold */
+  letter-spacing: -0.02em;
   color: #fff;
   min-width: 0;
   order: 0;
@@ -3363,22 +3368,20 @@ body:not(.layout-side) .look-intensity .dial-value {
   height: var(--photos-dial-value-h);
   font-variant-numeric: tabular-nums;
   text-align: center;
-  /* Legibility over any photo — no strip behind */
   text-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.85),
-    0 0 12px rgba(0, 0, 0, 0.55),
-    0 0 1px rgba(0, 0, 0, 0.9);
-  transition: transform 0.12s var(--ease-out), opacity 0.12s ease;
+    0 1px 3px rgba(0, 0, 0, 0.85),
+    0 0 14px rgba(0, 0, 0, 0.5);
+  transition: opacity 0.12s ease;
 }
 
 body:not(.layout-side) .dial-value.neutral {
-  color: #fff;
+  color: rgba(255, 255, 255, 0.92);
 }
 
-body:not(.layout-side) .dial-track-wrap.is-scrubbing .dial-value,
 body:not(.layout-side) .dial-row:has(.dial-track-wrap.is-scrubbing) .dial-value,
 body:not(.layout-side) .look-intensity:has(.dial-track-wrap.is-scrubbing) .dial-value {
-  transform: scale(1.06);
+  opacity: 1;
+  color: #fff;
 }
 
 body:not(.layout-side) .dial-track-wrap,
@@ -3389,39 +3392,67 @@ body:not(.layout-side) .look-intensity .dial-track-wrap {
   min-height: var(--photos-dial-track-h);
   display: flex;
   align-items: center;
-  touch-action: none; /* JS owns the scrub — never fight scroll */
-  cursor: ew-resize;
-  /* Slightly taller invisible hit pad without looking like a bar */
+  justify-content: center;
+  touch-action: none;
+  cursor: grab;
   margin: 0;
-  border-radius: 12px;
+  overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
+  /* Edge fade — tape disappears into the photo */
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000 12%,
+    #000 88%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    #000 12%,
+    #000 88%,
+    transparent 100%
+  );
 }
 
-/* Soft local vignette under ticks only (not a full panel strip) */
+body:not(.layout-side) .dial-track-wrap.is-scrubbing {
+  cursor: grabbing;
+}
+
+/* Soft vignette only under the needle zone */
 body:not(.layout-side) .dial-track-wrap::before,
 body:not(.layout-side) .look-intensity .dial-track-wrap::before {
   content: '';
   position: absolute;
-  left: -4%;
-  right: -4%;
+  left: 50%;
   top: 50%;
-  height: 28px;
-  margin-top: -14px;
+  width: 48px;
+  height: 36px;
+  margin: -18px 0 0 -24px;
   pointer-events: none;
   z-index: 0;
   background: radial-gradient(
-    ellipse 70% 100% at 50% 50%,
-    rgba(0, 0, 0, 0.38) 0%,
-    rgba(0, 0, 0, 0.12) 55%,
-    transparent 78%
+    ellipse at center,
+    rgba(0, 0, 0, 0.42) 0%,
+    transparent 72%
   );
-  opacity: 0.9;
-  transition: opacity 0.18s ease;
+  opacity: 0.85;
 }
 
-body:not(.layout-side) .dial-track-wrap.is-scrubbing::before {
-  opacity: 1;
+/* Sliding tape layer — wide strip translated by JS */
+body:not(.layout-side) .dial-tape,
+body:not(.layout-side) .look-intensity .dial-tape {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 400%;
+  margin-left: -200%;
+  z-index: 1;
+  pointer-events: none;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
 }
 
 body:not(.layout-side) .dial-ticks,
@@ -3431,39 +3462,19 @@ body:not(.layout-side) .look-intensity .dial-ticks {
   left: 0;
   right: 0;
   top: 50%;
-  height: 22px;
-  margin-top: -11px;
+  height: 26px;
+  margin-top: -13px;
   pointer-events: none;
-  z-index: 1;
-  /* Minor ticks — even spacing, soft fade at ends */
+  /* Minor ticks every 7px — must match JS MINOR_PX */
   background: repeating-linear-gradient(
     to right,
-    rgba(255, 255, 255, 0.28) 0,
-    rgba(255, 255, 255, 0.28) 1px,
+    rgba(255, 255, 255, 0.32) 0,
+    rgba(255, 255, 255, 0.32) 1px,
     transparent 1px,
-    transparent 6px
+    transparent 7px
   );
-  mask-image: linear-gradient(
-    90deg,
-    transparent 0%,
-    #000 6%,
-    #000 94%,
-    transparent 100%
-  );
-  -webkit-mask-image: linear-gradient(
-    90deg,
-    transparent 0%,
-    #000 6%,
-    #000 94%,
-    transparent 100%
-  );
-  opacity: 0.92;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
-  transition: opacity 0.15s ease;
-}
-
-body:not(.layout-side) .dial-track-wrap.is-scrubbing .dial-ticks {
-  opacity: 1;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
+  opacity: 0.95;
 }
 
 body:not(.layout-side) .dial-ticks::after,
@@ -3471,28 +3482,50 @@ body:not(.layout-side) .look-intensity .dial-ticks::after {
   content: '';
   position: absolute;
   inset: 0;
-  /* Major ticks every 5 minors */
+  /* Major every 5 minors = 35px */
   background: repeating-linear-gradient(
     to right,
-    rgba(255, 255, 255, 0.62) 0,
-    rgba(255, 255, 255, 0.62) 1.5px,
+    rgba(255, 255, 255, 0.72) 0,
+    rgba(255, 255, 255, 0.72) 1.5px,
     transparent 1.5px,
-    transparent 30px
+    transparent 35px
   );
 }
 
-body:not(.layout-side) .dial-center-mark {
-  height: 16px;
-  margin-top: -8px;
-  width: 1.5px;
-  background: rgba(255, 255, 255, 0.55);
-  z-index: 2;
-  border-radius: 1px;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
-  pointer-events: none;
+body:not(.layout-side) .dial-track-wrap.is-scrubbing .dial-ticks {
+  opacity: 1;
 }
 
-/* Shared range input chrome — visual only; JS drives scrub via wrap */
+/* Fixed center needle — accent, does not move */
+body:not(.layout-side) .dial-center-mark {
+  display: block !important;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2.5px;
+  height: 28px;
+  margin: -14px 0 0 -1.25px;
+  background: var(--accent);
+  border-radius: 1.5px;
+  z-index: 4;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.25),
+    0 0 10px rgba(255, 214, 10, 0.45),
+    0 1px 4px rgba(0, 0, 0, 0.4);
+  transition: height 0.12s ease, box-shadow 0.12s ease;
+}
+
+body:not(.layout-side) .dial-track-wrap.is-scrubbing .dial-center-mark {
+  height: 32px;
+  margin-top: -16px;
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.3),
+    0 0 14px rgba(255, 214, 10, 0.6),
+    0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+/* Range is a11y-only; no visible thumb (needle is the indicator) */
 body:not(.layout-side) .ios-dial,
 body:not(.layout-side) .look-intensity .ios-dial {
   -webkit-appearance: none;
@@ -3502,14 +3535,12 @@ body:not(.layout-side) .look-intensity .ios-dial {
   margin: 0;
   padding: 0;
   background: transparent;
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 3;
-  cursor: ew-resize;
-  touch-action: none;
-  /* Kill UA lag/animation on thumb */
-  transition: none !important;
-  /* Custom pointer path owns interaction; keep keyboard a11y */
+  opacity: 0;
   pointer-events: none;
+  touch-action: none;
 }
 
 body:not(.layout-side) .ios-dial:focus {
@@ -3517,12 +3548,7 @@ body:not(.layout-side) .ios-dial:focus {
 }
 
 body:not(.layout-side) .ios-dial::-webkit-slider-runnable-track,
-body:not(.layout-side) .look-intensity .ios-dial::-webkit-slider-runnable-track {
-  height: 0;
-  background: transparent;
-  border: none;
-}
-
+body:not(.layout-side) .look-intensity .ios-dial::-webkit-slider-runnable-track,
 body:not(.layout-side) .ios-dial::-moz-range-track,
 body:not(.layout-side) .look-intensity .ios-dial::-moz-range-track {
   height: 0;
@@ -3530,54 +3556,17 @@ body:not(.layout-side) .look-intensity .ios-dial::-moz-range-track {
   border: none;
 }
 
-/*
- * Photos indicator: thin white bar with soft glow.
- * Hit target is the full track wrap (JS scrub), not the thin thumb.
- */
 body:not(.layout-side) .ios-dial::-webkit-slider-thumb,
-body:not(.layout-side) .look-intensity .ios-dial::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 3px;
-  height: 26px;
-  border-radius: 1.5px;
-  background: #fff;
-  border: none;
-  box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.2),
-    0 1px 6px rgba(0, 0, 0, 0.45),
-    0 0 10px rgba(255, 255, 255, 0.35);
-  margin-top: 0;
-  transition: none !important;
-  transform: none !important;
-}
-
-body:not(.layout-side) .dial-track-wrap.is-scrubbing .ios-dial::-webkit-slider-thumb,
-body:not(.layout-side) .look-intensity .dial-track-wrap.is-scrubbing .ios-dial::-webkit-slider-thumb {
-  height: 30px;
-  box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.25),
-    0 2px 10px rgba(0, 0, 0, 0.5),
-    0 0 14px rgba(255, 255, 255, 0.45);
-}
-
-body:not(.layout-side) .ios-dial:active::-webkit-slider-thumb,
-body:not(.layout-side) .look-intensity .ios-dial:active::-webkit-slider-thumb {
-  background: #fff;
-  transform: none !important;
-}
-
+body:not(.layout-side) .look-intensity .ios-dial::-webkit-slider-thumb,
 body:not(.layout-side) .ios-dial::-moz-range-thumb,
 body:not(.layout-side) .look-intensity .ios-dial::-moz-range-thumb {
-  width: 3px;
-  height: 26px;
-  border-radius: 1.5px;
-  background: #fff;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0;
+  height: 0;
   border: none;
-  box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.2),
-    0 1px 6px rgba(0, 0, 0, 0.45);
-  transition: none !important;
+  background: transparent;
+  box-shadow: none;
 }
 
 body:not(.layout-side) .dial-reset {

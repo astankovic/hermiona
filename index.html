@@ -21,7 +21,7 @@
         if (p.has("fresh") || p.get("nocache") === "1") return String(Date.now());
         if (p.get("v")) return p.get("v");
       } catch (e) {}
-      return "202608021700"; // ← bump this when you push JS/CSS changes
+      return "202608021800"; // ← bump this when you push JS/CSS changes
     })();
     // Parallel-friendly CSS inject (avoids document.write blocking)
     (function () {
@@ -339,9 +339,11 @@
             <span class="dial-value" id="dialValue">0</span>
           </div>
           <div class="dial-track-wrap" id="dialTrackWrap">
-            <div class="dial-ticks" aria-hidden="true"></div>
-            <input type="range" id="activeDial" class="ios-dial" min="-100" max="100" step="1" value="0" />
+            <div class="dial-tape" aria-hidden="true">
+              <div class="dial-ticks"></div>
+            </div>
             <div class="dial-center-mark" aria-hidden="true"></div>
+            <input type="range" id="activeDial" class="ios-dial" min="-100" max="100" step="1" value="0" />
           </div>
           <p class="dial-hint" id="dialHint">Hold chip · fine adjust · double-tap = reset</p>
         </div>
@@ -360,7 +362,10 @@
               <span class="dial-name" id="lookIntensityName">Strength</span>
             </div>
             <div class="dial-track-wrap">
-              <div class="dial-ticks" aria-hidden="true"></div>
+              <div class="dial-tape" aria-hidden="true">
+                <div class="dial-ticks"></div>
+              </div>
+              <div class="dial-center-mark" aria-hidden="true"></div>
               <input type="range" id="lookIntensity" class="ios-dial" min="0" max="100" step="1" value="100" />
             </div>
           </div>

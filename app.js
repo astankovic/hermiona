@@ -592,6 +592,10 @@
   const activeDial = $('#activeDial');
   const chipsScroll = $('#chipsScroll');
   const chipsEl = $('#chips');
+  /** @type {{ sync:(v?:number, animate?:boolean)=>void } | null} */
+  let activeTape = null;
+  /** @type {{ sync:(v?:number, animate?:boolean)=>void } | null} */
+  let intensityTape = null;
 
   const panelLooks = $('#panelLooks');
   const panelCrop = $('#panelCrop');
@@ -3424,6 +3428,7 @@
           const v = state.look.presetIntensity != null ? state.look.presetIntensity : 100;
           if (lookIntensity) lookIntensity.value = v;
           if (lookIntensityValue) lookIntensityValue.textContent = String(v);
+          if (intensityTape && intensityTape.sync) intensityTape.sync(v, true);
         }
       } else {
         const meta = LOOK_INTENSITY[tab];
@@ -3433,8 +3438,10 @@
           lookIntensityWrap.hidden = !show;
           if (show) {
             if (lookIntensityName) lookIntensityName.textContent = meta.label;
-            if (lookIntensity) lookIntensity.value = state.look[meta.id];
-            if (lookIntensityValue) lookIntensityValue.textContent = String(state.look[meta.id]);
+            const iv = state.look[meta.id];
+            if (lookIntensity) lookIntensity.value = iv;
+            if (lookIntensityValue) lookIntensityValue.textContent = String(iv);
+            if (intensityTape && intensityTape.sync) intensityTape.sync(iv, true);
           }
         } else {
           lookIntensityWrap.hidden = true;
@@ -4481,9 +4488,8 @@
     }
     if (dialReset) dialReset.hidden = !isAdjModified(adj);
 
-    // center mark only for bipolar sliders
-    const mark = document.querySelector('.dial-center-mark');
-    if (mark) mark.style.display = adj.min < 0 && adj.max > 0 ? '' : 'none';
+    // Sliding tape always keeps the accent center needle (value is at center)
+    if (activeTape && activeTape.sync) activeTape.sync(val, true);
   }
 
   function markChipModified() {
@@ -4564,135 +4570,170 @@
   }
 
   /**
-   * Photos-style dial scrub — finger 1:1 with the ruler.
-   * - Touch near the indicator: relative drag (no jump)
-   * - Touch elsewhere on the track: absolute jump, then track finger
-   * - rAF-coalesced value apply; soft haptic on major ticks
-   * Native range stays for a11y/keyboard; pointer path is owned by the wrap.
+   * Sliding-tape dial (concept C / iOS Photos).
+   * Fixed center needle; tick tape translates under the finger.
+   * Drag right → value up. Soft inertia on release. Major-tick haptics.
+   * Must keep MINOR_PX in sync with CSS --dial-minor / tick period.
    */
-  function bindPhotosDialScrub(input, { onInput, onEnd } = {}) {
+  function bindSlidingTapeDial(input, { onInput, onEnd } = {}) {
     if (!input) return null;
     const wrap = input.closest('.dial-track-wrap') || input.parentElement;
     if (!wrap) return null;
+    const tape = wrap.querySelector('.dial-tape') || wrap.querySelector('.dial-ticks');
+    if (!tape) return null;
 
-    const EDGE = 12; // px inset so ends stay reachable
-    const NEAR_PX = 30; // grab-near-thumb threshold
-    let active = false;
-    let mode = 'absolute';
+    const MINOR_PX = 7; // px per step (matches CSS tick period)
+    const MAJOR_EVERY = 5; // major tick every N minors
+    const FRICTION = 0.92;
+    const MIN_VEL = 0.02; // units / ms
+    const MAX_RELEASE_VEL = 0.55; // units / ms cap
+
+    let dragging = false;
     let startX = 0;
     let startVal = 0;
+    let lastX = 0;
+    let lastT = 0;
+    let velocity = 0; // value-units per ms
     let lastMajor = null;
-    let raf = 0;
-    let pending = null;
+    let inertiaRaf = 0;
+    let liveVal = parseFloat(input.value) || 0;
 
     function rangeMeta() {
       const min = parseFloat(input.min);
       const max = parseFloat(input.max);
       let step = parseFloat(input.step);
       if (!(step > 0)) step = 1;
-      const span = max - min || 1;
-      return { min, max, step, span };
+      return { min, max, step, span: max - min || 1 };
     }
 
     function snap(val) {
       const { min, max, step } = rangeMeta();
       let v = min + Math.round((val - min) / step) * step;
-      // Avoid float dust (e.g. 0.30000000004)
       const decimals = (String(step).split('.')[1] || '').length;
       if (decimals) v = parseFloat(v.toFixed(decimals));
       return clamp(v, min, max);
     }
 
-    function valueFromX(clientX) {
-      const rect = wrap.getBoundingClientRect();
-      const usable = Math.max(1, rect.width - EDGE * 2);
-      let t = (clientX - rect.left - EDGE) / usable;
-      t = clamp(t, 0, 1);
-      const { min, span } = rangeMeta();
-      return snap(min + t * span);
+    function tapeXFor(val) {
+      const { min, step } = rangeMeta();
+      const units = (val - min) / step;
+      // Value ↑ → tape shifts left so higher ticks pass under center
+      return -units * MINOR_PX;
     }
 
-    function thumbX() {
-      const rect = wrap.getBoundingClientRect();
-      const { min, span } = rangeMeta();
-      const t = (parseFloat(input.value) - min) / span;
-      return rect.left + EDGE + clamp(t, 0, 1) * Math.max(1, rect.width - EDGE * 2);
+    function paintTape(val, withTransition) {
+      if (!tape) return;
+      const x = tapeXFor(val);
+      if (withTransition) {
+        tape.style.transition = 'transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)';
+      } else {
+        tape.style.transition = 'none';
+      }
+      tape.style.transform = 'translate3d(' + x + 'px, 0, 0)';
     }
 
-    function commit(val, isFinal) {
+    function commit(val, { final, haptic } = {}) {
       const v = snap(val);
+      liveVal = v;
       if (String(v) !== input.value) input.value = String(v);
-      if (onInput) onInput(v, { final: !!isFinal });
+      paintTape(v, false);
+      if (onInput) onInput(v, { final: !!final });
 
-      // Soft tick when crossing major marks (~every 10 steps)
-      const { step } = rangeMeta();
-      const majorStep = step * 10;
-      if (majorStep > 0) {
-        const bucket = Math.round(v / majorStep);
+      if (haptic !== false) {
+        const bucket = Math.round(v / (rangeMeta().step * MAJOR_EVERY));
         if (lastMajor != null && bucket !== lastMajor) {
           try {
-            if (navigator.vibrate) navigator.vibrate(5);
+            if (navigator.vibrate) navigator.vibrate(4);
           } catch (_) { /* ignore */ }
         }
         lastMajor = bucket;
       }
+      return v;
     }
 
-    function flush() {
-      raf = 0;
-      if (pending == null) return;
-      const v = pending;
-      pending = null;
-      commit(v, false);
+    function stopInertia() {
+      if (inertiaRaf) {
+        cancelAnimationFrame(inertiaRaf);
+        inertiaRaf = 0;
+      }
     }
 
-    function queue(val) {
-      pending = val;
-      if (!raf) raf = requestAnimationFrame(flush);
+    function runInertia() {
+      let prev = performance.now();
+      const tick = (now) => {
+        const dt = Math.min(32, now - prev) || 16;
+        prev = now;
+        // velocity is value-units per ms
+        if (Math.abs(velocity) < MIN_VEL) {
+          inertiaRaf = 0;
+          commit(liveVal, { final: true });
+          wrap.classList.remove('is-scrubbing');
+          if (onEnd) onEnd(liveVal);
+          return;
+        }
+        const { min, max } = rangeMeta();
+        liveVal = clamp(liveVal + velocity * dt, min, max);
+        commit(liveVal, { final: false });
+        velocity *= Math.pow(FRICTION, dt / 16);
+        if (liveVal <= min || liveVal >= max) {
+          liveVal = clamp(liveVal, min, max);
+          velocity = 0;
+        }
+        inertiaRaf = requestAnimationFrame(tick);
+      };
+      inertiaRaf = requestAnimationFrame(tick);
     }
 
     function onDown(e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      active = true;
+      stopInertia();
+      dragging = true;
       wrap.classList.add('is-scrubbing');
       beginScrub();
-      startX = e.clientX;
-      startVal = parseFloat(input.value);
+      startX = lastX = e.clientX;
+      startVal = liveVal = parseFloat(input.value) || 0;
+      lastT = performance.now();
+      velocity = 0;
       lastMajor = null;
-      mode = Math.abs(e.clientX - thumbX()) <= NEAR_PX ? 'relative' : 'absolute';
+      paintTape(liveVal, false);
       try {
         if (e.pointerId != null) wrap.setPointerCapture(e.pointerId);
-      } catch (_) { /* Safari non-primary */ }
-      if (mode === 'absolute') queue(valueFromX(e.clientX));
+      } catch (_) { /* Safari */ }
       if (e.cancelable) e.preventDefault();
     }
 
     function onMove(e) {
-      if (!active) return;
+      if (!dragging) return;
       if (e.cancelable) e.preventDefault();
-      if (mode === 'relative') {
-        const rect = wrap.getBoundingClientRect();
-        const usable = Math.max(1, rect.width - EDGE * 2);
-        const { span } = rangeMeta();
-        queue(startVal + ((e.clientX - startX) / usable) * span);
-      } else {
-        queue(valueFromX(e.clientX));
-      }
+      const now = performance.now();
+      const dx = e.clientX - startX;
+      // Finger right → value increases (tape moves left under fixed needle)
+      const { step } = rangeMeta();
+      const deltaUnits = dx / MINOR_PX;
+      const next = startVal + deltaUnits * step;
+      const dt = Math.max(1, now - lastT);
+      const frameDx = e.clientX - lastX;
+      velocity = (frameDx / MINOR_PX) * step / dt; // value units / ms
+      lastX = e.clientX;
+      lastT = now;
+      commit(next, { final: false });
     }
 
     function onUp() {
-      if (!active) return;
-      active = false;
-      wrap.classList.remove('is-scrubbing');
-      if (raf) {
-        cancelAnimationFrame(raf);
-        raf = 0;
+      if (!dragging) return;
+      dragging = false;
+      // Snap current
+      liveVal = commit(liveVal, { final: false });
+      // Cap release velocity and run inertia if meaningful
+      const v = clamp(velocity, -MAX_RELEASE_VEL, MAX_RELEASE_VEL);
+      velocity = v;
+      if (Math.abs(velocity) > MIN_VEL * 3) {
+        runInertia();
+      } else {
+        wrap.classList.remove('is-scrubbing');
+        commit(liveVal, { final: true });
+        if (onEnd) onEnd(liveVal);
       }
-      if (pending != null) {
-        commit(pending, true);
-        pending = null;
-      }
-      if (onEnd) onEnd(parseFloat(input.value));
     }
 
     wrap.addEventListener('pointerdown', onDown, { passive: false });
@@ -4701,21 +4742,36 @@
     wrap.addEventListener('pointercancel', onUp);
     wrap.addEventListener('lostpointercapture', onUp);
 
-    // Keyboard / assistive: native input still works
+    // Keyboard / assistive
     input.addEventListener('input', () => {
-      if (active) return;
-      if (onInput) onInput(parseFloat(input.value), { final: false });
+      if (dragging || inertiaRaf) return;
+      liveVal = parseFloat(input.value);
+      paintTape(liveVal, true);
+      if (onInput) onInput(liveVal, { final: false });
     });
     input.addEventListener('change', () => {
-      if (active) return;
-      if (onEnd) onEnd(parseFloat(input.value));
+      if (dragging || inertiaRaf) return;
+      liveVal = snap(parseFloat(input.value));
+      paintTape(liveVal, true);
+      if (onEnd) onEnd(liveVal);
     });
 
-    return { wrap };
+    // Public: keep tape aligned when value set externally (chip change, reset)
+    function sync(val, animate) {
+      if (dragging || inertiaRaf) return;
+      liveVal = val != null ? snap(val) : snap(parseFloat(input.value));
+      input.value = String(liveVal);
+      paintTape(liveVal, !!animate);
+    }
+
+    // Initial paint
+    sync(parseFloat(input.value), false);
+
+    return { wrap, sync, paintTape };
   }
 
   // Active adjust dial
-  bindPhotosDialScrub(activeDial, {
+  activeTape = bindSlidingTapeDial(activeDial, {
     onInput(val) {
       const adj = findAdj(state.ui.activeAdj);
       if (!adj) return;
@@ -4777,7 +4833,7 @@
     btn.addEventListener('click', () => setLooksTab(btn.dataset.looks));
   });
 
-  bindPhotosDialScrub(lookIntensity, {
+  intensityTape = bindSlidingTapeDial(lookIntensity, {
     onInput(val) {
       const tab = state.ui.looksTab || 'presets';
       if (tab === 'presets') {
