@@ -1126,10 +1126,8 @@ body.layout-side .acc-group .acc-body {
   overscroll-behavior: contain;
   /* Leave ~handle + rail + safe-area (~120px) under dock max-height */
   max-height: min(32dvh, 32vh, 240px);
-  transition:
-    max-height 0.34s var(--ease-out),
-    opacity 0.24s ease,
-    padding 0.28s var(--ease-out);
+  /* max-height only — opacity transitions flash content when panels swap */
+  transition: max-height 0.28s var(--ease-cinematic);
 }
 
 /* Tall dock for Age / Presets / Crop — grow body, never push rail off-screen */
@@ -3103,9 +3101,7 @@ body.is-entering .zoom-hud:not([hidden]) {
   animation: zoomHudIn 0.45s 0.35s var(--ease-cinematic) both;
 }
 
-body.is-entering .dock-body {
-  animation: panelEnter 0.48s 0.28s var(--ease-cinematic) both;
-}
+/* dock-body no enter animation — opacity keyframes flashed tool content */
 
 /* —— Exit editor → hero —— */
 body.is-exiting:not(.layout-side) .dock:not([hidden]) {
@@ -3139,47 +3135,7 @@ body.is-exiting .zoom-hud {
   transition: opacity 0.25s;
 }
 
-/* —— Tool / panel switch (single enter — no fill-mode, no permanent dockIn) —— */
-.dock-body.is-panel-enter > .dial-row:not([hidden]),
-.dock-body.is-panel-enter > .chips-scroll:not([hidden]),
-.dock-body.is-panel-enter > .subpanel:not([hidden]),
-.dock-body.is-panel-enter > .enhance-bar:not([hidden]) {
-  /* no "both" — removing the class must not re-snap opacity/transform */
-  animation: panelEnter 0.28s var(--ease-cinematic);
-}
-
-.dock-body.is-panel-enter .chip {
-  animation: chipPop 0.3s var(--ease-spring);
-}
-
-.dock-body.is-panel-enter .chip:nth-child(1) { animation-delay: 0.01s; }
-.dock-body.is-panel-enter .chip:nth-child(2) { animation-delay: 0.03s; }
-.dock-body.is-panel-enter .chip:nth-child(3) { animation-delay: 0.05s; }
-.dock-body.is-panel-enter .chip:nth-child(4) { animation-delay: 0.07s; }
-.dock-body.is-panel-enter .chip:nth-child(5) { animation-delay: 0.09s; }
-.dock-body.is-panel-enter .chip:nth-child(6) { animation-delay: 0.11s; }
-.dock-body.is-panel-enter .chip:nth-child(7) { animation-delay: 0.13s; }
-.dock-body.is-panel-enter .chip:nth-child(8) { animation-delay: 0.15s; }
-.dock-body.is-panel-enter .chip:nth-child(n + 9) { animation-delay: 0.17s; }
-
-.dock-body.is-panel-enter .preset-card,
-.dock-body.is-panel-enter .look-card,
-.dock-body.is-panel-enter .ratio-chip,
-.dock-body.is-panel-enter .frame-chip,
-.dock-body.is-panel-enter .seg-btn {
-  animation: chipPop 0.28s var(--ease-spring);
-}
-
-.dock-body.is-panel-enter .preset-card:nth-child(1),
-.dock-body.is-panel-enter .look-card:nth-child(1) { animation-delay: 0.02s; }
-.dock-body.is-panel-enter .preset-card:nth-child(2),
-.dock-body.is-panel-enter .look-card:nth-child(2) { animation-delay: 0.04s; }
-.dock-body.is-panel-enter .preset-card:nth-child(3),
-.dock-body.is-panel-enter .look-card:nth-child(3) { animation-delay: 0.06s; }
-.dock-body.is-panel-enter .preset-card:nth-child(4),
-.dock-body.is-panel-enter .look-card:nth-child(4) { animation-delay: 0.08s; }
-.dock-body.is-panel-enter .preset-card:nth-child(n + 5),
-.dock-body.is-panel-enter .look-card:nth-child(n + 5) { animation-delay: 0.1s; }
+/* Tool switch: no opacity/translate enter — was the source of the flash */
 
 /* Dial value tick */
 .dial-value {

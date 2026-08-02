@@ -449,25 +449,13 @@
     }, 420);
   }
 
-  /** Single panel entrance when switching tools (no double dockIn + panelEnter) */
+  /**
+   * Tool-switch panel animation removed — opacity-from-0 caused a visible flash
+   * (content painted, then re-hidden by keyframes). Instant swap is cleaner.
+   */
   function playPanelEnter() {
-    if (!dockBody || prefersReducedMotion()) return;
-    // Skip while the whole editor is still entering (that sequence already animates dock-body)
-    if (document.body.classList.contains('is-entering')) return;
+    if (dockBody) dockBody.classList.remove('is-panel-enter');
     clearTimeout(panelAnimTimer);
-    dockBody.classList.remove('is-panel-enter');
-    // Double rAF: wait until hidden toggles + chip DOM rebuild are painted once
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (!dockBody) return;
-        void dockBody.offsetWidth;
-        dockBody.classList.add('is-panel-enter');
-        panelAnimTimer = setTimeout(() => {
-          // Safe to drop class: animations have no fill-mode "both"
-          dockBody.classList.remove('is-panel-enter');
-        }, 380);
-      });
-    });
   }
 
   /** Soft pulse on dial value when scrubbing */
@@ -3212,7 +3200,7 @@
       const activeBtn = dock.querySelector('.tool-btn.active');
       if (activeBtn && activeBtn.scrollIntoView) {
         requestAnimationFrame(() => {
-          activeBtn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+          activeBtn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'auto' });
         });
       }
     }
@@ -3291,19 +3279,17 @@
       }
     }
 
-    // Animate panel only when the tool actually changes (re-tap same icon = no blink)
-    if (state.hasImage && toolChanged) {
-      playPanelEnter();
-    }
+    // No enter animation on tool switch — prevents flash
   }
 
   function buildChips(list, activeId) {
     if (!chipsEl) return;
-    chipsEl.innerHTML = '';
+    // Build off-DOM then swap once — avoids empty chips flash for one frame
+    const frag = document.createDocumentFragment();
     list.forEach((adj) => {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'chip';
+      btn.className = 'chip' + (activeId && adj.id === activeId ? ' active' : '');
       btn.dataset.adj = adj.id;
       btn.setAttribute('role', 'option');
       btn.innerHTML =
@@ -3313,9 +3299,7 @@
         adj.label +
         '</span>';
 
-      // tap = select
       btn.addEventListener('click', (e) => {
-        // double-tap handled separately
         if (btn._ignoreClick) {
           btn._ignoreClick = false;
           return;
@@ -3323,26 +3307,25 @@
         selectAdj(adj.id);
       });
 
-      // double-tap = reset
       btn.addEventListener('dblclick', (e) => {
         e.preventDefault();
         resetAdj(adj);
       });
 
-      // long-press = fine adjust
       bindLongPress(btn, {
         onLongPress: (ev) => startFineAdjust(adj, ev),
         onDoubleTap: () => resetAdj(adj)
       });
 
-      chipsEl.appendChild(btn);
+      frag.appendChild(btn);
     });
+    chipsEl.replaceChildren(frag);
     markChipModified();
     if (activeId) {
       const active = chipsEl.querySelector('[data-adj="' + activeId + '"]');
-      if (active) {
-        active.classList.add('active');
-        active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+      if (active && active.scrollIntoView) {
+        // Instant — smooth scroll also felt like a "jump/flash" on mobile
+        active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'auto' });
       }
     }
   }
