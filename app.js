@@ -3492,13 +3492,9 @@
     });
   }
 
-  // ========== IMMERSIVE CHROME (mobile: swipe toolbar hide/show) ==========
+  // ========== IMMERSIVE CHROME (mobile: tap chevron to collapse panels) ==========
   const chromeState = {
-    hidden: false,
-    dragging: false,
-    startY: 0,
-    startT: 0,
-    lastY: 0
+    hidden: false
   };
 
   function isOverlayChrome() {
@@ -3512,161 +3508,34 @@
     }
     chromeState.hidden = !!hidden;
     document.body.classList.toggle('chrome-hidden', chromeState.hidden);
-    document.body.classList.remove('chrome-dragging');
+    const handle = document.getElementById('dockHandleHit');
     const hint = document.getElementById('dockHandleHint');
+    if (handle) {
+      handle.setAttribute('aria-expanded', chromeState.hidden ? 'false' : 'true');
+      handle.setAttribute(
+        'aria-label',
+        chromeState.hidden ? 'Show tool panels' : 'Hide tool panels'
+      );
+    }
     if (hint) {
-      hint.textContent = chromeState.hidden ? 'Swipe up for tools' : 'Swipe down to review';
+      hint.textContent = chromeState.hidden ? 'Show panels' : 'Hide panels';
     }
     // Stage size does not change — only re-clamp pan if zoomed
     if (state.view.zoom > 1.02) clampPan();
     applyViewTransform();
     if (state.crop.active) updateCropOverlay();
-    if (opts.toast && chromeState.hidden) {
-      showToast('Swipe up for tools', 1400);
-    }
   }
 
-  function setChromeDragging(on) {
-    chromeState.dragging = !!on;
-    document.body.classList.toggle('chrome-dragging', chromeState.dragging);
-  }
-
-  /**
-   * Touch-first swipe on handle (and tool-rail).
-   * When hidden, only handle remains — must be easily tappable on iOS.
-   */
+  /** Simple click toggle — no swipe (unreliable on mobile). Tool rail always stays. */
   function bindChromeGestures() {
     const handle = document.getElementById('dockHandleHit');
-    const rail = document.getElementById('toolRail');
-    if (!handle && !dock) return;
-
-    let active = false;
-    let startY = 0;
-    let lastY = 0;
-    let startT = 0;
-    let moved = false;
-
-    function clientY(e) {
-      if (e.touches && e.touches[0]) return e.touches[0].clientY;
-      if (e.changedTouches && e.changedTouches[0]) return e.changedTouches[0].clientY;
-      return e.clientY;
-    }
-
-    function canStart(e) {
-      if (!isOverlayChrome() || !state.hasImage) return false;
-      if (dock && dock.hidden) return false;
-      const t = e.target;
-      if (!t) return false;
-      // Always allow on handle
-      if (handle && (t === handle || handle.contains(t))) return true;
-      // When hidden, only handle
-      if (chromeState.hidden) return false;
-      // Swipe down from tool rail background
-      if (rail && (t === rail || (t.closest && t.closest('.tool-rail') && !t.closest('button')))) {
-        return true;
-      }
-      return false;
-    }
-
-    function onStart(e) {
-      if (!canStart(e)) return;
-      active = true;
-      moved = false;
-      startY = clientY(e);
-      lastY = startY;
-      startT = Date.now();
-      setChromeDragging(true);
-      // Prevent scroll / bounce while dragging chrome
-      if (e.cancelable) e.preventDefault();
-    }
-
-    function onMove(e) {
-      if (!active) return;
-      lastY = clientY(e);
-      const dy = lastY - startY;
-      if (Math.abs(dy) > 6) moved = true;
-      // Optional live opacity fade on topbar while dragging down
-      const topbar = document.getElementById('topbar');
-      if (topbar && !chromeState.hidden && dy > 0) {
-        const t = Math.min(1, dy / 100);
-        topbar.style.opacity = String(1 - t * 0.85);
-        topbar.style.transform = 'translate3d(0,' + -dy * 0.4 + 'px,0)';
-      }
-      if (e.cancelable) e.preventDefault();
-    }
-
-    function onEnd(e) {
-      if (!active) return;
-      active = false;
-      setChromeDragging(false);
-      const topbar = document.getElementById('topbar');
-      if (topbar) {
-        topbar.style.opacity = '';
-        topbar.style.transform = '';
-      }
-      const y = e ? clientY(e) : lastY;
-      const dy = y - startY;
-      const dt = Math.max(1, Date.now() - startT);
-      const vel = dy / dt;
-
-      if (!chromeState.hidden) {
-        if (dy > 40 || vel > 0.4) {
-          setChromeHidden(true, { toast: true });
-        }
-      } else {
-        // Reveal: swipe up OR tap handle
-        if (dy < -28 || vel < -0.3 || (!moved && Math.abs(dy) < 12)) {
-          setChromeHidden(false);
-        }
-      }
-    }
-
-    // Prefer touch events on iOS (more reliable than pointer for custom swipe)
-    const opts = { passive: false };
-    [handle, rail].filter(Boolean).forEach((el) => {
-      el.addEventListener('touchstart', onStart, opts);
-      el.addEventListener('touchmove', onMove, opts);
-      el.addEventListener('touchend', onEnd, opts);
-      el.addEventListener('touchcancel', onEnd, opts);
-      // Desktop / stylus
-      el.addEventListener('pointerdown', (e) => {
-        if (e.pointerType === 'touch') return; // handled by touch*
-        onStart(e);
-        const move = (ev) => onMove(ev);
-        const up = (ev) => {
-          onEnd(ev);
-          window.removeEventListener('pointermove', move);
-          window.removeEventListener('pointerup', up);
-          window.removeEventListener('pointercancel', up);
-        };
-        window.addEventListener('pointermove', move);
-        window.addEventListener('pointerup', up);
-        window.addEventListener('pointercancel', up);
-      });
+    if (!handle) return;
+    handle.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (!isOverlayChrome() || !state.hasImage) return;
+      if (dock && dock.hidden) return;
+      setChromeHidden(!chromeState.hidden);
     });
-
-    // Double-tap photo to toggle chrome
-    let lastTap = 0;
-    if (canvasArea) {
-      canvasArea.addEventListener(
-        'touchend',
-        (e) => {
-          if (!isOverlayChrome() || !state.hasImage) return;
-          if (state.crop.active || panDrag.active) return;
-          if (e.target.closest('button, .zoom-hud, .crop-layer')) return;
-          if (e.changedTouches && e.changedTouches.length !== 1) return;
-          const now = Date.now();
-          if (now - lastTap < 320) {
-            e.preventDefault();
-            setChromeHidden(!chromeState.hidden, { toast: !chromeState.hidden });
-            lastTap = 0;
-          } else {
-            lastTap = now;
-          }
-        },
-        { passive: false }
-      );
-    }
   }
 
   /** Accordion open/close for compact Crop & Portrait panels */
@@ -3767,10 +3636,10 @@
       }
       return;
     }
-    // Toggle review chrome
+    // Toggle dock panels (rail stays)
     if (e.key === 'h' && !e.metaKey && !e.ctrlKey && state.hasImage && isOverlayChrome()) {
       e.preventDefault();
-      setChromeHidden(!chromeState.hidden, { toast: !chromeState.hidden });
+      setChromeHidden(!chromeState.hidden);
       return;
     }
     if (!state.hasImage) return;

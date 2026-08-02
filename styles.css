@@ -81,7 +81,7 @@ button, input {
  * Mobile immersive layout (not layout-side):
  * - Stage is the ONLY full-viewport layer (photo never reflows)
  * - Topbar + dock are overlays on the same cell
- * - chrome-hidden: both slide off for full-bleed review
+ * - chrome-hidden: collapse dock panels only (tool rail stays)
  */
 body:not(.layout-side) #app {
   display: grid;
@@ -235,16 +235,10 @@ body:not(.layout-side) .stage {
   position: relative;
 }
 
-/* Chrome hidden: collapse body/rail in place (handle stays on-screen for swipe) */
-body.chrome-hidden:not(.layout-side) .topbar {
-  transform: translate3d(0, calc(-100% - 12px), 0);
-  opacity: 0;
-  pointer-events: none;
-}
-
+/* Chrome collapsed: hide dials/panels only — tool rail + topbar stay */
 body.chrome-hidden:not(.layout-side) .dock {
   transform: none;
-  background: rgba(12, 12, 14, 0.55);
+  background: rgba(12, 12, 14, 0.78);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.35);
 }
 
@@ -258,45 +252,23 @@ body.chrome-hidden:not(.layout-side) .dock-body {
   padding-bottom: 0 !important;
 }
 
+/* Main tool menu always visible */
 body.chrome-hidden:not(.layout-side) .tool-rail {
-  max-height: 0;
-  min-height: 0;
-  height: 0;
-  opacity: 0;
-  overflow: hidden;
-  pointer-events: none;
-  border: none;
-  padding: 0 !important;
-}
-
-body.chrome-hidden:not(.layout-side) .dock-handle-hit {
-  pointer-events: auto;
-  padding: 14px 16px calc(12px + var(--safe-bottom));
-}
-
-body.chrome-hidden:not(.layout-side) .dock-handle-hint {
+  max-height: none;
+  min-height: var(--dock-rail);
+  height: var(--dock-rail);
   opacity: 1;
-}
-
-body.chrome-hidden:not(.layout-side) .dock-handle-hint::after {
-  content: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+  pointer-events: auto;
 }
 
 body.chrome-hidden:not(.layout-side) .zoom-hud {
-  bottom: calc(36px + var(--safe-bottom));
+  bottom: calc(var(--dock-rail) + 44px + var(--safe-bottom));
 }
 
 body:not(.layout-side) .zoom-hud {
   transition: bottom 0.36s var(--ease-out);
-}
-
-body.chrome-dragging:not(.layout-side) .topbar {
-  transition: none;
-}
-
-body.chrome-dragging:not(.layout-side) .dock-body,
-body.chrome-dragging:not(.layout-side) .tool-rail {
-  transition: none;
 }
 
 /* ========== TOP BAR ========== */
@@ -708,10 +680,7 @@ body:not(.layout-side) .look-chip {
   top: calc(var(--topbar-h) + var(--safe-top) + 4px);
 }
 
-body.chrome-hidden:not(.layout-side) .look-chip {
-  top: calc(12px + var(--safe-top));
-  transition: top 0.36s var(--ease-out);
-}
+
 
 .look-chip[hidden] {
   display: none !important;
@@ -739,37 +708,51 @@ body.chrome-hidden:not(.layout-side) .look-chip {
   display: none !important;
 }
 
-/* Grab strip for swipe hide/show */
+/* Tap chevron to collapse / expand dock panels */
 .dock-handle-hit {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 8px 12px 4px;
-  cursor: grab;
-  touch-action: none;
+  gap: 2px;
+  margin: 0;
+  padding: 6px 16px 2px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .dock-handle-hit:active {
-  cursor: grabbing;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.dock-handle {
-  width: 40px;
-  height: 5px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.28);
-  transition: background 0.15s, width 0.15s;
+.dock-handle-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: transform 0.28s var(--ease-out), background 0.15s;
 }
 
-.dock-handle-hit:active .dock-handle,
-body.chrome-dragging .dock-handle {
-  background: rgba(255, 255, 255, 0.5);
-  width: 48px;
+.dock-handle-hit:active .dock-handle-chevron {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* Collapsed panels → chevron points up (tap to expand) */
+body.chrome-hidden:not(.layout-side) .dock-handle-chevron {
+  transform: rotate(180deg);
 }
 
 .dock-handle-hint {
@@ -778,16 +761,15 @@ body.chrome-dragging .dock-handle {
   color: var(--text-tertiary);
   letter-spacing: 0.02em;
   line-height: 1;
-  opacity: 0.75;
+  opacity: 0.7;
   transition: opacity 0.2s;
   pointer-events: none;
   min-height: 1em;
 }
 
 body.chrome-hidden:not(.layout-side) .dock-handle-hint {
-  opacity: 1;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 11px;
+  opacity: 0.85;
+  color: rgba(255, 255, 255, 0.65);
 }
 
 body.layout-side .dock-handle-hit {
@@ -906,7 +888,10 @@ body.layout-side .acc-group .acc-body {
   overscroll-behavior: contain;
   /* Animate expand/collapse without reflowing the photo stage */
   max-height: min(28vh, 220px);
-  transition: max-height 0.34s var(--ease-out);
+  transition:
+    max-height 0.34s var(--ease-out),
+    opacity 0.24s ease,
+    padding 0.28s var(--ease-out);
 }
 
 /* Tall dock for Age / Presets / Crop — grows upward over the image */
