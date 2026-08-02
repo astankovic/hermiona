@@ -65,16 +65,24 @@
     }
   }
 
-  function applyVignette(data, w, h, amount) {
-    const cx = w / 2;
-    const cy = h / 2;
-    const maxDist = Math.sqrt(cx * cx + cy * cy);
+  /**
+   * @param {object} [roi] optional tile origin in full-frame coords
+   *   { x0, y0, fullW, fullH } — vignette/grain use full-frame distance
+   */
+  function applyVignette(data, w, h, amount, roi) {
+    const fullW = roi && roi.fullW > 0 ? roi.fullW : w;
+    const fullH = roi && roi.fullH > 0 ? roi.fullH : h;
+    const ox = roi && roi.x0 != null ? roi.x0 : 0;
+    const oy = roi && roi.y0 != null ? roi.y0 : 0;
+    const cx = fullW / 2;
+    const cy = fullH / 2;
+    const maxDist = Math.sqrt(cx * cx + cy * cy) || 1;
     const strength = amount * 1.4;
 
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
-        const dx = x - cx;
-        const dy = y - cy;
+        const dx = x + ox - cx;
+        const dy = y + oy - cy;
         const dist = Math.sqrt(dx * dx + dy * dy) / maxDist;
         const factor = 1 - Math.pow(dist, 1.8) * strength;
         const i = (y * w + x) * 4;
@@ -91,10 +99,15 @@
    * @param {number} h
    * @param {number} amount 0..1
    * @param {'static'|'random'} mode
+   * @param {object} [roi] { x0, y0, fullW, fullH } for seamless tiling across tiles
    */
-  function applyGrain(data, w, h, amount, mode) {
+  function applyGrain(data, w, h, amount, mode, roi) {
     const REF = 1600;
-    const longEdge = Math.max(w, h) || REF;
+    const fullW = roi && roi.fullW > 0 ? roi.fullW : w;
+    const fullH = roi && roi.fullH > 0 ? roi.fullH : h;
+    const ox = roi && roi.x0 != null ? roi.x0 : 0;
+    const oy = roi && roi.y0 != null ? roi.y0 : 0;
+    const longEdge = Math.max(fullW, fullH) || REF;
     const resScale = Math.max(0.5, longEdge / REF);
     const strength = amount * 28 * Math.sqrt(REF / longEdge);
     const sampleScale = 1 / resScale;
@@ -109,14 +122,14 @@
       return;
     }
 
-    // Static tiled grain — resolution-compensated sample rate
+    // Static tiled grain — resolution-compensated; offset by ROI origin
     const tile = getGrainTile();
     let px = 0;
     for (let y = 0; y < h; y++) {
-      const ty = Math.floor(y * sampleScale) % GRAIN_TILE;
+      const ty = Math.floor((y + oy) * sampleScale) % GRAIN_TILE;
       const tyN = ty < 0 ? ty + GRAIN_TILE : ty;
       for (let x = 0; x < w; x++) {
-        const tx = Math.floor(x * sampleScale) % GRAIN_TILE;
+        const tx = Math.floor((x + ox) * sampleScale) % GRAIN_TILE;
         const txN = tx < 0 ? tx + GRAIN_TILE : tx;
         const noise = tile[tyN * GRAIN_TILE + txN] * strength;
         data[px] = clamp(data[px] + noise, 0, 255);
@@ -424,10 +437,13 @@
       }
     }
 
-    if (vignette > 0) applyVignette(data, w, h, vignette);
+    // Optional ROI: tile processed as crop of full frame (zoom detail)
+    const roiMeta = options.roi || null;
+
+    if (vignette > 0) applyVignette(data, w, h, vignette, roiMeta);
 
     if (!fast && options.grain && grainAmt > 0) {
-      applyGrain(data, w, h, grainAmt, options.grainMode || 'static');
+      applyGrain(data, w, h, grainAmt, options.grainMode || 'static', roiMeta);
     }
 
     // Print / instant borders (Crop · Borders) — last step; may change size

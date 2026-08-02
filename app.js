@@ -304,7 +304,9 @@
       maxZoom: 8,
       /** true while canvas holds high-res filter detail for zoom */
       detailActive: false,
-      detailLong: 0
+      detailLong: 0,
+      /** Last HQ tile in full-frame pixel coords (source space) */
+      detailRoi: null
     },
     export: {
       size: 'working',
@@ -1316,6 +1318,9 @@
     state.view.zoom = 1;
     state.view.panX = 0;
     state.view.panY = 0;
+    state.view.detailActive = false;
+    state.view.detailLong = 0;
+    state.view.detailRoi = null;
     if (layout !== false) layoutViewport();
     else applyViewTransform();
     updateZoomHud();
@@ -1442,6 +1447,7 @@
     cancelDetailRender();
     state.view.detailActive = false;
     state.view.detailLong = 0;
+    state.view.detailRoi = null;
     resetView(true);
     scheduleRender(false);
   }
@@ -1614,7 +1620,12 @@
       if (state.crop.active) updateCropOverlay();
     });
     const endPan = () => {
+      if (!panDrag.active) return;
       panDrag.active = false;
+      // Pan may have left the HQ tile — re-render ROI if zoomed
+      if (state.view.zoom > DETAIL_ZOOM_MIN) {
+        scheduleDetailRender(280);
+      }
     };
     canvasArea.addEventListener('pointerup', endPan);
     canvasArea.addEventListener('pointercancel', endPan);
@@ -1932,11 +1943,22 @@
     ctx.drawImage(rotated, 0, 0);
   }
 
-  // ——— High-res filter detail for zoom (real grain/optics, not CSS blur) ———
+  // ——— High-res filter detail for zoom (ROI only: visible + 20% margin) ———
   let detailToken = 0;
   let detailTimer = null;
   const DETAIL_MAX_LONG = 4096;
+  const DETAIL_MAX_LONG_TOUCH = 2560;
   const DETAIL_ZOOM_MIN = 1.08;
+  /** Expand visible view by this fraction on each side before process */
+  const DETAIL_ROI_MARGIN = 0.2;
+
+  function detailMaxLong() {
+    const touch =
+      typeof navigator !== 'undefined' &&
+      (navigator.maxTouchPoints > 0 ||
+        /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent || ''));
+    return touch ? DETAIL_MAX_LONG_TOUCH : DETAIL_MAX_LONG;
+  }
 
   function cancelDetailRender() {
     clearTimeout(detailTimer);
@@ -1958,9 +1980,14 @@
       if (state.view.detailActive) {
         state.view.detailActive = false;
         state.view.detailLong = 0;
+        state.view.detailRoi = null;
         // Drop back to working-res preview
         scheduleRender(false);
       }
+      return;
+    }
+    // Skip re-render if current tile still covers the view (with margin slack)
+    if (state.view.detailActive && detailRoiStillValid()) {
       return;
     }
     const myToken = detailToken;
@@ -1968,6 +1995,113 @@
       if (myToken !== detailToken) return;
       runDetailRender();
     }, delay != null ? delay : 300);
+  }
+
+  /**
+   * Visible stage rect → image pixel ROI in working-image space (iw×ih),
+   * expanded by DETAIL_ROI_MARGIN on each side, clamped to bounds.
+   * Returns { x, y, w, h, iw, ih } or null.
+   */
+  function getVisibleImageRoi(margin) {
+    margin = margin != null ? margin : DETAIL_ROI_MARGIN;
+    if (!state.workingCanvas || !canvasArea) return null;
+    const iw = state.workingCanvas.width;
+    const ih = state.workingCanvas.height;
+    const fw = state.view.fitW || 1;
+    const fh = state.view.fitH || 1;
+    if (iw < 1 || ih < 1 || fw < 1 || fh < 1) return null;
+
+    const area = canvasArea.getBoundingClientRect();
+    const z = state.view.zoom || 1;
+    const panX = state.view.panX || 0;
+    const panY = state.view.panY || 0;
+    const cx = area.left + area.width / 2;
+    const cy = area.top + area.height / 2;
+
+    // Screen → image (working) pixels. Transform is scale then translate about center.
+    function screenToImage(sx, sy) {
+      const dx = (sx - cx - panX) / z;
+      const dy = (sy - cy - panY) / z;
+      return {
+        x: (dx / fw + 0.5) * iw,
+        y: (dy / fh + 0.5) * ih
+      };
+    }
+
+    const corners = [
+      screenToImage(area.left, area.top),
+      screenToImage(area.right, area.top),
+      screenToImage(area.left, area.bottom),
+      screenToImage(area.right, area.bottom)
+    ];
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (let i = 0; i < 4; i++) {
+      minX = Math.min(minX, corners[i].x);
+      minY = Math.min(minY, corners[i].y);
+      maxX = Math.max(maxX, corners[i].x);
+      maxY = Math.max(maxY, corners[i].y);
+    }
+
+    const visW = Math.max(1, maxX - minX);
+    const visH = Math.max(1, maxY - minY);
+    const mx = visW * margin;
+    const my = visH * margin;
+    minX -= mx;
+    minY -= my;
+    maxX += mx;
+    maxY += my;
+
+    // Clamp to image
+    minX = Math.max(0, minX);
+    minY = Math.max(0, minY);
+    maxX = Math.min(iw, maxX);
+    maxY = Math.min(ih, maxY);
+
+    const x = Math.floor(minX);
+    const y = Math.floor(minY);
+    const w = Math.max(1, Math.ceil(maxX) - x);
+    const h = Math.max(1, Math.ceil(maxY) - y);
+    return { x: x, y: y, w: Math.min(w, iw - x), h: Math.min(h, ih - y), iw: iw, ih: ih };
+  }
+
+  /** True if last detail tile still covers the current view + half-margin. */
+  function detailRoiStillValid() {
+    const prev = state.view.detailRoi;
+    if (!prev || !prev.fullW) return false;
+    const cur = getVisibleImageRoi(DETAIL_ROI_MARGIN * 0.5);
+    if (!cur) return false;
+    // Map current working-space ROI into previous full-frame space
+    const sx = prev.fullW / cur.iw;
+    const sy = prev.fullH / cur.ih;
+    const cx0 = cur.x * sx;
+    const cy0 = cur.y * sy;
+    const cx1 = (cur.x + cur.w) * sx;
+    const cy1 = (cur.y + cur.h) * sy;
+    return (
+      cx0 >= prev.x - 1 &&
+      cy0 >= prev.y - 1 &&
+      cx1 <= prev.x + prev.w + 1 &&
+      cy1 <= prev.y + prev.h + 1 &&
+      state.view.detailLong > 0
+    );
+  }
+
+  function cropImageData(src, x, y, tw, th) {
+    const sw = src.width;
+    const sh = src.height;
+    x = Math.max(0, Math.min(sw - 1, x | 0));
+    y = Math.max(0, Math.min(sh - 1, y | 0));
+    tw = Math.max(1, Math.min(tw | 0, sw - x));
+    th = Math.max(1, Math.min(th | 0, sh - y));
+    const c = document.createElement('canvas');
+    c.width = sw;
+    c.height = sh;
+    const cctx = c.getContext('2d');
+    cctx.putImageData(src, 0, 0);
+    return cctx.getImageData(x, y, tw, th);
   }
 
   function buildDetailSource(targetLong) {
@@ -2007,6 +2141,30 @@
     return cctx.getImageData(0, 0, tw, th);
   }
 
+  /**
+   * Composite HQ tile onto a full-frame canvas (working preview scaled up + tile).
+   */
+  function drawDetailTile(processed, roi, fullW, fullH) {
+    if (!processed || !roi) return;
+    if (canvas.width !== fullW || canvas.height !== fullH) {
+      canvas.width = fullW;
+      canvas.height = fullH;
+    }
+    // Base: scale current working canvas (last live preview) under the tile
+    if (state.workingCanvas) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(state.workingCanvas, 0, 0, fullW, fullH);
+    } else {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, fullW, fullH);
+    }
+    const bctx = ensureBlit(processed.width, processed.height);
+    bctx.putImageData(processed, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(blitCanvas, roi.x, roi.y);
+  }
+
   async function runDetailRender() {
     if (!state.hasImage || state.ui.scrubbing || state.isComparing) return;
     if (state.exporting) return;
@@ -2015,8 +2173,14 @@
     if (zoom <= DETAIL_ZOOM_MIN) {
       state.view.detailActive = false;
       state.view.detailLong = 0;
+      state.view.detailRoi = null;
       return;
     }
+
+    // Full-frame border / active crop: keep previous full-image detail path
+    const borderOn =
+      state.border && state.border.id && state.border.id !== 'none';
+    const useRoi = !state.crop.active && !borderOn;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const workLong = state.workingCanvas
@@ -2029,28 +2193,56 @@
         )
       : workLong;
 
-    let targetLong = Math.round(workLong * zoom * dpr);
-    targetLong = Math.min(targetLong, origLong || targetLong, DETAIL_MAX_LONG);
-    targetLong = Math.max(targetLong, workLong);
+    const maxLong = detailMaxLong();
+    // Density: make the visible+margin region ~screen long-edge * dpr,
+    // then back-solve full-frame long edge (roi covers ~1/zoom of the frame).
+    const area = canvasArea ? canvasArea.getBoundingClientRect() : null;
+    const screenLong = area
+      ? Math.max(area.width, area.height) * dpr
+      : workLong;
+    const roiFrac = Math.min(
+      1,
+      (1 / Math.max(zoom, 1.001)) * (1 + 2 * DETAIL_ROI_MARGIN)
+    );
+    let targetLong = Math.round(screenLong / Math.max(0.12, roiFrac));
+    // Also allow classic workLong*zoom*dpr when that is larger (desktop)
+    targetLong = Math.max(targetLong, Math.round(workLong * zoom * dpr * 0.85));
+    targetLong = Math.min(targetLong, origLong || targetLong, maxLong);
+    // Prefer at least working long edge; ROI still saves work via crop
+    targetLong = Math.max(targetLong, Math.min(workLong, maxLong));
 
-    // Already showing equal-or-better detail?
+    // Already showing equal-or-better detail that still covers the view?
     if (
       state.view.detailActive &&
       state.view.detailLong >= targetLong * 0.92 &&
-      canvas.width >= workLong
+      detailRoiStillValid()
     ) {
       return;
     }
 
-    // Not enough gain over working preview
-    if (targetLong < workLong * 1.15) return;
+    const workRoi = useRoi ? getVisibleImageRoi(DETAIL_ROI_MARGIN) : null;
+
+    // Full-frame path only: skip if no resolution gain. ROI path always worth it when
+    // the tile is clearly smaller than the full frame (fewer pixels to process).
+    if (!useRoi || !workRoi) {
+      if (targetLong < workLong * 1.12) return;
+    } else {
+      const areaFrac =
+        (workRoi.w * workRoi.h) / Math.max(1, workRoi.iw * workRoi.ih);
+      if (areaFrac > 0.92 && targetLong < workLong * 1.12) return;
+    }
 
     const token = detailToken;
     const pct = Math.round(zoom * 100);
+    const roiLabel =
+      workRoi && useRoi
+        ? Math.round((workRoi.w * workRoi.h) / ((workRoi.iw * workRoi.ih) || 1) * 100) +
+          '% frame'
+        : 'full';
     busyStart(
       'detail',
       'Rendering filter detail…',
-      pct + '% · ' + targetLong + 'px'
+      pct + '% · ' + targetLong + 'px · ' + roiLabel
     );
     if (canvasArea) canvasArea.classList.add('detail-render');
 
@@ -2059,10 +2251,39 @@
       await new Promise((r) => setTimeout(r, 24));
       if (token !== detailToken) return;
 
-      const srcData = buildDetailSource(targetLong);
+      const fullData = buildDetailSource(targetLong);
+      if (!fullData || token !== detailToken) return;
+
+      const fullW = fullData.width;
+      const fullH = fullData.height;
+
+      let srcData = fullData;
+      let roiPx = null;
+      if (useRoi && workRoi) {
+        const sx = fullW / workRoi.iw;
+        const sy = fullH / workRoi.ih;
+        const rx = Math.floor(workRoi.x * sx);
+        const ry = Math.floor(workRoi.y * sy);
+        const rw = Math.max(1, Math.ceil(workRoi.w * sx));
+        const rh = Math.max(1, Math.ceil(workRoi.h * sy));
+        // If ROI is almost the whole frame, skip crop overhead
+        if (rw * rh < fullW * fullH * 0.88) {
+          srcData = cropImageData(fullData, rx, ry, rw, rh);
+          roiPx = {
+            x: Math.max(0, Math.min(fullW - 1, rx)),
+            y: Math.max(0, Math.min(fullH - 1, ry)),
+            w: srcData.width,
+            h: srcData.height,
+            fullW: fullW,
+            fullH: fullH
+          };
+        }
+      }
+
       if (!srcData || token !== detailToken) return;
 
       const straighten = state.crop.active ? state.params.rotation : 0;
+      // Crop active + straighten: full frame (ROI off). Border off for tile path.
       const processed = Engine.process(srcData, state.params, {
         grain: true,
         grainMode: 'static',
@@ -2070,7 +2291,15 @@
         quality: 'export',
         fast: false,
         scene: state.scene,
-        border: currentBorderOpts(),
+        border: roiPx ? null : currentBorderOpts(),
+        roi: roiPx
+          ? {
+              x0: roiPx.x,
+              y0: roiPx.y,
+              fullW: fullW,
+              fullH: fullH
+            }
+          : null,
         optics: {
           enabled: state.optics.enabled && state.debugScene === 'off',
           strength: state.optics.strength,
@@ -2091,9 +2320,30 @@
       // Another zoom/scrub may have started
       if (state.ui.scrubbing || state.view.zoom <= DETAIL_ZOOM_MIN) return;
 
-      drawToMain(processed, straighten, { native: true });
+      if (roiPx && !straighten) {
+        drawDetailTile(processed, roiPx, fullW, fullH);
+      } else {
+        drawToMain(processed, straighten, { native: true });
+      }
       state.view.detailActive = true;
-      state.view.detailLong = Math.max(processed.width, processed.height);
+      state.view.detailLong = targetLong;
+      state.view.detailRoi = roiPx
+        ? {
+            x: roiPx.x,
+            y: roiPx.y,
+            w: roiPx.w,
+            h: roiPx.h,
+            fullW: fullW,
+            fullH: fullH
+          }
+        : {
+            x: 0,
+            y: 0,
+            w: fullW,
+            h: fullH,
+            fullW: fullW,
+            fullH: fullH
+          };
       layoutViewport();
       updateCropOverlay();
     } catch (err) {
@@ -2245,6 +2495,7 @@
     if (useFast || state.view.zoom <= DETAIL_ZOOM_MIN) {
       state.view.detailActive = false;
       state.view.detailLong = 0;
+      state.view.detailRoi = null;
     }
 
     const srcData =
