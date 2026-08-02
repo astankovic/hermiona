@@ -238,45 +238,139 @@
   }
 
   /**
-   * @param {ExportOptions} opts
-   * @returns {Promise<{width:number,height:number,pipeline?:string}>}
+   * Size ladder for OOM / memory fallback.
+   * Starts at requested size, then steps down: full → 2048 → 1080 → working.
+   * @param {string} requested
+   * @returns {string[]}
    */
-  function download(opts) {
+  function sizeFallbackLadder(requested) {
+    const order = ['full', '2048', '1080', 'working'];
+    const start = order.indexOf(requested);
+    if (start < 0) {
+      // Unknown size: try as-is, then full ladder
+      return [requested].concat(order);
+    }
+    return order.slice(start);
+  }
+
+  function triggerDownload(blob, ext) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'hermiona-edit-' + Date.now() + '.' + ext;
+    link.href = url;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
+  /**
+   * Build + blob at a single size (no fallback).
+   * @param {ExportOptions} opts
+   * @returns {Promise<{width:number,height:number,pipeline?:string,blob:Blob,ext:string}>}
+   */
+  function buildAndBlob(opts) {
+    return new Promise((resolve, reject) => {
+      try {
+        const result = buildExportCanvas(opts);
+        const format = opts.format || 'jpeg';
+        const quality = effectiveJpegQuality(opts, result.width, result.height);
+        const ext = format === 'png' ? 'png' : 'jpg';
+
+        canvasToBlob(result.canvas, format, quality)
+          .then((blob) => {
+            // Drop canvas ref ASAP for GC before download
+            try {
+              result.canvas.width = 0;
+              result.canvas.height = 0;
+            } catch (_) { /* ignore */ }
+            resolve({
+              width: result.width,
+              height: result.height,
+              pipeline: result.pipeline,
+              blob: blob,
+              ext: ext
+            });
+          })
+          .catch(reject);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  /**
+   * Export with automatic size fallback on memory-ish failures.
+   * Ladder: requested → next smaller (full → 2048 → 1080 → working).
+   *
+   * @param {ExportOptions} opts
+   * @returns {Promise<{width:number,height:number,pipeline?:string,fallbackFrom?:string}>}
+   */
+  function downloadWithFallback(opts) {
+    const base = opts || {};
+    const requested = base.size || 'working';
+    const ladder = sizeFallbackLadder(requested);
+    let fallbackFrom = null;
+
+    function attempt(i) {
+      if (i >= ladder.length) {
+        return Promise.reject(
+          new Error('Export failed — try a smaller size')
+        );
+      }
+      const size = ladder[i];
+      const tryOpts = Object.assign({}, base, { size: size });
+
+      return buildAndBlob(tryOpts)
+        .then((built) => {
+          triggerDownload(built.blob, built.ext);
+          const out = {
+            width: built.width,
+            height: built.height,
+            pipeline: built.pipeline
+          };
+          if (fallbackFrom) out.fallbackFrom = fallbackFrom;
+          else if (size !== requested) out.fallbackFrom = requested;
+          return out;
+        })
+        .catch(() => {
+          // Step down ladder on any build/toBlob failure (OOM often has opaque messages)
+          if (i + 1 < ladder.length) {
+            if (!fallbackFrom) fallbackFrom = requested;
+            // Small yield so browser can reclaim canvas memory
+            return new Promise((r) => setTimeout(r, 30)).then(() => attempt(i + 1));
+          }
+          throw new Error('Export failed — try a smaller size');
+        });
+    }
+
     return new Promise((resolve, reject) => {
       requestAnimationFrame(() => {
         setTimeout(() => {
-          try {
-            const result = buildExportCanvas(opts);
-            const format = opts.format || 'jpeg';
-            const quality = effectiveJpegQuality(opts, result.width, result.height);
-            const ext = format === 'png' ? 'png' : 'jpg';
-
-            canvasToBlob(result.canvas, format, quality)
-              .then((blob) => {
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.download = 'hermiona-edit-' + Date.now() + '.' + ext;
-                link.href = url;
-                link.click();
-                setTimeout(() => URL.revokeObjectURL(url), 4000);
-                resolve({
-                  width: result.width,
-                  height: result.height,
-                  pipeline: result.pipeline
-                });
-              })
-              .catch(reject);
-          } catch (err) {
-            reject(err);
-          }
+          attempt(0).then(resolve, (err) => {
+            reject(
+              err && err.message
+                ? err
+                : new Error('Export failed — try a smaller size')
+            );
+          });
         }, 40);
       });
     });
   }
 
+  /**
+   * @param {ExportOptions} opts
+   * @returns {Promise<{width:number,height:number,pipeline?:string,fallbackFrom?:string}>}
+   */
+  function download(opts) {
+    // Resilient by default — size ladder on OOM / build / toBlob failures
+    return downloadWithFallback(opts);
+  }
+
   global.HermionaExport = {
     download,
+    downloadWithFallback,
     buildExportCanvas,
+    sizeFallbackLadder,
     MAX_EXPORT_LONG_EDGE,
     HARD_MAX_LONG_EDGE,
     resolveTargetLong

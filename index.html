@@ -21,7 +21,7 @@
         if (p.has("fresh") || p.get("nocache") === "1") return String(Date.now());
         if (p.get("v")) return p.get("v");
       } catch (e) {}
-      return "202608020320"; // ← bump this when you push JS/CSS changes
+      return "202608020410"; // ← bump this when you push JS/CSS changes
     })();
     document.write(
       '<link rel="stylesheet" href="styles.css?v=' +
@@ -31,6 +31,7 @@
   </script>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
 </head>
 <body>
   <div id="app">
@@ -98,6 +99,7 @@
             <p class="drop-title">Add a photo</p>
             <p class="drop-sub">Tap or drop · quick edit</p>
             <button type="button" class="btn-pill" id="btnUpload">Upload</button>
+            <p class="fine-print"><a href="privacy.html">Privacy</a></p>
           </div>
         </div>
 
@@ -133,6 +135,15 @@
 
         <!-- Hold-to-compare hint -->
         <div class="compare-hint" id="compareHint" hidden>Hold for original</div>
+
+        <!-- Histogram + clipping stats (shown by app.js when ready) -->
+        <div class="histo-panel" id="histoPanel" hidden>
+          <canvas id="histoCanvas" width="240" height="64" aria-label="Histogram"></canvas>
+          <div class="histo-meta">
+            <span id="histoClipLow"></span>
+            <span id="histoClipHigh"></span>
+          </div>
+        </div>
 
         <!-- Look badge -->
         <div class="look-chip" id="lookChip" hidden></div>
@@ -442,8 +453,10 @@
     (function () {
       var v = window.__H_V || "0";
       var files = [
+        "js/errors.js",
         "js/looks.js",
         "js/imperfections.js",
+        "js/histogram.js",
         "js/scene/depth-pseudo.js",
         "js/scene/coc.js",
         "js/scene/bokeh.js",
@@ -452,6 +465,7 @@
         "js/engine.js",
         "js/export.js",
         "app.js",
+        "js/pwa.js",
       ];
       function load(i) {
         if (i >= files.length) {

@@ -55,6 +55,19 @@ python -m http.server 8000
 - Download re-runs the full pipeline at the chosen export size/quality.
 - Works offline after the first load (portrait AI only downloads when DoF / Analyze is used).
 
+## Privacy
+
+Photos are processed **on your device** in the browser. Hermiona has no app backend and does not upload your images to Hermiona servers. Optional Portrait/Analyze may download on-device ML models (MediaPipe) from Google/CDN on first use. No analytics are shipped today.
+
+→ **[privacy.html](privacy.html)**
+
+## Docs
+
+- [Processing pipeline](docs/pipeline.md) — order of operations (light → color → film → camera → optics → …)
+- [Licenses & third-party notices](docs/licenses.md)
+- [Production roadmap](docs/production-roadmap.md)
+- [Scene-aware optics](docs/scene-aware-optics.md)
+
 ---
 
 Built with care. Enjoy editing.

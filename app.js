@@ -337,6 +337,10 @@
   const canvasArea = $('#canvasArea');
   const dock = $('#dock');
   const topbarTitle = $('#topbarTitle');
+  const histoPanel = $('#histoPanel');
+  const histoCanvas = $('#histoCanvas');
+  const histoClipLow = $('#histoClipLow');
+  const histoClipHigh = $('#histoClipHigh');
 
   /** Iris + wordmark for idle topbar (must match index.html brand lockup) */
   const BRAND_LOCKUP_HTML =
@@ -1446,6 +1450,44 @@
     }
   }
 
+  // ========== HISTOGRAM ==========
+  let histoRaf = 0;
+  let histoPending = null;
+
+  function setHistoVisible(on) {
+    if (!histoPanel) return;
+    histoPanel.hidden = !on;
+  }
+
+  function scheduleHistogram(imageData) {
+    if (!imageData || !window.HermionaHistogram || !histoCanvas) return;
+    histoPending = imageData;
+    if (histoRaf) return;
+    histoRaf = requestAnimationFrame(() => {
+      histoRaf = 0;
+      const src = histoPending;
+      histoPending = null;
+      if (!src || !state.hasImage) return;
+      try {
+        const H = window.HermionaHistogram;
+        const hist = H.compute(src, src.width, src.height, {
+          bins: 64,
+          maxSide: 256
+        });
+        H.draw(histoCanvas, hist, { mode: 'rgb' });
+        if (histoClipLow) {
+          histoClipLow.textContent = '↓ ' + H.formatClip(hist.clipLow);
+        }
+        if (histoClipHigh) {
+          histoClipHigh.textContent = '↑ ' + H.formatClip(hist.clipHigh);
+        }
+        setHistoVisible(true);
+      } catch (e) {
+        /* non-fatal */
+      }
+    });
+  }
+
   function render(fast) {
     if (!state.hasImage) return;
 
@@ -1490,6 +1532,7 @@
     });
     if (processed) {
       drawToMain(processed, straighten);
+      scheduleHistogram(processed);
     }
     layoutViewport();
     updateCropOverlay();
@@ -3089,6 +3132,7 @@
     if (!state.exporting) btnDownload.disabled = !enabled;
     if (btnReset) btnReset.disabled = !enabled;
     if (btnClose) btnClose.disabled = !enabled;
+    if (!enabled) setHistoVisible(false);
     updateHistoryButtons();
   }
 
@@ -3369,10 +3413,30 @@
         },
         maxWorkingSize: state.maxWorkingSize
       });
-      showToast('Saved · ' + result.width + '×' + result.height);
+      if (result.fallbackFrom) {
+        showToast(
+          'Saved at ' +
+            result.width +
+            '×' +
+            result.height +
+            ' (reduced from ' +
+            result.fallbackFrom +
+            ')'
+        );
+      } else {
+        showToast('Saved · ' + result.width + '×' + result.height);
+      }
     } catch (err) {
-      console.error(err);
-      alert('Export failed: ' + (err.message || err));
+      const Errors = window.HermionaErrors;
+      const msg =
+        (err && err.message) || 'Export failed — try a smaller size';
+      if (Errors) {
+        Errors.report(err, 'export');
+        Errors.showBanner(msg, { tone: 'error', timeoutMs: 6000 });
+      } else {
+        console.error(err);
+        showToast(msg, 4000);
+      }
     } finally {
       state.exporting = false;
       busyEnd('export');

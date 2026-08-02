@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hermiona — P0 smoke tests</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: #0c0c0e;
+      color: #e8e8ec;
+      line-height: 1.45;
+      padding: 24px;
+    }
+    h1 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      margin: 0 0 4px;
+    }
+    .sub {
+      color: #8a8a96;
+      font-size: 0.85rem;
+      margin: 0 0 20px;
+    }
+    #results .summary {
+      font-weight: 600;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      font-variant-numeric: tabular-nums;
+    }
+    #results .summary.pass {
+      background: #12321f;
+      color: #7ddea0;
+      border: 1px solid #1e5c38;
+    }
+    #results .summary.fail {
+      background: #3a1518;
+      color: #ff9aa3;
+      border: 1px solid #7a2a32;
+    }
+    #results .list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    #results .list li {
+      padding: 6px 10px;
+      border-bottom: 1px solid #1c1c22;
+      font-size: 0.9rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    #results .list li.ok { color: #9ad4ad; }
+    #results .list li.bad {
+      color: #ff8f98;
+      background: #1a0e10;
+    }
+  </style>
+</head>
+<body>
+  <h1>Hermiona · P0 smoke tests</h1>
+  <p class="sub">Engine + export · no MediaPipe · no network</p>
+  <div id="results">Running…</div>
+
+  <!-- Classic non-module scripts (same order as production app) -->
+  <script src="../js/looks.js"></script>
+  <script src="../js/imperfections.js"></script>
+  <script src="../js/scene/depth-pseudo.js"></script>
+  <script src="../js/scene/coc.js"></script>
+  <script src="../js/scene/bokeh.js"></script>
+  <script src="../js/scene/dof.js"></script>
+  <script src="../js/engine.js"></script>
+  <script src="../js/export.js"></script>
+  <script src="run.js"></script>
+</body>
+</html>

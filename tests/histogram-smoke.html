@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hermiona — histogram smoke</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #050505;
+      color: #f5f5f2;
+      font: 14px/1.4 -apple-system, system-ui, sans-serif;
+    }
+    h1 { font-size: 16px; font-weight: 600; margin: 0 0 16px; }
+    .row { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+    .card {
+      background: rgba(28, 28, 30, 0.92);
+      border: 0.5px solid rgba(255, 255, 255, 0.14);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    canvas { display: block; background: #111; border-radius: 4px; }
+    pre {
+      margin: 10px 0 0;
+      font-size: 11px;
+      color: rgba(235, 235, 245, 0.6);
+      white-space: pre-wrap;
+    }
+    .ok { color: #30d158; }
+    .fail { color: #ff453a; }
+  </style>
+</head>
+<body>
+  <h1>Histogram smoke test</h1>
+  <div class="row">
+    <div class="card">
+      <canvas id="cLuma" width="240" height="64"></canvas>
+      <pre id="metaLuma"></pre>
+    </div>
+    <div class="card">
+      <canvas id="cRgb" width="240" height="64"></canvas>
+      <pre id="metaRgb"></pre>
+    </div>
+    <div class="card">
+      <canvas id="cSrc" width="128" height="96"></canvas>
+      <canvas id="cClip" width="128" height="96" style="margin-top:8px"></canvas>
+      <pre id="metaClip"></pre>
+    </div>
+  </div>
+  <pre id="log"></pre>
+
+  <script src="../js/histogram.js"></script>
+  <script>
+    (function () {
+      var log = document.getElementById('log');
+      var lines = [];
+      function ok(msg) { lines.push('<span class="ok">✓</span> ' + msg); }
+      function fail(msg) { lines.push('<span class="fail">✗</span> ' + msg); }
+
+      if (!window.HermionaHistogram) {
+        fail('HermionaHistogram not defined');
+        log.innerHTML = lines.join('\n');
+        return;
+      }
+
+      var H = HermionaHistogram;
+      var w = 128;
+      var h = 96;
+      var data = new Uint8ClampedArray(w * h * 4);
+
+      // Gradient: black → white horizontally; tint top half red, bottom blue
+      for (var y = 0; y < h; y++) {
+        for (var x = 0; x < w; x++) {
+          var i = (y * w + x) * 4;
+          var v = Math.round((x / (w - 1)) * 255);
+          if (y < h / 2) {
+            data[i] = v;
+            data[i + 1] = Math.round(v * 0.3);
+            data[i + 2] = Math.round(v * 0.2);
+          } else {
+            data[i] = Math.round(v * 0.2);
+            data[i + 1] = Math.round(v * 0.4);
+            data[i + 2] = v;
+          }
+          data[i + 3] = 255;
+        }
+      }
+
+      // Force some pure clip pixels
+      for (var k = 0; k < 40; k++) {
+        data[k * 4] = 0; data[k * 4 + 1] = 0; data[k * 4 + 2] = 0; data[k * 4 + 3] = 255;
+      }
+      for (k = 0; k < 40; k++) {
+        var j = (w * h - 1 - k) * 4;
+        data[j] = 255; data[j + 1] = 255; data[j + 2] = 255; data[j + 3] = 255;
+      }
+
+      var imageData = new ImageData(data, w, h);
+      var hist = H.compute(imageData, null, null, { bins: 64, maxSide: 256 });
+
+      if (hist.bins === 64) ok('bins=64');
+      else fail('bins expected 64 got ' + hist.bins);
+
+      if (hist.pixels > 0) ok('pixels=' + hist.pixels);
+      else fail('pixels=0');
+
+      if (hist.meanLuma > 0 && hist.meanLuma < 255) ok('meanLuma=' + hist.meanLuma.toFixed(2));
+      else fail('meanLuma out of range: ' + hist.meanLuma);
+
+      if (hist.clipLow > 0) ok('clipLow=' + (hist.clipLow * 100).toFixed(2) + '%');
+      else fail('clipLow should be > 0 for black pixels');
+
+      if (hist.clipHigh > 0) ok('clipHigh=' + (hist.clipHigh * 100).toFixed(2) + '%');
+      else fail('clipHigh should be > 0 for white pixels');
+
+      var sum = 0;
+      for (var b = 0; b < hist.luma.length; b++) sum += hist.luma[b];
+      if (sum === hist.pixels) ok('luma bin sum matches pixels');
+      else fail('luma sum ' + sum + ' != pixels ' + hist.pixels);
+
+      // Downsample path
+      var histDs = H.compute(imageData, null, null, { bins: 32, maxSide: 32 });
+      if (histDs.pixels < hist.pixels) ok('maxSide reduces samples: ' + histDs.pixels);
+      else ok('maxSide samples=' + histDs.pixels + ' (small source may equal full)');
+
+      // Array form
+      var histArr = H.compute(data, w, h, { bins: 16 });
+      if (histArr.pixels === hist.pixels) ok('Uint8ClampedArray + w/h works');
+      else fail('array path pixels mismatch');
+
+      H.draw(document.getElementById('cLuma'), hist, { mode: 'luma', bg: '#0a0a0a' });
+      H.draw(document.getElementById('cRgb'), hist, { mode: 'rgb', bg: '#0a0a0a' });
+
+      document.getElementById('metaLuma').textContent =
+        'luma · clip↓ ' + H.formatClip(hist.clipLow) +
+        ' · clip↑ ' + H.formatClip(hist.clipHigh) +
+        ' · mean ' + hist.meanLuma.toFixed(1);
+
+      document.getElementById('metaRgb').textContent = 'rgb mode · bins ' + hist.bins;
+
+      // Preview source + overlay
+      var cSrc = document.getElementById('cSrc');
+      cSrc.getContext('2d').putImageData(imageData, 0, 0);
+
+      var overlay = H.clippingOverlay(imageData);
+      if (overlay && overlay.width === w) ok('clippingOverlay size matches');
+      else fail('clippingOverlay failed');
+
+      var cClip = document.getElementById('cClip');
+      var ctx = cClip.getContext('2d');
+      ctx.putImageData(imageData, 0, 0);
+      // Composite overlay on top via temp
+      var tmp = document.createElement('canvas');
+      tmp.width = w;
+      tmp.height = h;
+      tmp.getContext('2d').putImageData(overlay, 0, 0);
+      ctx.drawImage(tmp, 0, 0);
+      document.getElementById('metaClip').textContent = 'source + clipping overlay';
+
+      log.innerHTML = lines.join('\n');
+    })();
+  </script>
+</body>
+</html>
