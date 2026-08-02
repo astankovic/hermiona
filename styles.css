@@ -295,7 +295,7 @@ body:not(.layout-side) .dock {
   max-height: none;
   overflow: visible;
   transform: none;
-  padding: 0 14px max(var(--safe-bottom), 14px);
+  padding: 0 18px max(var(--safe-bottom), 16px);
   transition:
     transform 0.34s var(--ease-cinematic),
     opacity 0.3s ease;
@@ -334,18 +334,18 @@ body:not(.layout-side) .dock-handle-hit {
 body:not(.layout-side) .tool-rail {
   flex: 0 0 auto;
   width: 100%;
-  max-width: 360px;
-  height: 58px;
-  min-height: 58px;
-  max-height: 58px;
+  max-width: 340px;
+  height: 56px;
+  min-height: 56px;
+  max-height: 56px;
   margin: 0 auto;
-  padding: 4px 6px;
+  padding: 3px 5px;
   border-radius: 999px;
   border: 0.5px solid rgba(255, 255, 255, 0.16);
   border-top: 0.5px solid rgba(255, 255, 255, 0.16);
-  background: rgba(28, 28, 30, 0.52);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  background: rgba(22, 22, 24, 0.48);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
   box-shadow:
     0 10px 36px rgba(0, 0, 0, 0.4),
     inset 0 0.5px 0 rgba(255, 255, 255, 0.12);
@@ -399,21 +399,21 @@ body:not(.layout-side) .tool-btn.has-edits::after {
 body:not(.layout-side) .dock-body {
   flex: 0 0 auto !important;
   width: 100%;
-  max-width: 360px;
+  max-width: 340px;
   margin: 0 auto !important;
   padding: 10px 12px 8px !important;
   border-radius: 22px;
   border: 0.5px solid rgba(255, 255, 255, 0.12);
-  background: rgba(28, 28, 30, 0.5);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  background: rgba(22, 22, 24, 0.48);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.38);
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   height: auto !important;
   min-height: 0 !important;
-  max-height: min(34dvh, 260px) !important;
+  max-height: min(32dvh, 240px) !important;
 }
 
 body:not(.layout-side) .dock.dock-tall .dock-body {
