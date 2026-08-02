@@ -21,7 +21,7 @@
         if (p.has("fresh") || p.get("nocache") === "1") return String(Date.now());
         if (p.get("v")) return p.get("v");
       } catch (e) {}
-      return "202608021030"; // ← bump this when you push JS/CSS changes
+      return "202608021045"; // ← bump this when you push JS/CSS changes
     })();
     document.write(
       '<link rel="stylesheet" href="styles.css?v=' +
@@ -63,7 +63,14 @@
           <span class="brand-word">HERMIONA</span>
         </span>
         <div class="header-busy" id="headerBusy" hidden>
-          <span class="busy-spinner" aria-hidden="true"></span>
+          <svg class="iris-svg iris-svg--busy iris-svg--sm" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+            <circle class="iris-orbit" cx="32" cy="32" r="26"/>
+            <circle class="iris-ring" cx="32" cy="32" r="22.5"/>
+            <g class="iris-diamond-g"><path class="iris-diamond" d="M32 14.5 L49.5 32 L32 49.5 L14.5 32 Z"/></g>
+            <g class="iris-diamond-ghost-g"><path class="iris-diamond-ghost" d="M32 14.5 L49.5 32 L32 49.5 L14.5 32 Z"/></g>
+            <circle class="iris-pupil" cx="32" cy="32" r="2.2"/>
+            <circle class="iris-spark" cx="40" cy="24" r="1"/>
+          </svg>
           <span class="header-busy-text" id="headerBusyText">Processing…</span>
         </div>
       </div>
@@ -93,7 +100,8 @@
           <div class="drop-content">
             <div class="drop-mark" aria-hidden="true">
               <div class="hero-slot hero-slot--iris" data-hero="iris">
-                <svg class="drop-iris" width="72" height="72" viewBox="0 0 64 64" fill="none">
+                <!-- Plays once on hero-ready, freezes as lockup when composition is complete -->
+                <svg class="iris-svg iris-svg--hero drop-iris" width="72" height="72" viewBox="0 0 64 64" fill="none">
                   <circle class="iris-orbit" cx="32" cy="32" r="26" />
                   <circle class="iris-ring" cx="32" cy="32" r="22.5" />
                   <g class="iris-diamond-g">
@@ -178,7 +186,15 @@
         <!-- Busy overlay -->
         <div class="busy-overlay" id="busyOverlay" hidden aria-live="polite" aria-busy="true">
           <div class="busy-card">
-            <div class="busy-spinner" aria-hidden="true"></div>
+            <!-- Full Iris loop while work runs -->
+            <svg class="iris-svg iris-svg--busy iris-svg--lg" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+              <circle class="iris-orbit" cx="32" cy="32" r="26"/>
+              <circle class="iris-ring" cx="32" cy="32" r="22.5"/>
+              <g class="iris-diamond-g"><path class="iris-diamond" d="M32 14.5 L49.5 32 L32 49.5 L14.5 32 Z"/></g>
+              <g class="iris-diamond-ghost-g"><path class="iris-diamond-ghost" d="M32 14.5 L49.5 32 L32 49.5 L14.5 32 Z"/></g>
+              <circle class="iris-pupil" cx="32" cy="32" r="2.2"/>
+              <circle class="iris-spark" cx="40" cy="24" r="1"/>
+            </svg>
             <p class="busy-title" id="busyTitle">Processing…</p>
             <p class="busy-sub" id="busySub" hidden></p>
           </div>

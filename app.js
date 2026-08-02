@@ -390,13 +390,25 @@
     }
   }
 
-  /** Hero boot: layout settles first, then body.hero-ready reveals by beat */
+  let heroIrisSettleTimer = 0;
+
+  /** Hero boot: layout settles → reveal beats → Iris freezes when composition is complete */
   function playHeroEnter() {
-    document.body.classList.remove('is-entering', 'is-exiting', 'hero-ready');
+    document.body.classList.remove(
+      'is-entering',
+      'is-exiting',
+      'hero-ready',
+      'hero-iris-settled'
+    );
+    clearTimeout(heroIrisSettleTimer);
     // Double rAF so flex geometry is painted before opacity reveals fire
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         document.body.classList.add('hero-ready');
+        // Last slot (foot) delay 1.28s + reveal 0.55s ≈ 1.83s; settle slightly after
+        heroIrisSettleTimer = setTimeout(() => {
+          document.body.classList.add('hero-iris-settled');
+        }, 1900);
       });
     });
   }
@@ -406,7 +418,8 @@
    * Call after state.hasImage is true and canvas is ready to paint.
    */
   function playEditorEnter() {
-    document.body.classList.remove('hero-ready', 'is-exiting');
+    clearTimeout(heroIrisSettleTimer);
+    document.body.classList.remove('hero-ready', 'hero-iris-settled', 'is-exiting');
     document.body.classList.add('has-image');
     if (dock) {
       dock.hidden = false;
