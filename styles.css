@@ -272,20 +272,40 @@ body:not(.layout-side) .stage {
 }
 
 /*
- * iOS Photos main menu — floating glass islands over full-bleed photo.
- * Dock wrapper is TRANSPARENT; only #toolRail / #dockBody paint glass.
+ * iOS Photos chrome — FIXED bottom anchor.
+ * Rail never jumps: all floating pieces use position:fixed from viewport bottom.
+ * Submenu shell height is CONSTANT across tools (content scrolls inside).
  */
+body:not(.layout-side) {
+  --photos-rail-h: 56px;
+  --photos-rail-gap: 10px;
+  --photos-panel-h: 156px; /* fixed shell — no per-tool jump */
+  --photos-enhance-h: 72px; /* circle row + labels */
+  --photos-side: 18px;
+  --photos-safe: max(14px, var(--safe-bottom));
+  --photos-rail-bottom: var(--photos-safe);
+  --photos-panel-bottom: calc(
+    var(--photos-rail-bottom) + var(--photos-rail-h) + var(--photos-rail-gap)
+  );
+  --photos-enhance-bottom: calc(
+    var(--photos-panel-bottom) + var(--photos-panel-h) + 8px
+  );
+}
+
+/* Transparent shell — children are viewport-fixed */
 body:not(.layout-side) .dock {
-  grid-area: workspace;
-  align-self: end;
-  justify-self: stretch;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: auto;
   width: 100%;
+  height: 0;
+  margin: 0;
+  padding: 0;
   z-index: 50;
   flex: none;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 10px;
-  /* No sheet — photo shows everywhere around floating controls */
+  overflow: visible;
   background: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -293,21 +313,16 @@ body:not(.layout-side) .dock {
   border-radius: 0 !important;
   box-shadow: none !important;
   max-height: none;
-  overflow: visible;
-  transform: none;
-  padding: 0 18px max(var(--safe-bottom), 16px);
-  transition:
-    transform 0.34s var(--ease-cinematic),
-    opacity 0.3s ease;
+  transform: none !important;
+  pointer-events: none;
   touch-action: manipulation;
-  pointer-events: none; /* clicks pass to photo except on children */
 }
 
 body:not(.layout-side) .dock > * {
   pointer-events: auto;
 }
 
-/* Full-bleed photo — chrome floats on top */
+/* Full-bleed photo */
 body:not(.layout-side) .canvas-area {
   padding: 0;
   position: absolute;
@@ -325,24 +340,27 @@ body:not(.layout-side) #mainCanvas {
   will-change: transform;
 }
 
-/* Photos has no grabber on the edit rail */
 body:not(.layout-side) .dock-handle-hit {
   display: none !important;
 }
 
-/* —— Primary menu: floating capsule (Adjust · Filters · …) —— */
+/* —— Primary menu: FIXED floating capsule (never moves with tool content) —— */
 body:not(.layout-side) .tool-rail {
-  flex: 0 0 auto;
-  width: 100%;
-  max-width: 340px;
-  height: 56px;
-  min-height: 56px;
-  max-height: 56px;
-  margin: 0 auto;
-  padding: 3px 5px;
+  position: fixed !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: var(--photos-rail-bottom) !important;
+  transform: translateX(-50%) !important;
+  z-index: 56;
+  width: min(340px, calc(100% - (var(--photos-side) * 2))) !important;
+  height: var(--photos-rail-h) !important;
+  min-height: var(--photos-rail-h) !important;
+  max-height: var(--photos-rail-h) !important;
+  margin: 0 !important;
+  padding: 3px 5px !important;
   border-radius: 999px;
   border: 0.5px solid rgba(255, 255, 255, 0.16);
-  border-top: 0.5px solid rgba(255, 255, 255, 0.16);
   background: rgba(22, 22, 24, 0.48);
   backdrop-filter: blur(32px) saturate(200%);
   -webkit-backdrop-filter: blur(32px) saturate(200%);
@@ -354,6 +372,7 @@ body:not(.layout-side) .tool-rail {
   overflow: hidden;
   gap: 0;
   touch-action: manipulation;
+  transition: opacity 0.28s ease !important;
 }
 
 body:not(.layout-side) .tool-btn {
@@ -373,8 +392,8 @@ body:not(.layout-side) .tool-btn span {
 }
 
 body:not(.layout-side) .tool-rail .tool-btn svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 body:not(.layout-side) .tool-btn.active {
@@ -388,21 +407,27 @@ body:not(.layout-side) .tool-btn.active span {
 }
 
 body:not(.layout-side) .tool-btn.has-edits::after {
-  /* yellow edit dot like Photos */
   bottom: 3px;
   width: 4px;
   height: 4px;
   background: var(--accent);
 }
 
-/* —— Tool surface: floating card ABOVE the capsule (not edge sheet) —— */
+/* —— Submenu card: FIXED height shell above rail (same for every tool) —— */
 body:not(.layout-side) .dock-body {
-  flex: 0 0 auto !important;
-  width: 100%;
-  max-width: 340px;
-  margin: 0 auto !important;
-  padding: 10px 12px 8px !important;
-  border-radius: 22px;
+  position: fixed !important;
+  left: 50%;
+  bottom: var(--photos-panel-bottom);
+  transform: translateX(-50%);
+  z-index: 55;
+  width: min(340px, calc(100% - (var(--photos-side) * 2)));
+  max-width: min(340px, calc(100% - (var(--photos-side) * 2)));
+  height: var(--photos-panel-h) !important;
+  min-height: var(--photos-panel-h) !important;
+  max-height: var(--photos-panel-h) !important;
+  margin: 0 !important;
+  padding: 8px 10px 6px !important;
+  border-radius: 20px;
   border: 0.5px solid rgba(255, 255, 255, 0.12);
   background: rgba(22, 22, 24, 0.48);
   backdrop-filter: blur(32px) saturate(200%);
@@ -411,81 +436,80 @@ body:not(.layout-side) .dock-body {
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: min(32dvh, 240px) !important;
+  flex: none !important;
+  transition: opacity 0.28s ease, transform 0.34s var(--ease-cinematic);
 }
 
-body:not(.layout-side) .dock.dock-tall .dock-body {
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: min(38dvh, 300px) !important;
-}
-
-body:not(.layout-side) .dock.dock-tall[data-tool="looks"] .dock-body {
-  max-height: min(40dvh, 320px) !important;
-}
-
+/* Kill per-tool height variants — they caused the jump */
+body:not(.layout-side) .dock.dock-tall .dock-body,
+body:not(.layout-side) .dock.dock-tall[data-tool="looks"] .dock-body,
 body:not(.layout-side) .dock.dock-tall[data-tool="crop"] .dock-body,
 body:not(.layout-side) .dock.dock-tall[data-tool="border"] .dock-body,
 body:not(.layout-side) .dock.dock-tall[data-tool="portrait"] .dock-body,
 body:not(.layout-side) .dock.dock-tall[data-tool="age"] .dock-body {
-  max-height: min(36dvh, 280px) !important;
+  height: var(--photos-panel-h) !important;
+  min-height: var(--photos-panel-h) !important;
+  max-height: var(--photos-panel-h) !important;
 }
 
-/* Expanded: no full-width sheet — wrapper stays clear */
 body:not(.layout-side) .dock.dock-tall {
   background: transparent !important;
   box-shadow: none !important;
 }
 
-/* Rail-only / collapsed panels */
+/* Rail-only: panel gone, rail stays pinned */
 body.chrome-hidden:not(.layout-side) .dock {
-  transform: none;
+  transform: none !important;
   background: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  box-shadow: none !important;
-  max-height: none;
-  border-radius: 0;
 }
 
 body.chrome-hidden:not(.layout-side) .dock-body,
 .dock-body[hidden] {
   display: none !important;
-  max-height: 0 !important;
-  min-height: 0 !important;
-  flex: 0 0 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: none;
-  overflow: hidden !important;
-  pointer-events: none;
+  pointer-events: none !important;
 }
 
 body.chrome-hidden:not(.layout-side) .tool-rail {
-  max-height: 58px;
-  min-height: 58px;
-  height: 58px;
   opacity: 1;
-  overflow: hidden;
   pointer-events: auto;
-  margin-top: 0;
-  border-top: 0.5px solid rgba(255, 255, 255, 0.16);
+  visibility: visible;
 }
 
-body.chrome-hidden:not(.layout-side) .zoom-hud {
-  bottom: calc(58px + 28px + var(--safe-bottom));
+/* Immersive: hide islands (don't translate .dock — would re-parent fixed kids) */
+body.ui-immersive:not(.layout-side) .dock {
+  transform: none !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
 }
 
+body.ui-immersive:not(.layout-side) .tool-rail,
+body.ui-immersive:not(.layout-side) .dock-body,
+body.ui-immersive:not(.layout-side) .enhance-bar {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  /* Keep translateX(-50%) so un-hide does not jump horizontally */
+  transform: translateX(-50%) !important;
+}
+
+body.chrome-hidden:not(.layout-side) .zoom-hud,
 body:not(.layout-side) .zoom-hud {
-  bottom: calc(58px + 28px + var(--safe-bottom));
+  bottom: calc(var(--photos-rail-bottom) + var(--photos-rail-h) + 20px);
   transition: bottom 0.28s var(--ease-out), opacity 0.22s ease;
 }
 
-/* When panels open, lift HUD above floating body + rail */
 body:not(.layout-side):not(.chrome-hidden):not(.ui-immersive) .zoom-hud {
-  bottom: calc(58px + min(34dvh, 260px) + 40px + var(--safe-bottom));
+  bottom: calc(
+    var(--photos-panel-bottom) + var(--photos-panel-h) + 16px
+  );
+}
+
+/* When enhance circles visible, lift zoom HUD above them */
+body:not(.layout-side):not(.chrome-hidden):not(.ui-immersive):has(
+    #enhanceBar:not([hidden])
+  )
+  .zoom-hud {
+  bottom: calc(var(--photos-enhance-bottom) + var(--photos-enhance-h) + 8px);
 }
 
 /*
@@ -516,11 +540,7 @@ body.tool-session-crop:not(.layout-side).chrome-hidden .topbar {
   pointer-events: auto;
 }
 
-body.ui-immersive:not(.layout-side) .dock {
-  transform: translate3d(0, calc(100% + 28px), 0);
-  opacity: 0;
-  pointer-events: none;
-}
+/* Immersive dock hide: see fixed-island block (hide children, not .dock transform) */
 
 body.ui-immersive:not(.layout-side) .zoom-hud,
 body.ui-immersive:not(.layout-side) .histo-panel,
@@ -628,9 +648,13 @@ body:not(.layout-side) #panelCrop .crop-apply-row {
 }
 
 body:not(.layout-side) #panelPortrait {
-  padding: 0 10px 2px;
-  max-height: 72px;
-  overflow: hidden;
+  padding: 0;
+  max-height: none;
+  overflow: visible;
+}
+
+body:not(.layout-side) #panelCrop {
+  padding: 0;
 }
 
 /* ========== TOP BAR ========== */
@@ -1888,10 +1912,11 @@ body:not(.layout-side) .bokeh-scroll {
 /* Mobile dock-body / rail sizes live in the Photos floating-island block above */
 
 /* Filters: iPhone-style horizontal filmstrip */
+/* Filters — compact filmstrip for fixed panel shell */
 body:not(.layout-side) .dock[data-tool="looks"] .subpanel {
   max-height: none;
   overflow: visible;
-  padding: 4px 10px 2px;
+  padding: 0;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .preset-hint {
@@ -1899,55 +1924,61 @@ body:not(.layout-side) .dock[data-tool="looks"] .preset-hint {
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .subpanel-seg {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .seg-btn {
   min-width: 0;
-  height: 28px;
-  font-size: 11.5px;
-  padding: 0 6px;
+  height: 26px;
+  font-size: 11px;
+  padding: 0 5px;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .user-looks-bar {
-  padding: 0 0 6px;
+  padding: 0 0 4px;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .user-looks-hint {
   display: none;
 }
 
+body:not(.layout-side) .dock[data-tool="looks"] .user-looks-bar .btn-pill {
+  height: 26px;
+  font-size: 11px;
+  padding: 0 10px;
+}
+
 body:not(.layout-side) .dock[data-tool="looks"] .preset-cats {
-  padding-bottom: 2px;
-  margin-bottom: 0;
+  padding-bottom: 0;
+  margin-bottom: 2px;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .preset-cat {
-  height: 26px;
-  padding: 0 11px;
-  font-size: 11px;
+  height: 24px;
+  padding: 0 10px;
+  font-size: 10.5px;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .preset-scroll {
   min-height: 0;
-  gap: 10px;
-  padding: 2px 2px 6px;
+  gap: 8px;
+  padding: 0 0 2px;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .preset-card {
-  width: 76px;
+  width: 64px;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .preset-swatch {
-  width: 76px;
-  height: 76px;
+  width: 64px;
+  height: 64px;
   border-radius: 10px;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .preset-card-name {
-  max-width: 76px;
-  font-size: 10.5px;
+  max-width: 64px;
+  font-size: 10px;
   text-align: center;
 }
 
@@ -1956,22 +1987,22 @@ body:not(.layout-side) .dock[data-tool="looks"] .preset-card-recipe {
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .look-card {
-  width: 68px;
+  width: 58px;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .look-swatch {
-  width: 68px;
-  height: 68px;
+  width: 58px;
+  height: 58px;
   border-radius: 10px;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .look-card-name {
-  font-size: 10.5px;
+  font-size: 10px;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .look-intensity {
-  padding: 0 2px 2px;
+  padding: 0;
 }
 
 body:not(.layout-side) .dial-hint {
@@ -2189,18 +2220,23 @@ body.layout-compact .enhance-btn {
 }
 
 /*
- * Mobile Photos: secondary tools = floating circular icons above dial card.
- * Lives outside #dockBody so photo shows around them.
+ * Mobile Photos: secondary tools — FIXED above the fixed panel shell.
  */
 body:not(.layout-side) .enhance-bar {
-  flex: 0 0 auto;
+  position: fixed;
+  left: 50%;
+  bottom: var(--photos-enhance-bottom);
+  transform: translateX(-50%);
+  z-index: 55;
+  flex: none;
   width: auto;
-  max-width: 340px;
-  margin: 0 auto;
+  max-width: min(340px, calc(100% - 36px));
+  margin: 0;
   padding: 0;
-  gap: 18px;
+  gap: 14px;
   background: transparent;
   pointer-events: auto;
+  transition: opacity 0.28s ease, transform 0.34s var(--ease-cinematic);
 }
 
 body:not(.layout-side) .enhance-bar[hidden] {
@@ -2215,22 +2251,22 @@ body.ui-immersive:not(.layout-side) .enhance-bar {
 
 body:not(.layout-side) .enhance-btn {
   flex-direction: column;
-  width: 52px;
+  width: 48px;
   height: auto;
   min-height: 0;
   padding: 0;
-  gap: 5px;
+  gap: 4px;
   border: none;
   border-radius: 0;
   background: transparent;
   color: rgba(255, 255, 255, 0.88);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 500;
 }
 
 body:not(.layout-side) .enhance-btn .enhance-ico {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   align-items: center;
   justify-content: center;
@@ -2342,8 +2378,8 @@ body:not(.layout-side) .enhance-btn.active .enhance-label {
 
 /* Mobile Photos tick dial */
 body:not(.layout-side) .dial-row {
-  padding: 6px 8px 2px;
-  gap: 2px;
+  padding: 2px 4px 0;
+  gap: 0;
 }
 
 body:not(.layout-side) .dial-meta {
@@ -2361,12 +2397,13 @@ body:not(.layout-side) .dial-name {
 }
 
 body:not(.layout-side) .dial-value {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 500;
   letter-spacing: -0.03em;
   color: #fff;
   min-width: 0;
   order: 0;
+  line-height: 1.15;
 }
 
 body:not(.layout-side) .dial-value.neutral {
@@ -2374,8 +2411,8 @@ body:not(.layout-side) .dial-value.neutral {
 }
 
 body:not(.layout-side) .dial-track-wrap {
-  padding: 10px 0 6px;
-  height: 44px;
+  padding: 4px 0 2px;
+  height: 36px;
   display: flex;
   align-items: center;
 }
@@ -2438,7 +2475,7 @@ body:not(.layout-side) .dial-center-mark {
 }
 
 body:not(.layout-side) .ios-dial {
-  height: 44px;
+  height: 36px;
   position: relative;
   z-index: 1;
 }
@@ -2488,15 +2525,24 @@ body:not(.layout-side) .dial-reset {
 }
 
 body:not(.layout-side) .chips-scroll {
-  padding: 2px 4px 6px;
+  padding: 0 2px 2px;
+}
+
+body:not(.layout-side) .chip {
+  min-width: 52px;
 }
 
 body:not(.layout-side) .chip-icon {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.08);
   border: 0.5px solid rgba(255, 255, 255, 0.1);
+}
+
+body:not(.layout-side) .chip-label {
+  font-size: 9.5px;
+  max-width: 52px;
 }
 
 body:not(.layout-side) .chip.active .chip-icon {
@@ -3401,19 +3447,7 @@ body.layout-compact .preset-scroll {
     height: 22px;
   }
 
-  /* Keep body shorter than dock so Light/Color/Age rail stays on screen */
-  body:not(.layout-side) .dock {
-    max-height: min(58dvh, 460px);
-  }
-
-  body:not(.layout-side) .dock.dock-tall .dock-body {
-    max-height: min(34dvh, 260px);
-  }
-
-  body:not(.layout-side) .dock.dock-tall[data-tool="looks"] .dock-body,
-  body:not(.layout-side) .dock.dock-tall[data-tool="age"] .dock-body {
-    max-height: min(38dvh, 300px);
-  }
+  /* Fixed Photos islands: do not override panel height (causes menu jump) */
 
   .dock[data-tool="age"] .chips-scroll {
     min-height: 0;
