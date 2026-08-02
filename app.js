@@ -436,6 +436,7 @@
       dock.style.transform = '';
       dock.style.opacity = '';
     }
+    if (typeof setImmersive === 'function') setImmersive(false);
     canvas.classList.add('visible');
 
     if (prefersReducedMotion()) {
@@ -1422,12 +1423,61 @@
     );
   }
 
-  // Pinch zoom
-  const pinch = { active: false, startDist: 0, startZoom: 1 };
+  // Pinch zoom + two-finger pan (incremental, anchored at midpoint, rubber-band)
+  const pinch = {
+    active: false,
+    lastDist: 0,
+    lastMidX: 0,
+    lastMidY: 0,
+    virtualZoom: 1,
+    endedAt: 0
+  };
+  // Single/double tap tracking — shared between pinch and tap handlers
+  const tapState = { lastAt: 0, lastX: 0, lastY: 0, timer: null };
   function touchDist(t0, t1) {
     const dx = t0.clientX - t1.clientX;
     const dy = t0.clientY - t1.clientY;
     return Math.sqrt(dx * dx + dy * dy);
+  }
+  function pinchSoftClamp(z) {
+    const min = state.view.minZoom;
+    const max = state.view.maxZoom;
+    if (z < min) return min * Math.pow(z / min, 0.55);
+    if (z > max) return max * Math.pow(z / max, 0.4);
+    return z;
+  }
+  function applyPinchStep(dist, midX, midY) {
+    const prev = state.view.zoom;
+    pinch.virtualZoom *= dist / (pinch.lastDist || dist || 1);
+    const z = pinchSoftClamp(pinch.virtualZoom);
+    if (canvasArea && state.view.fitW) {
+      const area = canvasArea.getBoundingClientRect();
+      const cx = area.left + area.width / 2;
+      const cy = area.top + area.height / 2;
+      const ax = midX - cx - state.view.panX;
+      const ay = midY - cy - state.view.panY;
+      const r = z / (prev || 1);
+      // Zoom around the midpoint, then follow midpoint travel (two-finger pan)
+      state.view.panX += ax - ax * r + (midX - pinch.lastMidX);
+      state.view.panY += ay - ay * r + (midY - pinch.lastMidY);
+    }
+    state.view.zoom = z;
+    clampPan();
+    if (canvasWrap) canvasWrap.classList.remove('zoom-animate');
+    applyViewTransform();
+    updateZoomHud();
+    if (state.crop.active) updateCropOverlay();
+  }
+  function settlePinch() {
+    pinch.endedAt = Date.now();
+    const z = state.view.zoom;
+    if (z < state.view.minZoom - 0.001) {
+      setZoom(state.view.minZoom, null, null, true);
+    } else if (z > state.view.maxZoom + 0.001) {
+      setZoom(state.view.maxZoom, null, null, true);
+    } else {
+      scheduleDetailRender(260);
+    }
   }
   if (canvasArea) {
     canvasArea.addEventListener(
@@ -1435,8 +1485,20 @@
       (e) => {
         if (!state.hasImage || e.touches.length !== 2) return;
         pinch.active = true;
-        pinch.startDist = touchDist(e.touches[0], e.touches[1]);
-        pinch.startZoom = state.view.zoom;
+        pinch.lastDist = touchDist(e.touches[0], e.touches[1]);
+        pinch.lastMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        pinch.lastMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        pinch.virtualZoom = state.view.zoom;
+        // A second finger cancels every one-finger gesture — otherwise the
+        // pan handler and hold-compare fight the pinch and the photo jumps.
+        panDrag.active = false;
+        clearTimeout(compareTimer);
+        compareTimer = null;
+        comparePointerId = null;
+        endCompare();
+        clearTimeout(tapState.timer);
+        tapState.timer = null;
+        tapState.lastAt = 0;
       },
       { passive: true }
     );
@@ -1448,23 +1510,35 @@
         const d = touchDist(e.touches[0], e.touches[1]);
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
         const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-        const z = pinch.startZoom * (d / (pinch.startDist || 1));
-        setZoom(z, midX, midY, false);
+        applyPinchStep(d, midX, midY);
+        pinch.lastDist = d;
+        pinch.lastMidX = midX;
+        pinch.lastMidY = midY;
       },
       { passive: false }
     );
-    canvasArea.addEventListener('touchend', () => {
+    const onPinchEnd = (e) => {
       if (!pinch.active) return;
-      if (!window.TouchEvent) {
-        pinch.active = false;
-        return;
+      if (e.touches && e.touches.length >= 2) return;
+      pinch.active = false;
+      settlePinch();
+      // Hand the remaining finger to one-finger pan without a position jump
+      if (
+        e.touches &&
+        e.touches.length === 1 &&
+        state.view.zoom > 1.02 &&
+        !state.crop.active
+      ) {
+        const t = e.touches[0];
+        panDrag.active = true;
+        panDrag.x = t.clientX;
+        panDrag.y = t.clientY;
+        panDrag.panX = state.view.panX;
+        panDrag.panY = state.view.panY;
       }
-      // end when fingers lift
-      pinch.active = false;
-    });
-    canvasArea.addEventListener('touchcancel', () => {
-      pinch.active = false;
-    });
+    };
+    canvasArea.addEventListener('touchend', onPinchEnd);
+    canvasArea.addEventListener('touchcancel', onPinchEnd);
   }
 
   // Alt / middle-mouse / touch pan when zoomed (Space remains compare)
@@ -1472,7 +1546,7 @@
 
   if (canvasArea) {
     canvasArea.addEventListener('pointerdown', (e) => {
-      if (!state.hasImage) return;
+      if (!state.hasImage || pinch.active) return;
       if (e.target.closest('.crop-rect, .crop-handle, .zoom-hud, button, .drop-overlay')) return;
       if (state.view.zoom <= 1.02) return;
       const wantPan =
@@ -1491,7 +1565,7 @@
       } catch (_) { /* ignore */ }
     });
     canvasArea.addEventListener('pointermove', (e) => {
-      if (!panDrag.active) return;
+      if (!panDrag.active || pinch.active) return;
       state.view.panX = panDrag.panX + (e.clientX - panDrag.x);
       state.view.panY = panDrag.panY + (e.clientY - panDrag.y);
       clampPan();
@@ -3935,10 +4009,43 @@
   if (canvasArea) {
     let compareStartX = 0;
     let compareStartY = 0;
+
+    const onCanvasTap = (x, y) => {
+      const now = Date.now();
+      const isDouble =
+        now - tapState.lastAt < 300 &&
+        Math.abs(x - tapState.lastX) < 44 &&
+        Math.abs(y - tapState.lastY) < 44;
+      if (isDouble) {
+        clearTimeout(tapState.timer);
+        tapState.timer = null;
+        tapState.lastAt = 0;
+        // Double-tap: toggle fit ↔ 2.5× at the tapped point
+        if (state.view.zoom > 1.05) {
+          setZoom(state.view.minZoom, null, null, true);
+        } else {
+          setZoom(2.5, x, y, true);
+        }
+        hapticLight();
+        return;
+      }
+      tapState.lastAt = now;
+      tapState.lastX = x;
+      tapState.lastY = y;
+      clearTimeout(tapState.timer);
+      tapState.timer = setTimeout(() => {
+        tapState.timer = null;
+        // Single tap on the photo: toggle immersive view (iOS Photos)
+        if (isOverlayChrome() && state.hasImage && !state.crop.active) {
+          toggleImmersive();
+        }
+      }, 290);
+    };
+
     canvasArea.addEventListener('pointerdown', (e) => {
       if (!state.hasImage) return;
       if (state.crop.active) return;
-      if (panDrag.active) return;
+      if (pinch.active) return;
       if (e.altKey || e.button === 1) return;
       if (e.target.closest('.crop-layer, .zoom-hud, button')) return;
       if (e.isPrimary === false) return;
@@ -3948,7 +4055,9 @@
       compareStartY = e.clientY;
       clearTimeout(compareTimer);
       compareTimer = setTimeout(() => {
-        if (panDrag.active) return;
+        if (pinch.active) return;
+        // Finger held still — compare wins over the (not yet moved) pan drag
+        panDrag.active = false;
         startCompare();
         hapticLight();
       }, 220);
@@ -3956,10 +4065,22 @@
 
     const cancelCompareGesture = (e) => {
       if (comparePointerId != null && e.pointerId !== comparePointerId) return;
+      // Timer still pending = short still press → candidate for tap
+      const hadTimer = !!compareTimer;
+      const wasComparing = state.isComparing;
       clearTimeout(compareTimer);
       compareTimer = null;
       comparePointerId = null;
       endCompare();
+      if (
+        e.type === 'pointerup' &&
+        hadTimer &&
+        !wasComparing &&
+        !pinch.active &&
+        Date.now() - pinch.endedAt > 350
+      ) {
+        onCanvasTap(e.clientX, e.clientY);
+      }
     };
 
     canvasArea.addEventListener('pointerup', cancelCompareGesture);
@@ -4407,6 +4528,7 @@
           state.sourceFileName = null;
           canvas.classList.remove('visible');
           if (dock) dock.hidden = true;
+          if (typeof setImmersive === 'function') setImmersive(false);
           if (typeof setChromeHidden === 'function') setChromeHidden(false);
           dropOverlay.classList.remove('hidden');
           enableControls(false);
@@ -4490,11 +4612,28 @@
 
   // ========== IMMERSIVE CHROME (mobile: tap chevron to collapse panels) ==========
   const chromeState = {
-    hidden: false
+    hidden: false,
+    immersive: false
   };
 
   function isOverlayChrome() {
     return !document.body.classList.contains('layout-side');
+  }
+
+  /** Full immersive: tap photo hides ALL chrome (topbar + dock). Tap again restores. */
+  function setImmersive(on) {
+    if (!isOverlayChrome() || !state.hasImage) on = false;
+    on = !!on;
+    if (chromeState.immersive === on) return;
+    chromeState.immersive = on;
+    document.body.classList.toggle('ui-immersive', on);
+    if (state.view.zoom > 1.02) clampPan();
+    applyViewTransform();
+  }
+
+  function toggleImmersive() {
+    setImmersive(!chromeState.immersive);
+    hapticLight();
   }
 
   function setChromeHidden(hidden, opts) {
@@ -4520,35 +4659,73 @@
     if (state.crop.active) updateCropOverlay();
   }
 
-  /** Chevron tap only — no swipe. Tool rail always stays. */
+  /** Chevron tap + vertical swipe on handle/rail. Tool rail always stays. */
   function bindChromeGestures() {
     const handle = document.getElementById('dockHandleHit');
-    if (!handle) return;
-    // Guard against double-fire (iOS ghost clicks)
+    const rail = document.getElementById('toolRail');
+    // Guard against double-fire (iOS ghost clicks / swipe + click)
     let lastToggle = 0;
-    const toggle = (e) => {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
+    const setPanels = (hidden) => {
       if (!isOverlayChrome() || !state.hasImage) return;
       if (dock && dock.hidden) return;
       const now = Date.now();
       if (now - lastToggle < 280) return;
       lastToggle = now;
-      setChromeHidden(!chromeState.hidden);
+      setChromeHidden(hidden);
+      hapticLight();
     };
-    handle.addEventListener('click', toggle);
-    // Pointerup helps when click is swallowed after scroll bounce
-    handle.addEventListener(
-      'pointerup',
-      (e) => {
-        if (e.pointerType === 'touch' && e.button === 0) {
-          // click will also fire — debounce handles it
-        }
-      },
-      { passive: true }
-    );
+    // Swipe down = collapse panels · swipe up = expand (bottom-sheet feel)
+    const bindSwipe = (el) => {
+      if (!el) return;
+      let track = null;
+      let swipedAt = 0;
+      el.addEventListener(
+        'pointerdown',
+        (e) => {
+          if (e.pointerType !== 'touch') return;
+          track = { id: e.pointerId, x: e.clientX, y: e.clientY };
+        },
+        { passive: true }
+      );
+      el.addEventListener('pointermove', (e) => {
+        if (!track || e.pointerId !== track.id) return;
+        const dy = e.clientY - track.y;
+        const dx = e.clientX - track.x;
+        // Mostly-vertical drag beyond threshold (horizontal stays scroll)
+        if (Math.abs(dy) < 24 || Math.abs(dy) < Math.abs(dx) * 1.3) return;
+        track = null;
+        swipedAt = Date.now();
+        if (dy > 0 && !chromeState.hidden) setPanels(true);
+        else if (dy < 0 && chromeState.hidden) setPanels(false);
+      });
+      const clear = () => {
+        track = null;
+      };
+      el.addEventListener('pointerup', clear);
+      el.addEventListener('pointercancel', clear);
+      // Swallow the ghost click a swipe can leave behind (would hit a tool button)
+      el.addEventListener(
+        'click',
+        (e) => {
+          if (Date.now() - swipedAt < 450) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+          }
+        },
+        true
+      );
+    };
+    // Swipe suppressors first, then the tap toggle (same-element listener order)
+    bindSwipe(handle);
+    bindSwipe(rail);
+    if (handle) {
+      handle.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setPanels(!chromeState.hidden);
+      });
+    }
   }
 
   /** Accordion open/close for compact Crop & Portrait panels */
@@ -4598,6 +4775,12 @@
     window.visualViewport.addEventListener('scroll', syncVisualViewportHeight);
   }
 
+  // iOS Safari ignores user-scalable=no in the browser tab — block the native
+  // page pinch-zoom so two fingers always drive the photo, never the UI.
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach((type) => {
+    document.addEventListener(type, (e) => e.preventDefault());
+  });
+
   // ========== RESPONSIVE LAYOUT (portrait bottom dock · landscape/desktop side dock) ==========
   function updateLayoutMode() {
     syncVisualViewportHeight();
@@ -4621,6 +4804,9 @@
     // Side layout always shows chrome
     if (side && chromeState.hidden) {
       setChromeHidden(false);
+    }
+    if (side && chromeState.immersive) {
+      setImmersive(false);
     }
 
     // Refit image after reflow — stage size is stable on overlay layout
@@ -4663,6 +4849,10 @@
         fineOverlay.hidden = true;
         fineState = null;
         endScrub();
+        return;
+      }
+      if (chromeState.immersive && isOverlayChrome()) {
+        setImmersive(false);
         return;
       }
       if (chromeState.hidden && isOverlayChrome()) {

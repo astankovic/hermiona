@@ -71,6 +71,9 @@ html, body {
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   touch-action: manipulation;
+  /* No page rubber-band / pull-to-refresh — the app owns all gestures */
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
 }
 
 body {
@@ -336,7 +339,41 @@ body.chrome-hidden:not(.layout-side) .zoom-hud {
 }
 
 body:not(.layout-side) .zoom-hud {
-  transition: bottom 0.28s var(--ease-out);
+  transition: bottom 0.28s var(--ease-out), opacity 0.22s ease;
+}
+
+/*
+ * Full immersive (tap photo): ALL chrome slides away — topbar up, dock down.
+ * Tap again / Escape restores. Only on overlay (mobile) layout.
+ */
+body:not(.layout-side) .dock {
+  will-change: transform;
+  transition:
+    transform 0.34s var(--ease-cinematic),
+    max-height 0.38s var(--ease-cinematic),
+    box-shadow 0.32s var(--ease-out),
+    background 0.32s ease,
+    opacity 0.3s ease;
+}
+
+body.ui-immersive:not(.layout-side) .topbar {
+  transform: translate3d(0, calc(-100% - var(--safe-top)), 0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.ui-immersive:not(.layout-side) .dock {
+  transform: translate3d(0, 110%, 0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.ui-immersive:not(.layout-side) .zoom-hud,
+body.ui-immersive:not(.layout-side) .histo-panel,
+body.ui-immersive:not(.layout-side) .look-chip,
+body.ui-immersive:not(.layout-side) .compare-hint {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* ========== TOP BAR ========== */
@@ -1367,7 +1404,8 @@ body:not(.layout-side) .look-chip {
   background: transparent;
   color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
-  touch-action: manipulation;
+  /* none: vertical swipe on the handle must reach JS (collapse/expand) */
+  touch-action: none;
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -2580,6 +2618,8 @@ body.layout-compact .preset-scroll {
   overflow-y: hidden;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  /* Horizontal scroll stays native; vertical swipe reaches JS (expand/collapse) */
+  touch-action: pan-x;
   transition:
     max-height 0.34s var(--ease-out),
     min-height 0.34s var(--ease-out),
