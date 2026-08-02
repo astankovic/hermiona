@@ -122,13 +122,8 @@ body:not(.layout-side) .topbar {
   justify-self: stretch;
   width: 100%;
   z-index: 60;
-  /* Floating glass over photo */
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.62) 0%,
-    rgba(0, 0, 0, 0.28) 55%,
-    transparent 100%
-  );
+  /* Photos: no gradient slab — only floating pills */
+  background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   border-bottom: none;
@@ -137,6 +132,12 @@ body:not(.layout-side) .topbar {
   transition:
     transform 0.36s var(--ease-out),
     opacity 0.28s ease;
+  pointer-events: none; /* pass taps to photo between pills */
+}
+
+body:not(.layout-side) .topbar-left,
+body:not(.layout-side) .topbar-right,
+body:not(.layout-side) .topbar-center {
   pointer-events: auto;
 }
 
@@ -154,11 +155,11 @@ body:not(.layout-side) .tb-cluster {
   gap: 2px;
   padding: 3px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.38);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-  border: 0.5px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  background: rgba(28, 28, 30, 0.5);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
 }
 
 body:not(.layout-side) .topbar .tb-btn {
@@ -271,8 +272,8 @@ body:not(.layout-side) .stage {
 }
 
 /*
- * Photo-first mobile dock — translucent glass OVER the photo (iPhone Photos).
- * Photo is always full-bleed in the stage; chrome never steals layout rows.
+ * iOS Photos main menu — floating glass islands over full-bleed photo.
+ * Dock wrapper is TRANSPARENT; only #toolRail / #dockBody paint glass.
  */
 body:not(.layout-side) .dock {
   grid-area: workspace;
@@ -281,30 +282,32 @@ body:not(.layout-side) .dock {
   width: 100%;
   z-index: 50;
   flex: none;
-  /* Natural stack: handle → panels → rail (rail always last / bottom) */
-  justify-content: flex-start;
-  border-radius: 18px 18px 0 0;
-  border-top: 0.5px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.28);
-  /* See the photo through controls */
-  background: rgba(8, 8, 10, 0.52);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  /* Cap relative to visible viewport (not layout viewport / address bar) */
-  max-height: min(58dvh, calc(var(--vvh, 100dvh) * 0.58), 480px);
-  overflow: hidden;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  /* No sheet — photo shows everywhere around floating controls */
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  max-height: none;
+  overflow: visible;
   transform: none;
-  padding-bottom: max(var(--safe-bottom), 10px);
+  padding: 0 14px max(var(--safe-bottom), 14px);
   transition:
     transform 0.34s var(--ease-cinematic),
-    opacity 0.3s ease,
-    box-shadow 0.28s var(--ease-out),
-    background 0.28s ease,
-    max-height 0.38s var(--ease-cinematic);
-  touch-action: pan-y;
+    opacity 0.3s ease;
+  touch-action: manipulation;
+  pointer-events: none; /* clicks pass to photo except on children */
 }
 
-/* Full-bleed photo — chrome floats on top; never pad for dock height */
+body:not(.layout-side) .dock > * {
+  pointer-events: auto;
+}
+
+/* Full-bleed photo — chrome floats on top */
 body:not(.layout-side) .canvas-area {
   padding: 0;
   position: absolute;
@@ -319,22 +322,134 @@ body:not(.layout-side) .stage {
 
 body:not(.layout-side) .canvas-wrap,
 body:not(.layout-side) #mainCanvas {
-  /* Keep GPU layer for smooth immersive transitions */
   will-change: transform;
 }
 
-/* Rail-only: thinner glass strip — photo dominates */
-body.chrome-hidden:not(.layout-side) .dock {
-  transform: none;
-  background: rgba(8, 8, 10, 0.42);
-  backdrop-filter: blur(22px) saturate(170%);
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
-  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.25);
-  max-height: none;
-  border-radius: 16px 16px 0 0;
+/* Photos has no grabber on the edit rail */
+body:not(.layout-side) .dock-handle-hit {
+  display: none !important;
 }
 
-/* JS also sets dockBody.hidden — display:none is the reliable collapse on iOS */
+/* —— Primary menu: floating capsule (Adjust · Filters · …) —— */
+body:not(.layout-side) .tool-rail {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 360px;
+  height: 58px;
+  min-height: 58px;
+  max-height: 58px;
+  margin: 0 auto;
+  padding: 4px 6px;
+  border-radius: 999px;
+  border: 0.5px solid rgba(255, 255, 255, 0.16);
+  border-top: 0.5px solid rgba(255, 255, 255, 0.16);
+  background: rgba(28, 28, 30, 0.52);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  box-shadow:
+    0 10px 36px rgba(0, 0, 0, 0.4),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.12);
+  justify-content: space-evenly;
+  align-items: center;
+  overflow: hidden;
+  gap: 0;
+  touch-action: manipulation;
+}
+
+body:not(.layout-side) .tool-btn {
+  min-width: 0;
+  flex: 1 1 0;
+  height: 100%;
+  padding: 4px 2px 2px;
+  border-radius: 999px;
+  gap: 2px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+body:not(.layout-side) .tool-btn span {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+body:not(.layout-side) .tool-rail .tool-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+body:not(.layout-side) .tool-btn.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+body:not(.layout-side) .tool-btn.active span {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+body:not(.layout-side) .tool-btn.has-edits::after {
+  /* yellow edit dot like Photos */
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  background: var(--accent);
+}
+
+/* —— Tool surface: floating card ABOVE the capsule (not edge sheet) —— */
+body:not(.layout-side) .dock-body {
+  flex: 0 0 auto !important;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto !important;
+  padding: 10px 12px 8px !important;
+  border-radius: 22px;
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  background: rgba(28, 28, 30, 0.5);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.38);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: min(34dvh, 260px) !important;
+}
+
+body:not(.layout-side) .dock.dock-tall .dock-body {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: min(38dvh, 300px) !important;
+}
+
+body:not(.layout-side) .dock.dock-tall[data-tool="looks"] .dock-body {
+  max-height: min(40dvh, 320px) !important;
+}
+
+body:not(.layout-side) .dock.dock-tall[data-tool="crop"] .dock-body,
+body:not(.layout-side) .dock.dock-tall[data-tool="border"] .dock-body,
+body:not(.layout-side) .dock.dock-tall[data-tool="portrait"] .dock-body,
+body:not(.layout-side) .dock.dock-tall[data-tool="age"] .dock-body {
+  max-height: min(36dvh, 280px) !important;
+}
+
+/* Expanded: no full-width sheet — wrapper stays clear */
+body:not(.layout-side) .dock.dock-tall {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Rail-only / collapsed panels */
+body.chrome-hidden:not(.layout-side) .dock {
+  transform: none;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  max-height: none;
+  border-radius: 0;
+}
+
 body.chrome-hidden:not(.layout-side) .dock-body,
 .dock-body[hidden] {
   display: none !important;
@@ -348,25 +463,29 @@ body.chrome-hidden:not(.layout-side) .dock-body,
   pointer-events: none;
 }
 
-/* Main tool menu always visible & interactive when collapsed */
 body.chrome-hidden:not(.layout-side) .tool-rail {
-  max-height: none;
-  min-height: var(--dock-rail);
-  height: auto;
+  max-height: 58px;
+  min-height: 58px;
+  height: 58px;
   opacity: 1;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
   pointer-events: auto;
   margin-top: 0;
-  border-top: 0.5px solid var(--separator);
+  border-top: 0.5px solid rgba(255, 255, 255, 0.16);
 }
 
 body.chrome-hidden:not(.layout-side) .zoom-hud {
-  bottom: calc(var(--dock-rail) + 36px + var(--safe-bottom));
+  bottom: calc(58px + 28px + var(--safe-bottom));
 }
 
 body:not(.layout-side) .zoom-hud {
+  bottom: calc(58px + 28px + var(--safe-bottom));
   transition: bottom 0.28s var(--ease-out), opacity 0.22s ease;
+}
+
+/* When panels open, lift HUD above floating body + rail */
+body:not(.layout-side):not(.chrome-hidden):not(.ui-immersive) .zoom-hud {
+  bottom: calc(58px + min(34dvh, 260px) + 40px + var(--safe-bottom));
 }
 
 /*
@@ -1554,39 +1673,8 @@ body:not(.layout-side) .look-chip {
   z-index: 5;
 }
 
-/* Phone: thinner grabber bar (pill), not a heavy chevron capsule */
-body:not(.layout-side) .dock-handle-hit {
-  padding: 8px 24px 2px;
-  min-height: 28px;
-}
-
-body:not(.layout-side) .dock-handle-hit::before {
-  content: '';
-  position: absolute;
-  top: 6px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 36px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.28);
-  pointer-events: none;
-}
-
-body:not(.layout-side) .dock-handle-chevron {
-  /* Grabber pill is enough; keep chevron for a11y state but tiny */
-  opacity: 0;
-  width: 36px;
-  height: 8px;
-  background: transparent;
-}
-
 .dock-handle-hit:active {
   color: rgba(255, 255, 255, 0.95);
-}
-
-body:not(.layout-side) .dock-handle-hit:active::before {
-  background: rgba(255, 255, 255, 0.45);
 }
 
 .dock-handle-chevron {
@@ -1797,47 +1885,7 @@ body:not(.layout-side) .bokeh-scroll {
   max-height: min(40dvh, 320px);
 }
 
-/*
- * Overlay mobile: FIXED tool-surface height (iPhone Photos stability).
- * !important wins over .dock-tall max-height ladder so tool switches don't leap.
- */
-body:not(.layout-side) .dock-body {
-  flex: 0 0 auto;
-  height: 152px !important;
-  min-height: 152px !important;
-  max-height: 152px !important;
-  overflow-x: hidden;
-  overflow-y: auto;
-  transition: height 0.2s var(--ease-out), max-height 0.2s var(--ease-out), min-height 0.2s var(--ease-out);
-}
-
-/* Default tall tools */
-body:not(.layout-side) .dock.dock-tall .dock-body {
-  height: 196px !important;
-  min-height: 196px !important;
-  max-height: 196px !important;
-}
-
-/* Per-tool shells — same specificity family, later + attribute wins */
-body:not(.layout-side) .dock.dock-tall[data-tool="looks"] .dock-body {
-  height: 210px !important;
-  min-height: 210px !important;
-  max-height: 210px !important;
-}
-
-body:not(.layout-side) .dock.dock-tall[data-tool="crop"] .dock-body,
-body:not(.layout-side) .dock.dock-tall[data-tool="border"] .dock-body {
-  height: 168px !important;
-  min-height: 168px !important;
-  max-height: 168px !important;
-}
-
-body:not(.layout-side) .dock.dock-tall[data-tool="portrait"] .dock-body,
-body:not(.layout-side) .dock.dock-tall[data-tool="age"] .dock-body {
-  height: 196px !important;
-  min-height: 196px !important;
-  max-height: 196px !important;
-}
+/* Mobile dock-body / rail sizes live in the Photos floating-island block above */
 
 /* Filters: iPhone-style horizontal filmstrip */
 body:not(.layout-side) .dock[data-tool="looks"] .subpanel {
@@ -1962,43 +2010,16 @@ body:not(.layout-side) .dock[data-tool="portrait"] .bokeh-scroll {
   margin-bottom: 2px;
 }
 
-/* Crop apply: sticky feel at bottom of panel */
+/* Crop apply: no solid slab — floating card already has glass */
 body:not(.layout-side) .dock[data-tool="crop"] .crop-apply-row {
   position: sticky;
   bottom: 0;
-  background: linear-gradient(to top, rgba(12, 12, 14, 0.96) 60%, transparent);
+  background: transparent;
   padding-bottom: 2px;
   margin-top: 2px;
 }
 
-body:not(.layout-side) .tool-rail {
-  margin-top: 0; /* no auto-gap on phone bottom sheet */
-  overflow-x: hidden; /* 6 tools fit without scroll on 390px */
-  justify-content: space-between;
-  padding: 0 2px;
-}
-
-body:not(.layout-side) .tool-btn {
-  min-width: 0;
-  flex: 1 1 0;
-  padding: 6px 2px;
-}
-
-body:not(.layout-side) .tool-btn span {
-  font-size: 9.5px;
-  letter-spacing: -0.02em;
-}
-
-body:not(.layout-side) .tool-rail .tool-btn svg {
-  width: 20px;
-  height: 20px;
-}
-
-/* Expanded tool surface — still glass, photo remains visible through it */
-body:not(.layout-side) .dock.dock-tall {
-  background: rgba(8, 8, 10, 0.62);
-  box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.32);
-}
+/* tool-rail / tool-btn mobile island styles: see Photos floating block near top */
 
 /* Border tool panel */
 #panelBorder .frame-scroll {
