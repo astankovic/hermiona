@@ -8,7 +8,26 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Hermiona" />
   <title>Hermiona</title>
-  <link rel="stylesheet" href="styles.css" />
+  <!-- Discourage HTML document caching (browsers may still ignore; asset ?v= is the real fix) -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <script>
+    // Asset cache-bust. Bump FIXED on each deploy, or open with ?fresh=1 for a one-shot bypass.
+    window.__H_V = (function () {
+      try {
+        var p = new URLSearchParams(location.search);
+        if (p.has("fresh") || p.get("nocache") === "1") return String(Date.now());
+        if (p.get("v")) return p.get("v");
+      } catch (e) {}
+      return "202608020244"; // ← bump this when you push JS/CSS changes
+    })();
+    document.write(
+      '<link rel="stylesheet" href="styles.css?v=' +
+        encodeURIComponent(window.__H_V) +
+        '" />'
+    );
+  </script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>" />
 </head>
 <body>
@@ -402,15 +421,40 @@
     </div>
   </div>
 
-  <script src="js/looks.js"></script>
-  <script src="js/imperfections.js"></script>
-  <script src="js/scene/depth-pseudo.js"></script>
-  <script src="js/scene/coc.js"></script>
-  <script src="js/scene/bokeh.js"></script>
-  <script src="js/scene/dof.js"></script>
-  <script src="js/scene/analyze.js"></script>
-  <script src="js/engine.js"></script>
-  <script src="js/export.js"></script>
-  <script src="app.js"></script>
+  <script>
+    // Load app scripts with the same cache-bust token as CSS (order preserved).
+    (function () {
+      var v = window.__H_V || "0";
+      var files = [
+        "js/looks.js",
+        "js/imperfections.js",
+        "js/scene/depth-pseudo.js",
+        "js/scene/coc.js",
+        "js/scene/bokeh.js",
+        "js/scene/dof.js",
+        "js/scene/analyze.js",
+        "js/engine.js",
+        "js/export.js",
+        "app.js",
+      ];
+      function load(i) {
+        if (i >= files.length) {
+          console.info("[Hermiona] assets v=" + v);
+          return;
+        }
+        var s = document.createElement("script");
+        s.src = files[i] + "?v=" + encodeURIComponent(v);
+        s.onload = function () {
+          load(i + 1);
+        };
+        s.onerror = function () {
+          console.error("[Hermiona] failed to load", files[i]);
+          load(i + 1);
+        };
+        document.body.appendChild(s);
+      }
+      load(0);
+    })();
+  </script>
 </body>
 </html>
