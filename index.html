@@ -16,15 +16,17 @@
     <!-- Top chrome — iOS Photos style -->
     <header class="topbar" id="topbar">
       <div class="topbar-left">
-        <button type="button" class="tb-btn" id="btnClose" title="Close / new photo" disabled>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-        <button type="button" class="tb-btn" id="btnUndo" title="Undo" disabled>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6.7 3L3 13"/></svg>
-        </button>
-        <button type="button" class="tb-btn" id="btnRedo" title="Redo" disabled>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6.7 3L21 13"/></svg>
-        </button>
+        <div class="tb-cluster">
+          <button type="button" class="tb-btn" id="btnClose" title="Close / new photo" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+          <button type="button" class="tb-btn" id="btnUndo" title="Undo" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6.7 3L3 13"/></svg>
+          </button>
+          <button type="button" class="tb-btn" id="btnRedo" title="Redo" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6.7 3L21 13"/></svg>
+          </button>
+        </div>
       </div>
 
       <div class="topbar-center">
@@ -36,13 +38,15 @@
       </div>
 
       <div class="topbar-right">
-        <button type="button" class="tb-btn" id="btnReset" title="Reset all" disabled>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-        </button>
-        <button type="button" class="tb-done" id="btnDownload" disabled>
-          <span class="btn-spinner" hidden aria-hidden="true"></span>
-          <span class="btn-label">Done</span>
-        </button>
+        <div class="tb-cluster">
+          <button type="button" class="tb-btn" id="btnReset" title="Reset all" disabled>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          </button>
+          <button type="button" class="tb-done" id="btnDownload" disabled>
+            <span class="btn-spinner" hidden aria-hidden="true"></span>
+            <span class="btn-label">Done</span>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -168,85 +172,136 @@
           </div>
         </div>
 
-        <!-- Crop panel — studio framing -->
-        <div class="subpanel" id="panelCrop" hidden>
-          <p class="crop-section-label">Studio frame</p>
-          <div class="frame-scroll" id="frameSuggestScroll">
-            <button type="button" class="ratio-chip frame-chip active" data-frame="full">Full</button>
-            <button type="button" class="ratio-chip frame-chip" data-frame="subject">Subject</button>
-            <button type="button" class="ratio-chip frame-chip" data-frame="portrait">Portrait</button>
-            <button type="button" class="ratio-chip frame-chip" data-frame="thirds">Thirds</button>
-            <button type="button" class="ratio-chip frame-chip" data-frame="tight">Tight</button>
-            <button type="button" class="ratio-chip frame-chip" data-frame="wide">Wide</button>
-            <button type="button" class="ratio-chip frame-chip" data-frame="center">Center</button>
+        <!-- Crop panel — compact accordion on mobile -->
+        <div class="subpanel subpanel-compact" id="panelCrop" hidden>
+          <div class="acc-group open" data-acc="frame">
+            <button type="button" class="acc-head" data-acc-toggle="frame">
+              <span>Frame</span>
+              <span class="acc-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="acc-body">
+              <div class="frame-scroll" id="frameSuggestScroll">
+                <button type="button" class="ratio-chip frame-chip active" data-frame="full">Full</button>
+                <button type="button" class="ratio-chip frame-chip" data-frame="subject">Subject</button>
+                <button type="button" class="ratio-chip frame-chip" data-frame="portrait">Portrait</button>
+                <button type="button" class="ratio-chip frame-chip" data-frame="thirds">Thirds</button>
+                <button type="button" class="ratio-chip frame-chip" data-frame="tight">Tight</button>
+                <button type="button" class="ratio-chip frame-chip" data-frame="wide">Wide</button>
+                <button type="button" class="ratio-chip frame-chip" data-frame="center">Center</button>
+              </div>
+              <p class="crop-hint" id="cropHint">Soft-snaps · scroll zoom</p>
+            </div>
           </div>
-          <p class="crop-hint" id="cropHint">Soft-snaps to subject &amp; thirds · scroll to zoom</p>
 
-          <div class="crop-tools">
-            <button type="button" class="tool-icon-btn" id="btnRotateLeft" title="Rotate left">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2.5 12a9.5 9.5 0 1 1 1.5 5.2"/><polyline points="2 8 2.5 12 6.5 11.5"/></svg>
-              <span>90°</span>
+          <div class="acc-group" data-acc="transform">
+            <button type="button" class="acc-head" data-acc-toggle="transform">
+              <span>Rotate &amp; flip</span>
+              <span class="acc-chevron" aria-hidden="true"></span>
             </button>
-            <button type="button" class="tool-icon-btn" id="btnRotateRight" title="Rotate right">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21.5 12a9.5 9.5 0 1 0-1.5 5.2"/><polyline points="22 8 21.5 12 17.5 11.5"/></svg>
-              <span>90°</span>
-            </button>
-            <button type="button" class="tool-icon-btn" id="btnFlipH" title="Flip horizontal">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
-              <span>Flip H</span>
-            </button>
-            <button type="button" class="tool-icon-btn" id="btnFlipV" title="Flip vertical">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3"/><path d="M3 16v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-              <span>Flip V</span>
-            </button>
+            <div class="acc-body">
+              <div class="crop-tools">
+                <button type="button" class="tool-icon-btn" id="btnRotateLeft" title="Rotate left">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2.5 12a9.5 9.5 0 1 1 1.5 5.2"/><polyline points="2 8 2.5 12 6.5 11.5"/></svg>
+                  <span>90°</span>
+                </button>
+                <button type="button" class="tool-icon-btn" id="btnRotateRight" title="Rotate right">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21.5 12a9.5 9.5 0 1 0-1.5 5.2"/><polyline points="22 8 21.5 12 17.5 11.5"/></svg>
+                  <span>90°</span>
+                </button>
+                <button type="button" class="tool-icon-btn" id="btnFlipH" title="Flip horizontal">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
+                  <span>Flip H</span>
+                </button>
+                <button type="button" class="tool-icon-btn" id="btnFlipV" title="Flip vertical">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3"/><path d="M3 16v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                  <span>Flip V</span>
+                </button>
+              </div>
+            </div>
           </div>
-          <div class="ratio-scroll">
-            <button type="button" class="ratio-chip active" data-ratio="free">Free</button>
-            <button type="button" class="ratio-chip" data-ratio="original">Original</button>
-            <button type="button" class="ratio-chip" data-ratio="1:1">1:1</button>
-            <button type="button" class="ratio-chip" data-ratio="4:5">4:5</button>
-            <button type="button" class="ratio-chip" data-ratio="3:2">3:2</button>
-            <button type="button" class="ratio-chip" data-ratio="4:3">4:3</button>
-            <button type="button" class="ratio-chip" data-ratio="16:9">16:9</button>
-            <button type="button" class="ratio-chip" data-ratio="9:16">9:16</button>
+
+          <div class="acc-group" data-acc="ratio">
+            <button type="button" class="acc-head" data-acc-toggle="ratio">
+              <span>Aspect</span>
+              <span class="acc-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="acc-body">
+              <div class="ratio-scroll">
+                <button type="button" class="ratio-chip active" data-ratio="free">Free</button>
+                <button type="button" class="ratio-chip" data-ratio="original">Original</button>
+                <button type="button" class="ratio-chip" data-ratio="1:1">1:1</button>
+                <button type="button" class="ratio-chip" data-ratio="4:5">4:5</button>
+                <button type="button" class="ratio-chip" data-ratio="3:2">3:2</button>
+                <button type="button" class="ratio-chip" data-ratio="4:3">4:3</button>
+                <button type="button" class="ratio-chip" data-ratio="16:9">16:9</button>
+                <button type="button" class="ratio-chip" data-ratio="9:16">9:16</button>
+              </div>
+            </div>
           </div>
+
           <div class="crop-apply-row">
             <button type="button" class="btn-ghost-wide" id="btnCropReset">Reset</button>
             <button type="button" class="btn-accent-wide" id="btnCropApply">Apply</button>
           </div>
         </div>
 
-        <!-- Portrait / scene panel -->
-        <div class="subpanel" id="panelPortrait" hidden>
-          <p class="scene-status" id="sceneStatus">Load a photo</p>
-          <div class="portrait-actions">
-            <button type="button" class="btn-pill sm" id="btnSceneAnalyze" disabled>
-              <span class="btn-spinner" hidden aria-hidden="true"></span>
-              <span class="btn-label">Analyze</span>
+        <!-- Portrait / scene panel — compact accordion -->
+        <div class="subpanel subpanel-compact" id="panelPortrait" hidden>
+          <div class="acc-group open" data-acc="dof">
+            <button type="button" class="acc-head" data-acc-toggle="dof">
+              <span>Depth of field</span>
+              <span class="acc-chevron" aria-hidden="true"></span>
             </button>
-            <label class="ios-switch">
-              <input type="checkbox" id="opticsEnabled" />
-              <span class="ios-switch-ui"></span>
-              <span class="ios-switch-label">DoF</span>
-            </label>
+            <div class="acc-body">
+              <p class="scene-status" id="sceneStatus">Load a photo</p>
+              <div class="portrait-actions">
+                <button type="button" class="btn-pill sm" id="btnSceneAnalyze" disabled>
+                  <span class="btn-spinner" hidden aria-hidden="true"></span>
+                  <span class="btn-label">Analyze</span>
+                </button>
+                <label class="ios-switch">
+                  <input type="checkbox" id="opticsEnabled" />
+                  <span class="ios-switch-ui"></span>
+                  <span class="ios-switch-label">DoF</span>
+                </label>
+              </div>
+            </div>
           </div>
-          <div class="focal-scroll" id="focalRecipeGrid">
-            <button type="button" class="ratio-chip" data-focal="35">35mm</button>
-            <button type="button" class="ratio-chip active" data-focal="50">50mm</button>
-            <button type="button" class="ratio-chip" data-focal="85">85mm</button>
-            <button type="button" class="ratio-chip" data-focal="anamo">Anamo</button>
+
+          <div class="acc-group" data-acc="optics">
+            <button type="button" class="acc-head" data-acc-toggle="optics">
+              <span>Lens &amp; bokeh</span>
+              <span class="acc-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="acc-body">
+              <div class="focal-scroll" id="focalRecipeGrid">
+                <button type="button" class="ratio-chip" data-focal="35">35mm</button>
+                <button type="button" class="ratio-chip active" data-focal="50">50mm</button>
+                <button type="button" class="ratio-chip" data-focal="85">85mm</button>
+                <button type="button" class="ratio-chip" data-focal="anamo">Anamo</button>
+              </div>
+              <div class="bokeh-scroll" id="bokehShapeGrid">
+                <button type="button" class="ratio-chip active" data-bokeh="auto">Auto</button>
+                <button type="button" class="ratio-chip" data-bokeh="circle">Circle</button>
+                <button type="button" class="ratio-chip" data-bokeh="hex">Hex</button>
+                <button type="button" class="ratio-chip" data-bokeh="anamorphic">Anamo</button>
+              </div>
+            </div>
           </div>
-          <div class="bokeh-scroll" id="bokehShapeGrid">
-            <button type="button" class="ratio-chip active" data-bokeh="auto">Auto</button>
-            <button type="button" class="ratio-chip" data-bokeh="circle">Circle</button>
-            <button type="button" class="ratio-chip" data-bokeh="hex">Hex</button>
-            <button type="button" class="ratio-chip" data-bokeh="anamorphic">Anamo</button>
-          </div>
-          <div class="debug-row compact">
-            <button type="button" class="debug-btn active" data-debug="off">Off</button>
-            <button type="button" class="debug-btn" data-debug="mask">Subj</button>
-            <button type="button" class="debug-btn" data-debug="depth">Depth</button>
-            <button type="button" class="debug-btn" data-debug="coc">CoC</button>
+
+          <div class="acc-group" data-acc="debug">
+            <button type="button" class="acc-head" data-acc-toggle="debug">
+              <span>Debug</span>
+              <span class="acc-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="acc-body">
+              <div class="debug-row compact">
+                <button type="button" class="debug-btn active" data-debug="off">Off</button>
+                <button type="button" class="debug-btn" data-debug="mask">Subj</button>
+                <button type="button" class="debug-btn" data-debug="depth">Depth</button>
+                <button type="button" class="debug-btn" data-debug="coc">CoC</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

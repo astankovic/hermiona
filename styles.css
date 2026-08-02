@@ -113,21 +113,67 @@ body:not(.layout-side) .topbar {
   pointer-events: auto;
 }
 
+/* Floating control clusters over the photo */
+body:not(.layout-side) .tb-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
 body:not(.layout-side) .topbar .tb-btn {
-  background: rgba(0, 0, 0, 0.32);
+  background: transparent;
   color: #fff;
+  width: 36px;
+  height: 36px;
 }
 
 body:not(.layout-side) .topbar .tb-btn:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.48);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+body:not(.layout-side) .topbar .tb-btn:disabled {
+  opacity: 0.35;
 }
 
 body:not(.layout-side) .topbar .tb-done {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  height: 32px;
+  margin-right: 2px;
+  box-shadow: none;
 }
 
 body:not(.layout-side) .topbar-title {
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  text-shadow: none;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* Hide title when editing (more room / cleaner) — keep busy pill */
+body:not(.layout-side).has-image .topbar-title {
+  display: none;
+}
+
+body:not(.layout-side) .header-busy {
+  background: rgba(0, 0, 0, 0.45);
+  border: 0.5px solid rgba(255, 214, 10, 0.25);
+}
+
+body:not(.layout-side) .topbar {
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 body:not(.layout-side) .stage {
@@ -172,7 +218,7 @@ body:not(.layout-side) .stage {
   position: relative;
 }
 
-/* Chrome hidden: review mode — photo stays put, chrome slides away */
+/* Chrome hidden: collapse body/rail in place (handle stays on-screen for swipe) */
 body.chrome-hidden:not(.layout-side) .topbar {
   transform: translate3d(0, calc(-100% - 12px), 0);
   opacity: 0;
@@ -180,31 +226,59 @@ body.chrome-hidden:not(.layout-side) .topbar {
 }
 
 body.chrome-hidden:not(.layout-side) .dock {
-  /* Leave a thin peek handle so user can swipe up */
-  transform: translate3d(0, calc(100% - 22px - var(--safe-bottom)), 0);
+  transform: none;
+  background: rgba(12, 12, 14, 0.55);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.35);
 }
 
-body.chrome-hidden:not(.layout-side) .dock .dock-body,
-body.chrome-hidden:not(.layout-side) .dock .tool-rail {
+body.chrome-hidden:not(.layout-side) .dock-body {
+  max-height: 0 !important;
+  opacity: 0;
+  overflow: hidden;
   pointer-events: none;
+  margin: 0;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
 
-body.chrome-hidden:not(.layout-side) .dock .dock-handle-hit {
+body.chrome-hidden:not(.layout-side) .tool-rail {
+  max-height: 0;
+  min-height: 0;
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border: none;
+  padding: 0 !important;
+}
+
+body.chrome-hidden:not(.layout-side) .dock-handle-hit {
   pointer-events: auto;
+  padding: 14px 16px calc(12px + var(--safe-bottom));
+}
+
+body.chrome-hidden:not(.layout-side) .dock-handle-hint {
+  opacity: 1;
+}
+
+body.chrome-hidden:not(.layout-side) .dock-handle-hint::after {
+  content: none;
 }
 
 body.chrome-hidden:not(.layout-side) .zoom-hud {
-  bottom: calc(28px + var(--safe-bottom));
-  transition: bottom 0.36s var(--ease-out);
+  bottom: calc(36px + var(--safe-bottom));
 }
 
 body:not(.layout-side) .zoom-hud {
   transition: bottom 0.36s var(--ease-out);
 }
 
-/* Dragging chrome — disable transition for direct follow */
-body.chrome-dragging:not(.layout-side) .topbar,
-body.chrome-dragging:not(.layout-side) .dock {
+body.chrome-dragging:not(.layout-side) .topbar {
+  transition: none;
+}
+
+body.chrome-dragging:not(.layout-side) .dock-body,
+body.chrome-dragging:not(.layout-side) .tool-rail {
   transition: none;
 }
 
@@ -630,17 +704,120 @@ body.chrome-dragging .dock-handle {
   color: var(--text-tertiary);
   letter-spacing: 0.02em;
   line-height: 1;
-  opacity: 0.85;
+  opacity: 0.75;
   transition: opacity 0.2s;
   pointer-events: none;
+  min-height: 1em;
 }
 
-body.chrome-hidden .dock-handle-hint {
-  opacity: 0;
+body.chrome-hidden:not(.layout-side) .dock-handle-hint {
+  opacity: 1;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
 }
 
 body.layout-side .dock-handle-hit {
   display: none; /* side layout keeps always-visible chrome */
+}
+
+body.layout-side .tb-cluster {
+  display: contents;
+}
+
+/* —— Accordion submenus (Crop / Portrait compact) —— */
+.acc-group {
+  border-bottom: 0.5px solid var(--separator);
+}
+
+.acc-group:last-of-type {
+  border-bottom: none;
+}
+
+.acc-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 40px;
+  padding: 6px 4px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.acc-head:active {
+  opacity: 0.75;
+}
+
+.acc-chevron {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--text-tertiary);
+  border-bottom: 2px solid var(--text-tertiary);
+  transform: rotate(-45deg);
+  transition: transform 0.22s var(--ease-out);
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+.acc-group.open .acc-chevron {
+  transform: rotate(45deg);
+  margin-top: -2px;
+}
+
+.acc-body {
+  display: none;
+  padding: 0 2px 10px;
+  animation: dockIn 0.18s var(--ease-out);
+}
+
+.acc-group.open .acc-body {
+  display: block;
+}
+
+.subpanel-compact {
+  padding-top: 4px;
+  padding-bottom: 6px;
+}
+
+.subpanel-compact .crop-apply-row {
+  margin-top: 6px;
+  padding-top: 4px;
+}
+
+.subpanel-compact .crop-tools {
+  margin-bottom: 0;
+}
+
+.subpanel-compact .crop-hint {
+  margin: 4px 0 0;
+}
+
+.subpanel-compact .scene-status {
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+.subpanel-compact .portrait-actions {
+  margin-bottom: 0;
+}
+
+/* Side: keep accordions open-looking optional — still work */
+body.layout-side .acc-group .acc-body {
+  /* default closed except .open */
+}
+
+@media (min-width: 860px) {
+  body.layout-side .subpanel-compact .acc-group:not(.open) .acc-body {
+    /* desktop side can leave user control */
+  }
 }
 
 /* Dock body: dials / chips / panels (tool-rail stays outside, sticky bottom) */
@@ -1512,6 +1689,7 @@ body.layout-compact .preset-scroll {
   justify-content: space-around;
   align-items: stretch;
   height: var(--dock-rail);
+  max-height: 80px;
   padding: 0 4px;
   border-top: 0.5px solid var(--separator);
   flex-shrink: 0;
@@ -1519,6 +1697,13 @@ body.layout-compact .preset-scroll {
   overflow-y: hidden;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  transition:
+    max-height 0.34s var(--ease-out),
+    min-height 0.34s var(--ease-out),
+    height 0.34s var(--ease-out),
+    opacity 0.28s ease,
+    padding 0.28s ease,
+    border-color 0.28s ease;
 }
 
 .tool-rail::-webkit-scrollbar {
@@ -2281,6 +2466,17 @@ body.layout-side .topbar {
 
 body.layout-side .topbar .tb-btn {
   background: transparent;
+  width: 40px;
+  height: 40px;
+}
+
+body.layout-side .topbar-title {
+  display: inline;
+  font-size: 16px;
+  padding: 0;
+  background: none;
+  border: none;
+  backdrop-filter: none;
 }
 
 body.layout-side .dock {
