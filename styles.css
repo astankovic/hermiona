@@ -3439,32 +3439,40 @@ body:not(.layout-side) .look-intensity .dial-track-wrap::before {
   opacity: 0.85;
 }
 
-/* Sliding tape layer — wide strip translated by JS */
+/*
+ * Finite tick tape — width set by JS to exactly [min…max].
+ * left:50% + translateX(-(val-min)*px) puts current value under needle.
+ * Empty space past the strip ends = hard stop feeling (no phantom negatives).
+ */
 body:not(.layout-side) .dial-tape,
 body:not(.layout-side) .look-intensity .dial-tape {
   position: absolute;
   left: 50%;
   top: 0;
   bottom: 0;
-  width: 400%;
-  margin-left: -200%;
+  width: auto;
+  margin: 0;
   z-index: 1;
   pointer-events: none;
   will-change: transform;
   transform: translate3d(0, 0, 0);
+  display: flex;
+  align-items: center;
 }
 
 body:not(.layout-side) .dial-ticks,
 body:not(.layout-side) .look-intensity .dial-ticks {
   display: block;
-  position: absolute;
+  position: relative;
   left: 0;
-  right: 0;
-  top: 50%;
+  top: auto;
   height: 26px;
-  margin-top: -13px;
+  margin: 0;
+  /* width set inline by JS (finite range only) */
+  width: 100px;
+  flex: 0 0 auto;
   pointer-events: none;
-  /* Minor ticks every 7px — must match JS MINOR_PX */
+  /* Fallback pattern; JS overwrites backgroundImage for major+minor */
   background: repeating-linear-gradient(
     to right,
     rgba(255, 255, 255, 0.32) 0,
@@ -3474,25 +3482,23 @@ body:not(.layout-side) .look-intensity .dial-ticks {
   );
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
   opacity: 0.95;
+  border-radius: 1px;
 }
 
+/* Kill the old infinite ::after major-tick layer */
 body:not(.layout-side) .dial-ticks::after,
 body:not(.layout-side) .look-intensity .dial-ticks::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  /* Major every 5 minors = 35px */
-  background: repeating-linear-gradient(
-    to right,
-    rgba(255, 255, 255, 0.72) 0,
-    rgba(255, 255, 255, 0.72) 1.5px,
-    transparent 1.5px,
-    transparent 35px
-  );
+  content: none;
+  display: none;
 }
 
 body:not(.layout-side) .dial-track-wrap.is-scrubbing .dial-ticks {
   opacity: 1;
+}
+
+/* Unipolar (min≥0): subtle end fade so “nothing left of 0” reads clearly */
+body:not(.layout-side) .dial-track-wrap.dial-unipolar .dial-ticks {
+  /* end caps already via box-shadow from JS */
 }
 
 /* Fixed center needle — accent, does not move */

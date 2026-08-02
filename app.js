@@ -4571,32 +4571,41 @@
 
   /**
    * Sliding-tape dial (concept C / iOS Photos).
-   * Fixed center needle; tick tape translates under the finger.
-   * Drag right → value up. Soft inertia on release. Major-tick haptics.
-   * Must keep MINOR_PX in sync with CSS --dial-minor / tick period.
+   *
+   * - Fixed center needle; finite tick strip for [min, max] only
+   *   (no phantom ticks past 0 on unipolar scales).
+   * - Continuous tape motion; pipeline only updates when snapped value changes
+   *   (keeps inertia buttery — no per-frame snap + full re-render thrash).
+   * - Soft inertia on release; hard stop + haptic at ends.
+   * MINOR_PX must match CSS tick period.
    */
   function bindSlidingTapeDial(input, { onInput, onEnd } = {}) {
     if (!input) return null;
     const wrap = input.closest('.dial-track-wrap') || input.parentElement;
     if (!wrap) return null;
-    const tape = wrap.querySelector('.dial-tape') || wrap.querySelector('.dial-ticks');
-    if (!tape) return null;
+    const tape = wrap.querySelector('.dial-tape');
+    const ticksEl = wrap.querySelector('.dial-ticks');
+    if (!tape || !ticksEl) return null;
 
-    const MINOR_PX = 7; // px per step (matches CSS tick period)
-    const MAJOR_EVERY = 5; // major tick every N minors
-    const FRICTION = 0.92;
-    const MIN_VEL = 0.02; // units / ms
-    const MAX_RELEASE_VEL = 0.55; // units / ms cap
+    const MINOR_PX = 7;
+    const MAJOR_EVERY = 5;
+    const FRICTION = 0.935;
+    const MIN_VEL = 0.012; // value-units / ms
+    const MAX_RELEASE_VEL = 0.42;
+    const VEL_SMOOTH = 0.35; // blend for release velocity
 
     let dragging = false;
+    let ended = true; // true after onEnd fired for this gesture
     let startX = 0;
     let startVal = 0;
     let lastX = 0;
     let lastT = 0;
-    let velocity = 0; // value-units per ms
+    let velocity = 0;
     let lastMajor = null;
     let inertiaRaf = 0;
-    let liveVal = parseFloat(input.value) || 0;
+    let liveVal = parseFloat(input.value) || 0; // continuous (visual)
+    let appliedVal = snapRaw(liveVal); // last value sent to pipeline
+    let rangeKey = '';
 
     function rangeMeta() {
       const min = parseFloat(input.min);
@@ -4606,7 +4615,7 @@
       return { min, max, step, span: max - min || 1 };
     }
 
-    function snap(val) {
+    function snapRaw(val) {
       const { min, max, step } = rangeMeta();
       let v = min + Math.round((val - min) / step) * step;
       const decimals = (String(step).split('.')[1] || '').length;
@@ -4614,41 +4623,114 @@
       return clamp(v, min, max);
     }
 
+    /** Width of the finite tick strip in px (min mark → max mark). */
+    function tapeWidthPx() {
+      const { min, max, step } = rangeMeta();
+      const steps = Math.max(1, Math.round((max - min) / step));
+      return steps * MINOR_PX;
+    }
+
+    /**
+     * Rebuild finite tick strip for current min/max/step.
+     * Only draws ticks for the real range — past min/max is empty air,
+     * so the user feels the hard end (esp. unipolar min=0).
+     */
+    function rebuildTicks() {
+      const { min, max, step } = rangeMeta();
+      const key = min + ':' + max + ':' + step;
+      if (key === rangeKey) return;
+      rangeKey = key;
+
+      const w = tapeWidthPx();
+      ticksEl.style.width = w + 'px';
+      // Minor every MINOR_PX; major every MAJOR_EVERY minors
+      ticksEl.style.background =
+        'repeating-linear-gradient(to right,' +
+        'rgba(255,255,255,0.34) 0, rgba(255,255,255,0.34) 1px,' +
+        'transparent 1px, transparent ' +
+        MINOR_PX +
+        'px)';
+      // Major ticks via box-shadow list would be huge; use layered gradient
+      ticksEl.style.backgroundImage =
+        'repeating-linear-gradient(to right,' +
+        'rgba(255,255,255,0.75) 0, rgba(255,255,255,0.75) 1.5px,' +
+        'transparent 1.5px, transparent ' +
+        MINOR_PX * MAJOR_EVERY +
+        'px),' +
+        'repeating-linear-gradient(to right,' +
+        'rgba(255,255,255,0.32) 0, rgba(255,255,255,0.32) 1px,' +
+        'transparent 1px, transparent ' +
+        MINOR_PX +
+        'px)';
+
+      // End caps — slightly taller marks at min/max so the stop is obvious
+      ticksEl.style.boxShadow =
+        'inset 1.5px 0 0 rgba(255,255,255,0.85),' +
+        'inset -1.5px 0 0 rgba(255,255,255,0.85)';
+
+      wrap.classList.toggle('dial-unipolar', min >= 0 && max > min);
+      wrap.classList.toggle('dial-bipolar', min < 0 && max > 0);
+    }
+
+    /**
+     * Tape left edge sits at center when val === min.
+     * So for unipolar 0…N, left of needle is empty at 0 — clear hard stop.
+     */
     function tapeXFor(val) {
       const { min, step } = rangeMeta();
       const units = (val - min) / step;
-      // Value ↑ → tape shifts left so higher ticks pass under center
       return -units * MINOR_PX;
     }
 
     function paintTape(val, withTransition) {
-      if (!tape) return;
+      rebuildTicks();
       const x = tapeXFor(val);
-      if (withTransition) {
-        tape.style.transition = 'transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)';
-      } else {
-        tape.style.transition = 'none';
-      }
+      tape.style.transition = withTransition
+        ? 'transform 0.2s cubic-bezier(0.22, 1, 0.36, 1)'
+        : 'none';
       tape.style.transform = 'translate3d(' + x + 'px, 0, 0)';
     }
 
-    function commit(val, { final, haptic } = {}) {
-      const v = snap(val);
-      liveVal = v;
-      if (String(v) !== input.value) input.value = String(v);
-      paintTape(v, false);
-      if (onInput) onInput(v, { final: !!final });
+    /**
+     * Visual always continuous; pipeline only when snapped value changes.
+     * This is the main anti-jank: inertia no longer re-renders every frame.
+     */
+    function applyVisual(val, { forcePipeline, haptic } = {}) {
+      const { min, max } = rangeMeta();
+      liveVal = clamp(val, min, max);
+      paintTape(liveVal, false);
 
-      if (haptic !== false) {
-        const bucket = Math.round(v / (rangeMeta().step * MAJOR_EVERY));
-        if (lastMajor != null && bucket !== lastMajor) {
-          try {
-            if (navigator.vibrate) navigator.vibrate(4);
-          } catch (_) { /* ignore */ }
+      const snapped = snapRaw(liveVal);
+      if (forcePipeline || snapped !== appliedVal) {
+        if (haptic !== false && appliedVal != null) {
+          const step = rangeMeta().step;
+          const bucket = Math.round(snapped / (step * MAJOR_EVERY));
+          if (lastMajor != null && bucket !== lastMajor) {
+            try {
+              if (navigator.vibrate) navigator.vibrate(3);
+            } catch (_) { /* ignore */ }
+          }
+          lastMajor = bucket;
         }
-        lastMajor = bucket;
+        appliedVal = snapped;
+        if (String(snapped) !== input.value) input.value = String(snapped);
+        if (onInput) onInput(snapped, { final: false });
       }
-      return v;
+    }
+
+    function finishGesture() {
+      if (ended) return;
+      ended = true;
+      stopInertia();
+      const snapped = snapRaw(liveVal);
+      liveVal = snapped;
+      appliedVal = snapped;
+      input.value = String(snapped);
+      paintTape(snapped, false);
+      // Ensure final value reached pipeline
+      if (onInput) onInput(snapped, { final: true });
+      wrap.classList.remove('is-scrubbing');
+      if (onEnd) onEnd(snapped);
     }
 
     function stopInertia() {
@@ -4660,38 +4742,58 @@
 
     function runInertia() {
       let prev = performance.now();
-      const tick = (now) => {
-        const dt = Math.min(32, now - prev) || 16;
-        prev = now;
-        // velocity is value-units per ms
-        if (Math.abs(velocity) < MIN_VEL) {
-          inertiaRaf = 0;
-          commit(liveVal, { final: true });
-          wrap.classList.remove('is-scrubbing');
-          if (onEnd) onEnd(liveVal);
-          return;
-        }
-        const { min, max } = rangeMeta();
-        liveVal = clamp(liveVal + velocity * dt, min, max);
-        commit(liveVal, { final: false });
-        velocity *= Math.pow(FRICTION, dt / 16);
-        if (liveVal <= min || liveVal >= max) {
-          liveVal = clamp(liveVal, min, max);
-          velocity = 0;
-        }
-        inertiaRaf = requestAnimationFrame(tick);
+      const step = () => {
+        inertiaRaf = requestAnimationFrame((now) => {
+          const dt = Math.min(24, Math.max(8, now - prev));
+          prev = now;
+          const { min, max } = rangeMeta();
+
+          if (Math.abs(velocity) < MIN_VEL) {
+            inertiaRaf = 0;
+            finishGesture();
+            return;
+          }
+
+          let next = liveVal + velocity * dt;
+          // Hard stop at ends — no rubber, no phantom overshoot
+          if (next <= min) {
+            next = min;
+            velocity = 0;
+            try {
+              if (navigator.vibrate) navigator.vibrate(6);
+            } catch (_) { /* ignore */ }
+          } else if (next >= max) {
+            next = max;
+            velocity = 0;
+            try {
+              if (navigator.vibrate) navigator.vibrate(6);
+            } catch (_) { /* ignore */ }
+          }
+
+          applyVisual(next, { haptic: true });
+          velocity *= Math.pow(FRICTION, dt / 16);
+
+          if (velocity === 0 || Math.abs(velocity) < MIN_VEL) {
+            inertiaRaf = 0;
+            finishGesture();
+            return;
+          }
+          step();
+        });
       };
-      inertiaRaf = requestAnimationFrame(tick);
+      step();
     }
 
     function onDown(e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       stopInertia();
       dragging = true;
+      ended = false;
       wrap.classList.add('is-scrubbing');
       beginScrub();
+      rebuildTicks();
       startX = lastX = e.clientX;
-      startVal = liveVal = parseFloat(input.value) || 0;
+      startVal = liveVal = appliedVal = snapRaw(parseFloat(input.value) || 0);
       lastT = performance.now();
       velocity = 0;
       lastMajor = null;
@@ -4706,33 +4808,30 @@
       if (!dragging) return;
       if (e.cancelable) e.preventDefault();
       const now = performance.now();
-      const dx = e.clientX - startX;
-      // Finger right → value increases (tape moves left under fixed needle)
       const { step } = rangeMeta();
-      const deltaUnits = dx / MINOR_PX;
-      const next = startVal + deltaUnits * step;
+      const dx = e.clientX - startX;
+      // Finger right → value up (tape slides left under fixed needle)
+      const next = startVal + (dx / MINOR_PX) * step;
+
       const dt = Math.max(1, now - lastT);
       const frameDx = e.clientX - lastX;
-      velocity = (frameDx / MINOR_PX) * step / dt; // value units / ms
+      const instant = ((frameDx / MINOR_PX) * step) / dt;
+      velocity = velocity * (1 - VEL_SMOOTH) + instant * VEL_SMOOTH;
       lastX = e.clientX;
       lastT = now;
-      commit(next, { final: false });
+
+      applyVisual(next, { haptic: true });
     }
 
     function onUp() {
       if (!dragging) return;
       dragging = false;
-      // Snap current
-      liveVal = commit(liveVal, { final: false });
-      // Cap release velocity and run inertia if meaningful
-      const v = clamp(velocity, -MAX_RELEASE_VEL, MAX_RELEASE_VEL);
-      velocity = v;
-      if (Math.abs(velocity) > MIN_VEL * 3) {
+      // Cap release velocity
+      velocity = clamp(velocity, -MAX_RELEASE_VEL, MAX_RELEASE_VEL);
+      if (Math.abs(velocity) > MIN_VEL * 4) {
         runInertia();
       } else {
-        wrap.classList.remove('is-scrubbing');
-        commit(liveVal, { final: true });
-        if (onEnd) onEnd(liveVal);
+        finishGesture();
       }
     }
 
@@ -4740,34 +4839,35 @@
     wrap.addEventListener('pointermove', onMove, { passive: false });
     wrap.addEventListener('pointerup', onUp);
     wrap.addEventListener('pointercancel', onUp);
-    wrap.addEventListener('lostpointercapture', onUp);
+    // Only if capture is lost while still dragging (pointerup already cleared it)
+    wrap.addEventListener('lostpointercapture', () => {
+      if (dragging) onUp();
+    });
 
-    // Keyboard / assistive
     input.addEventListener('input', () => {
       if (dragging || inertiaRaf) return;
-      liveVal = parseFloat(input.value);
+      liveVal = appliedVal = snapRaw(parseFloat(input.value));
       paintTape(liveVal, true);
       if (onInput) onInput(liveVal, { final: false });
     });
     input.addEventListener('change', () => {
       if (dragging || inertiaRaf) return;
-      liveVal = snap(parseFloat(input.value));
+      liveVal = appliedVal = snapRaw(parseFloat(input.value));
       paintTape(liveVal, true);
       if (onEnd) onEnd(liveVal);
     });
 
-    // Public: keep tape aligned when value set externally (chip change, reset)
     function sync(val, animate) {
       if (dragging || inertiaRaf) return;
-      liveVal = val != null ? snap(val) : snap(parseFloat(input.value));
+      rebuildTicks();
+      liveVal = appliedVal = val != null ? snapRaw(val) : snapRaw(parseFloat(input.value));
       input.value = String(liveVal);
       paintTape(liveVal, !!animate);
     }
 
-    // Initial paint
     sync(parseFloat(input.value), false);
 
-    return { wrap, sync, paintTape };
+    return { wrap, sync, paintTape: (v, a) => paintTape(v, a) };
   }
 
   // Active adjust dial
