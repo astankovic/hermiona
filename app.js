@@ -434,6 +434,10 @@
       dock.style.opacity = '';
     }
     // Fresh edit session always starts with full chrome (not rail/immersive)
+    if (typeof cropSession !== 'undefined') {
+      cropSession.open = false;
+      cropSession.committing = false;
+    }
     if (typeof setChromeMode === 'function') {
       chromeState.mode = 'full';
       chromeState.beforeImmersive = 'full';
@@ -442,6 +446,7 @@
     } else if (typeof setImmersive === 'function') {
       setImmersive(false);
     }
+    if (typeof syncToolChrome === 'function') syncToolChrome();
     canvas.classList.add('visible');
 
     if (prefersReducedMotion()) {
@@ -526,6 +531,10 @@
   const btnFlipV = $('#btnFlipV');
   const btnCropApply = $('#btnCropApply');
   const btnCropReset = $('#btnCropReset');
+  const btnToolCancel = $('#btnToolCancel');
+  const btnToolDone = $('#btnToolDone');
+  const tbClusterMain = $('#tbClusterMain');
+  const tbClusterExport = $('#tbClusterExport');
   const cropLayer = $('#cropLayer');
   const cropFrame = $('#cropFrame');
   const cropRectEl = $('#cropRect');
@@ -2908,6 +2917,92 @@
   }
 
   // ========== CROP ==========
+  /** iOS Photos-style crop session: Cancel discards, Done commits + exits */
+  const cropSession = {
+    open: false,
+    rotation: 0,
+    x: 0,
+    y: 0,
+    w: 1,
+    h: 1,
+    aspect: 'free',
+    frame: 'full',
+    committing: false
+  };
+
+  function snapshotCropSession() {
+    cropSession.rotation = state.params.rotation || 0;
+    cropSession.x = state.crop.x;
+    cropSession.y = state.crop.y;
+    cropSession.w = state.crop.w;
+    cropSession.h = state.crop.h;
+    cropSession.aspect = state.crop.aspect || 'free';
+    cropSession.frame = state.crop.frame || 'full';
+  }
+
+  function restoreCropSessionSnap() {
+    state.params.rotation = cropSession.rotation;
+    state.crop.x = cropSession.x;
+    state.crop.y = cropSession.y;
+    state.crop.w = cropSession.w;
+    state.crop.h = cropSession.h;
+    state.crop.aspect = cropSession.aspect;
+    state.crop.frame = cropSession.frame;
+    markFrameActive(state.crop.frame || 'full');
+    $$('.ratio-chip[data-ratio]').forEach((b) => {
+      b.classList.toggle('active', b.dataset.ratio === (state.crop.aspect || 'free'));
+    });
+    updateDialUI();
+    updateCropOverlay();
+    scheduleRender(false);
+  }
+
+  function beginCropSession() {
+    if (cropSession.open) return;
+    snapshotCropSession();
+    cropSession.open = true;
+    cropSession.committing = false;
+    syncToolChrome();
+  }
+
+  function endCropSession(opts) {
+    opts = opts || {};
+    cropSession.open = false;
+    cropSession.committing = false;
+    if (opts.restore) restoreCropSessionSnap();
+    syncToolChrome();
+  }
+
+  /**
+   * Main edit chrome vs crop session Cancel / Done (iPhone Photos).
+   * body.tool-session-crop drives layout; rail mode hides topbar separately.
+   */
+  function syncToolChrome() {
+    const cropMode = !!(state.hasImage && state.ui.tool === 'crop');
+    document.body.classList.toggle('tool-session-crop', cropMode);
+    if (btnToolCancel) btnToolCancel.hidden = !cropMode;
+    if (btnToolDone) btnToolDone.hidden = !cropMode;
+    if (tbClusterMain) tbClusterMain.hidden = cropMode;
+    if (tbClusterExport) tbClusterExport.hidden = cropMode;
+  }
+
+  function cancelCropAndExit() {
+    if (!cropSession.open && state.ui.tool !== 'crop') return;
+    endCropSession({ restore: true });
+    // Avoid re-discard: session already closed before setTool
+    setTool('adjust');
+    hapticLight();
+    showToast('Crop canceled', 900);
+  }
+
+  function commitCropAndExit() {
+    if (state.ui.tool !== 'crop') return;
+    cropSession.committing = true;
+    cropSession.open = false; // prevent discard when apply leaves crop
+    applyCrop({ exit: true });
+    hapticSelect();
+  }
+
   function resetCropRect() {
     state.crop.x = 0;
     state.crop.y = 0;
@@ -3470,8 +3565,15 @@
     });
   });
 
-  function applyCrop() {
-    if (!state.hasImage || !state.workingCanvas) return;
+  function applyCrop(opts) {
+    opts = opts || {};
+    if (!state.hasImage || !state.workingCanvas) {
+      if (opts.exit) {
+        endCropSession();
+        setTool('adjust');
+      }
+      return;
+    }
 
     const hasStraighten = Math.abs(state.params.rotation) > 0.001;
     const fullCrop =
@@ -3482,7 +3584,13 @@
 
     if (!hasStraighten && fullCrop) {
       resetCropRect();
-      showToast('Nothing to apply');
+      if (opts.exit) {
+        endCropSession();
+        setTool('adjust');
+        showToast('Crop done', 900);
+      } else {
+        showToast('Nothing to apply');
+      }
       return;
     }
 
@@ -3524,8 +3632,13 @@
         scheduleRender(false);
         scheduleSceneAnalysis(150);
         showToast('Crop applied');
+        if (opts.exit) {
+          endCropSession();
+          setTool('adjust');
+        }
       } finally {
         busyEnd('crop');
+        cropSession.committing = false;
       }
     });
   }
@@ -3543,6 +3656,18 @@
     tool = normalizeToolId(tool);
     const prevTool = state.ui.tool;
     const toolChanged = tool !== prevTool;
+
+    // Leaving crop without Done → discard uncommitted straighten/rect (iOS Cancel)
+    if (
+      prevTool === 'crop' &&
+      tool !== 'crop' &&
+      cropSession.open &&
+      !cropSession.committing
+    ) {
+      restoreCropSessionSnap();
+      cropSession.open = false;
+    }
+
     state.ui.tool = tool;
     $$('.tool-btn').forEach((b) => {
       const on = b.dataset.tool === tool;
@@ -3613,6 +3738,13 @@
     // Crop overlay ONLY on Crop tab — never on Border
     setCropMode(tool === 'crop');
 
+    if (tool === 'crop') {
+      beginCropSession();
+    } else if (prevTool === 'crop') {
+      // Ensure session flag cleared when leaving (commit path already did)
+      if (!cropSession.committing) cropSession.open = false;
+    }
+
     if (tool === 'border') {
       syncBorderUI();
       // Ensure no crop handles linger
@@ -3637,6 +3769,7 @@
     }
 
     updateEnhanceBarUI();
+    syncToolChrome();
 
     if (topbarTitle) {
       const titles = {
@@ -4649,10 +4782,22 @@
     btnCropReset.addEventListener('click', () => {
       resetCropRect();
       state.params.rotation = 0;
+      state.crop.aspect = 'free';
+      state.crop.frame = 'full';
+      markFrameActive('full');
+      $$('.ratio-chip[data-ratio]').forEach((b) => {
+        b.classList.toggle('active', b.dataset.ratio === 'free');
+      });
       updateDialUI();
       scheduleRender(false);
       scheduleHistoryPush();
     });
+  }
+  if (btnToolCancel) {
+    btnToolCancel.addEventListener('click', () => cancelCropAndExit());
+  }
+  if (btnToolDone) {
+    btnToolDone.addEventListener('click', () => commitCropAndExit());
   }
 
   // ========== CHROME STATE MACHINE (mobile overlay) ==========
@@ -4679,6 +4824,7 @@
   function canEnterImmersive() {
     if (!isOverlayChrome() || !state.hasImage) return false;
     if (state.crop && state.crop.active) return false;
+    if (state.ui.tool === 'crop') return false;
     if (chromeState.sheetOpen) return false;
     if (fineOverlay && !fineOverlay.hidden) return false;
     if (exportSheet && !exportSheet.hidden) return false;
@@ -4771,6 +4917,11 @@
   /** Collapse panels only (rail stays). */
   function setChromeHidden(hidden) {
     if (!isOverlayChrome()) {
+      setChromeMode('full');
+      return;
+    }
+    // Crop session needs Cancel/Done topbar + crop panel — stay full
+    if (hidden && state.ui.tool === 'crop') {
       setChromeMode('full');
       return;
     }
@@ -4985,6 +5136,11 @@
         endScrub();
         return;
       }
+      // Crop session Cancel
+      if (state.ui.tool === 'crop' && state.hasImage) {
+        cancelCropAndExit();
+        return;
+      }
       if (chromeState.mode === 'immersive' && isOverlayChrome()) {
         setImmersive(false);
         return;
@@ -5042,9 +5198,12 @@
       e.preventDefault();
       startCompare();
     }
-    if (e.code === 'Enter' && state.crop.active && meta) {
-      e.preventDefault();
-      applyCrop();
+    if (e.code === 'Enter' && state.crop.active) {
+      if (meta || state.ui.tool === 'crop') {
+        e.preventDefault();
+        if (state.ui.tool === 'crop') commitCropAndExit();
+        else applyCrop();
+      }
     }
   });
 

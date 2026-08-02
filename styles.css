@@ -140,6 +140,13 @@ body:not(.layout-side) .topbar {
   pointer-events: auto;
 }
 
+/* Crop Cancel / Done sit outside glass clusters */
+body:not(.layout-side) .topbar-left,
+body:not(.layout-side) .topbar-right {
+  align-items: center;
+  gap: 4px;
+}
+
 /* Floating control clusters over the photo */
 body:not(.layout-side) .tb-cluster {
   display: inline-flex;
@@ -362,6 +369,20 @@ body.ui-immersive:not(.layout-side) .topbar {
   pointer-events: none;
 }
 
+/* Rail-only: hide topbar so photo + tool menu breathe (iPhone intermediate view) */
+body.chrome-hidden:not(.layout-side):not(.ui-immersive):not(.tool-session-crop) .topbar {
+  transform: translate3d(0, calc(-100% - var(--safe-top)), 0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Crop session always keeps Cancel / Done reachable */
+body.tool-session-crop:not(.layout-side).chrome-hidden .topbar {
+  transform: none;
+  opacity: 1;
+  pointer-events: auto;
+}
+
 body.ui-immersive:not(.layout-side) .dock {
   transform: translate3d(0, 110%, 0);
   opacity: 0;
@@ -374,6 +395,56 @@ body.ui-immersive:not(.layout-side) .look-chip,
 body.ui-immersive:not(.layout-side) .compare-hint {
   opacity: 0;
   pointer-events: none;
+}
+
+/* Crop session: Cancel · Crop · Done (replaces undo/export clusters) */
+.tb-text-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  padding: 8px 12px;
+  min-height: 36px;
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tb-text-btn:active {
+  opacity: 0.55;
+}
+
+.tb-text-btn.tb-text-done {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.tb-text-btn[hidden] {
+  display: none !important;
+}
+
+body.tool-session-crop .topbar-title:not(.topbar-title--brand) {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Mobile: topbar Done/Cancel own the crop commit — hide dock Apply */
+body:not(.layout-side).tool-session-crop #btnCropApply {
+  display: none !important;
+}
+
+body:not(.layout-side).tool-session-crop .crop-apply-row {
+  /* Reset alone when Apply is hidden */
+  display: flex;
+}
+
+body:not(.layout-side).tool-session-crop .crop-apply-row .btn-ghost-wide {
+  flex: 1;
 }
 
 /* ========== TOP BAR ========== */
