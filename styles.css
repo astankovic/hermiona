@@ -250,6 +250,8 @@ body:not(.layout-side) .dock {
   width: 100%;
   z-index: 50;
   flex: none;
+  /* Pack chrome to the bottom edge of the dock box (never float mid-screen) */
+  justify-content: flex-end;
   border-radius: 18px 18px 0 0;
   box-shadow:
     0 -8px 32px rgba(0, 0, 0, 0.5),
@@ -258,13 +260,11 @@ body:not(.layout-side) .dock {
   /* Cap total dock so handle + panels + tool-rail always fit on screen */
   max-height: min(70dvh, 70vh, 520px);
   overflow: hidden;
-  transform: translate3d(0, 0, 0);
+  transform: none;
   transition:
-    transform 0.36s var(--ease-out),
     max-height 0.32s var(--ease-out),
     box-shadow 0.28s var(--ease-out),
     background 0.28s ease;
-  will-change: transform;
   touch-action: pan-y;
 }
 
@@ -932,11 +932,12 @@ body:not(.layout-side) .look-chip {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  /* Children stack from top; tool-rail uses margin-top:auto to pin bottom */
+  justify-content: flex-start;
   transition:
     max-height 0.38s var(--ease-cinematic),
     box-shadow 0.32s var(--ease-out),
     background 0.32s ease,
-    transform 0.45s var(--ease-cinematic),
     opacity 0.35s var(--ease-soft);
 }
 
@@ -2105,7 +2106,7 @@ body.layout-compact .preset-scroll {
   color: var(--accent);
 }
 
-/* Tool rail — always visible; never shrink out of the dock */
+/* Tool rail — always visible, always pinned to bottom of dock */
 .tool-rail {
   display: flex;
   justify-content: space-around;
@@ -2117,6 +2118,8 @@ body.layout-compact .preset-scroll {
   border-top: 0.5px solid var(--separator);
   flex: 0 0 auto;
   flex-shrink: 0;
+  /* Pin to dock bottom when dock is taller than content (side layout / leftover height) */
+  margin-top: auto;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -3051,12 +3054,23 @@ body.hero-ready .draft-resume:not([hidden]) {
 }
 
 /* —— Enter editor —— */
+/* No fill-mode "both/forwards" on dock — avoids sticky transform floating the menu */
 body.is-entering:not(.layout-side) .dock:not([hidden]) {
-  animation: dockRise 0.7s var(--ease-cinematic) both;
+  animation: dockRise 0.7s var(--ease-cinematic);
 }
 
 body.is-entering.layout-side .dock:not([hidden]) {
-  animation: dockSlideIn 0.6s 0.06s var(--ease-cinematic) both;
+  animation: dockSlideIn 0.6s 0.06s var(--ease-cinematic);
+}
+
+body.is-entering .dock,
+body.is-exiting .dock {
+  /* Don't let transform transitions fight enter/exit keyframes */
+  transition:
+    max-height 0.32s var(--ease-out),
+    box-shadow 0.28s var(--ease-out),
+    background 0.28s ease,
+    opacity 0.35s var(--ease-soft) !important;
 }
 
 body.is-entering .topbar-left,
@@ -3105,6 +3119,12 @@ body.is-exiting:not(.layout-side) .dock:not([hidden]) {
 body.is-exiting.layout-side .dock:not([hidden]) {
   animation: dockSlideOut 0.38s var(--ease-soft) forwards;
   pointer-events: none;
+}
+
+/* After any enter/exit, hard-pin dock (guards against leftover transform) */
+body.has-image:not(.is-entering):not(.is-exiting) .dock {
+  transform: none !important;
+  opacity: 1 !important;
 }
 
 body.is-exiting .topbar-left,
@@ -3356,6 +3376,7 @@ body.layout-side .dock {
   max-width: none;
   height: 100%;
   max-height: none;
+  min-height: 0;
   margin: 0;
   border-top: none;
   border-left: 0.5px solid var(--separator);
@@ -3364,12 +3385,19 @@ body.layout-side .dock {
   padding-bottom: max(8px, var(--safe-bottom));
   padding-right: max(0px, var(--safe-right));
   background: rgba(12, 12, 14, 0.94);
+  /* Full-height column: body grows, rail stays on the bottom edge */
+  justify-content: flex-start;
+  overflow: hidden;
+  transform: none;
 }
 
-/* Side layout: dock-body uses full column height, no overlay max-height cap */
+/* Side layout: dock-body fills remaining height above the tool rail */
 body.layout-side .dock-body {
-  max-height: none;
-  flex: 1 1 auto;
+  max-height: none !important;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   transition: none;
 }
 
@@ -3378,18 +3406,17 @@ body.layout-side .canvas-area {
   padding: 16px 20px;
 }
 
-body.layout-side .dock-body {
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
 body.layout-side .tool-rail {
-  margin-top: 0;
+  margin-top: auto;
+  flex: 0 0 auto;
   flex-shrink: 0;
   height: auto;
   min-height: var(--dock-rail);
   padding: 8px 4px 10px;
   border-top: 0.5px solid var(--separator);
+  /* Keep rail on the physical bottom of the side column */
+  position: relative;
+  z-index: 2;
 }
 
 body.layout-side .dial-row {

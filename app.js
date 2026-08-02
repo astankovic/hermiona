@@ -405,7 +405,12 @@
   function playEditorEnter() {
     document.body.classList.remove('hero-ready', 'is-exiting');
     document.body.classList.add('has-image');
-    if (dock) dock.hidden = false;
+    if (dock) {
+      dock.hidden = false;
+      // Clear any leftover enter/exit transform so the rail never floats mid-screen
+      dock.style.transform = '';
+      dock.style.opacity = '';
+    }
     canvas.classList.add('visible');
 
     if (prefersReducedMotion()) {
@@ -419,6 +424,10 @@
     clearTimeout(enterAnimTimer);
     enterAnimTimer = setTimeout(() => {
       document.body.classList.remove('is-entering');
+      if (dock) {
+        dock.style.transform = '';
+        dock.style.opacity = '';
+      }
     }, 900);
   }
 
