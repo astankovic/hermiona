@@ -75,8 +75,196 @@
     return c;
   }
 
+  // ——— Export process worker (G1) ———
+  let exportWorker = null;
+  let exportWorkerFailed = false;
+  let workerMsgId = 1;
+  const workerPending = Object.create(null);
+
+  function getExportWorker() {
+    if (exportWorkerFailed) return null;
+    if (exportWorker) return exportWorker;
+    try {
+      if (typeof Worker === 'undefined') {
+        exportWorkerFailed = true;
+        return null;
+      }
+      // Absolute-ish path relative to page
+      const base =
+        (document.currentScript && document.currentScript.src) ||
+        (global.location && global.location.href) ||
+        '';
+      let workerUrl = 'js/export-worker.js';
+      try {
+        workerUrl = new URL('js/export-worker.js', global.location.href).href;
+      } catch (e) {
+        /* keep relative */
+      }
+      // bust cache with app version if present
+      if (global.__H_V) {
+        workerUrl += (workerUrl.indexOf('?') >= 0 ? '&' : '?') + 'v=' + global.__H_V;
+      }
+      exportWorker = new Worker(workerUrl);
+      exportWorker.onmessage = function (ev) {
+        const msg = ev.data || {};
+        const pending = workerPending[msg.id];
+        if (!pending) return;
+        delete workerPending[msg.id];
+        if (msg.ok) {
+          pending.resolve({
+            width: msg.width,
+            height: msg.height,
+            data: new Uint8ClampedArray(msg.rgba)
+          });
+        } else {
+          pending.reject(new Error(msg.error || 'Worker process failed'));
+        }
+      };
+      exportWorker.onerror = function (err) {
+        exportWorkerFailed = true;
+        try {
+          exportWorker.terminate();
+        } catch (e) {
+          /* ignore */
+        }
+        exportWorker = null;
+        Object.keys(workerPending).forEach(function (k) {
+          workerPending[k].reject(err || new Error('Worker crashed'));
+          delete workerPending[k];
+        });
+      };
+      return exportWorker;
+    } catch (e) {
+      exportWorkerFailed = true;
+      return null;
+    }
+  }
+
+  function packScene(scene) {
+    if (!scene) return null;
+    const out = {
+      width: scene.width,
+      height: scene.height,
+      focusDepth: scene.focusDepth,
+      depthSource: scene.depthSource,
+      version: scene.version
+    };
+    if (scene.personMask) out.personMask = scene.personMask.buffer.slice(
+      scene.personMask.byteOffset,
+      scene.personMask.byteOffset + scene.personMask.byteLength
+    );
+    if (scene.depthMap) out.depthMap = scene.depthMap.buffer.slice(
+      scene.depthMap.byteOffset,
+      scene.depthMap.byteOffset + scene.depthMap.byteLength
+    );
+    if (scene.parts) {
+      out.parts = {};
+      Object.keys(scene.parts).forEach(function (k) {
+        const m = scene.parts[k];
+        if (m) {
+          out.parts[k] = m.buffer.slice(m.byteOffset, m.byteOffset + m.byteLength);
+        }
+      });
+    }
+    return out;
+  }
+
   /**
-   * Build export canvas (processed + sized).
+   * Process ImageData on worker when available (large exports).
+   * @returns {Promise<ImageData>}
+   */
+  function processOnWorker(imageData, params, processOpts) {
+    const w = imageData.width;
+    const h = imageData.height;
+    // Prefer worker when pixel count is large enough to matter
+    if (w * h < 900 * 900) {
+      return Promise.resolve(
+        global.HermionaEngine.process(imageData, params, processOpts)
+      );
+    }
+    const worker = getExportWorker();
+    if (!worker) {
+      return Promise.resolve(
+        global.HermionaEngine.process(imageData, params, processOpts)
+      );
+    }
+
+    const id = workerMsgId++;
+    const rgba = imageData.data.buffer.slice(
+      imageData.data.byteOffset,
+      imageData.data.byteOffset + imageData.data.byteLength
+    );
+    const scenePack = packScene(processOpts.scene);
+    const transfer = [rgba];
+    if (scenePack) {
+      if (scenePack.personMask) transfer.push(scenePack.personMask);
+      if (scenePack.depthMap) transfer.push(scenePack.depthMap);
+      if (scenePack.parts) {
+        Object.keys(scenePack.parts).forEach(function (k) {
+          if (scenePack.parts[k]) transfer.push(scenePack.parts[k]);
+        });
+      }
+    }
+
+    return new Promise(function (resolve, reject) {
+      workerPending[id] = {
+        resolve: function (r) {
+          resolve(new ImageData(r.data, r.width, r.height));
+        },
+        reject: reject
+      };
+      // Timeout — fall back to main
+      const timer = setTimeout(function () {
+        if (!workerPending[id]) return;
+        delete workerPending[id];
+        try {
+          resolve(
+            global.HermionaEngine.process(imageData, params, processOpts)
+          );
+        } catch (e) {
+          reject(e);
+        }
+      }, 120000);
+
+      const origResolve = workerPending[id].resolve;
+      const origReject = workerPending[id].reject;
+      workerPending[id].resolve = function (r) {
+        clearTimeout(timer);
+        origResolve(r);
+      };
+      workerPending[id].reject = function (e) {
+        clearTimeout(timer);
+        // Fallback main thread
+        try {
+          resolve(
+            global.HermionaEngine.process(imageData, params, processOpts)
+          );
+        } catch (e2) {
+          origReject(e2);
+        }
+      };
+
+      worker.postMessage(
+        {
+          id: id,
+          type: 'process',
+          width: w,
+          height: h,
+          rgba: rgba,
+          params: params,
+          look: processOpts.look,
+          optics: processOpts.optics,
+          scene: scenePack,
+          grain: processOpts.grain,
+          grainMode: processOpts.grainMode
+        },
+        transfer
+      );
+    });
+  }
+
+  /**
+   * Build export canvas (processed + sized). Sync path (main thread).
    * @param {ExportOptions} opts
    */
   function buildExportCanvas(opts) {
@@ -86,8 +274,6 @@
     const size = opts.size || 'working';
     const params = opts.params || {};
 
-    // Grain: static tile so export matches preview character (not random sparkle each time)
-    // Strength is resolution-compensated inside looks.js
     const processOpts = {
       grain: true,
       grainMode: 'static',
@@ -96,7 +282,7 @@
       exportRes: true,
       scene: opts.scene || null,
       optics: opts.optics || null,
-      debugScene: null // never debug on export
+      debugScene: null
     };
 
     // ——— Fast path: working / preview resolution ———
@@ -114,11 +300,9 @@
 
     const targetLong = resolveTargetLong(size, opts.originalImage, opts.workingCanvas);
 
-    // ——— No originalImage: scale working canvas (never upscale past working) ———
     if (!opts.originalImage) {
       let base = opts.workingCanvas;
       if (!base) throw new Error('No image');
-      // Process first at working res, then downscale if needed
       const ctx = base.getContext('2d', { willReadFrequently: true });
       const data = ctx.getImageData(0, 0, base.width, base.height);
       const processed = Engine.process(data, params, processOpts);
@@ -135,27 +319,22 @@
       };
     }
 
-    // ——— Full / 1080 / 2048 from original + geometry ops ———
     const rebuildCap = resolveRebuildCap(size, targetLong, opts.originalImage);
     let rebuilt = Engine.rebuildGeometry(opts.originalImage, opts.ops || [], rebuildCap);
 
     if (!rebuilt) throw new Error('Rebuild failed');
 
-    // If rebuilt is still larger than target (e.g. aspect ops), downscale BEFORE process
-    // so film grain / CA run at final pixel density (matches "what you get").
     let long = Math.max(rebuilt.width, rebuilt.height);
     if (targetLong && long > targetLong) {
       rebuilt = Engine.scaleCanvasToLongEdge(rebuilt, targetLong);
       long = Math.max(rebuilt.width, rebuilt.height);
     }
 
-    // Sanity: never leave export larger than HARD_MAX
     if (long > HARD_MAX_LONG_EDGE) {
       rebuilt = Engine.scaleCanvasToLongEdge(rebuilt, HARD_MAX_LONG_EDGE);
     }
 
     const rctx = rebuilt.getContext('2d', { willReadFrequently: true });
-    // Force readback from clean bitmap
     const srcData = rctx.getImageData(0, 0, rebuilt.width, rebuilt.height);
 
     const processed = Engine.process(srcData, params, processOpts);
@@ -171,6 +350,98 @@
       rebuildCap: rebuildCap,
       targetLong: targetLong
     };
+  }
+
+  /**
+   * Async export canvas — uses worker for process when beneficial.
+   * Geometry rebuild stays on main (needs DOM image/canvas).
+   */
+  function buildExportCanvasAsync(opts) {
+    const Engine = global.HermionaEngine;
+    if (!Engine) return Promise.reject(new Error('HermionaEngine missing'));
+
+    const size = opts.size || 'working';
+    const params = opts.params || {};
+    const processOpts = {
+      grain: true,
+      grainMode: 'static',
+      look: opts.look || null,
+      quality: 'export',
+      exportRes: true,
+      scene: opts.scene || null,
+      optics: opts.optics || null,
+      debugScene: null
+    };
+
+    // Small / working: sync on main (fast enough)
+    if (size === 'working') {
+      try {
+        return Promise.resolve(buildExportCanvas(opts));
+      } catch (e) {
+        return Promise.reject(e);
+      }
+    }
+
+    try {
+      let srcData = null;
+      let rebuildCap = null;
+      let targetLong = resolveTargetLong(
+        size,
+        opts.originalImage,
+        opts.workingCanvas
+      );
+      let pipeline = 'full';
+
+      if (!opts.originalImage) {
+        const base = opts.workingCanvas;
+        if (!base) return Promise.reject(new Error('No image'));
+        const ctx = base.getContext('2d', { willReadFrequently: true });
+        srcData = ctx.getImageData(0, 0, base.width, base.height);
+        pipeline = 'working-fallback';
+      } else {
+        rebuildCap = resolveRebuildCap(size, targetLong, opts.originalImage);
+        let rebuilt = Engine.rebuildGeometry(
+          opts.originalImage,
+          opts.ops || [],
+          rebuildCap
+        );
+        if (!rebuilt) return Promise.reject(new Error('Rebuild failed'));
+        let long = Math.max(rebuilt.width, rebuilt.height);
+        if (targetLong && long > targetLong) {
+          rebuilt = Engine.scaleCanvasToLongEdge(rebuilt, targetLong);
+          long = Math.max(rebuilt.width, rebuilt.height);
+        }
+        if (long > HARD_MAX_LONG_EDGE) {
+          rebuilt = Engine.scaleCanvasToLongEdge(rebuilt, HARD_MAX_LONG_EDGE);
+        }
+        const rctx = rebuilt.getContext('2d', { willReadFrequently: true });
+        srcData = rctx.getImageData(0, 0, rebuilt.width, rebuilt.height);
+      }
+
+      return processOnWorker(srcData, params, processOpts).then(function (
+        processed
+      ) {
+        if (!processed) throw new Error('Process failed');
+        let out = canvasFromImageData(processed);
+        if (pipeline === 'working-fallback' && targetLong) {
+          const long = Math.max(out.width, out.height);
+          if (long > targetLong) {
+            out = Engine.scaleCanvasToLongEdge(out, targetLong);
+          }
+        }
+        return {
+          canvas: out,
+          width: out.width,
+          height: out.height,
+          pipeline: pipeline,
+          rebuildCap: rebuildCap,
+          targetLong: targetLong,
+          worker: true
+        };
+      });
+    } catch (e) {
+      return Promise.reject(e);
+    }
   }
 
   function canvasToBlob(canvas, format, quality) {
@@ -264,37 +535,32 @@
 
   /**
    * Build + blob at a single size (no fallback).
+   * Uses async worker process when beneficial (G1).
    * @param {ExportOptions} opts
    * @returns {Promise<{width:number,height:number,pipeline?:string,blob:Blob,ext:string}>}
    */
   function buildAndBlob(opts) {
-    return new Promise((resolve, reject) => {
-      try {
-        const result = buildExportCanvas(opts);
+    return buildExportCanvasAsync(opts)
+      .then((result) => {
         const format = opts.format || 'jpeg';
         const quality = effectiveJpegQuality(opts, result.width, result.height);
         const ext = format === 'png' ? 'png' : 'jpg';
-
-        canvasToBlob(result.canvas, format, quality)
-          .then((blob) => {
-            // Drop canvas ref ASAP for GC before download
-            try {
-              result.canvas.width = 0;
-              result.canvas.height = 0;
-            } catch (_) { /* ignore */ }
-            resolve({
-              width: result.width,
-              height: result.height,
-              pipeline: result.pipeline,
-              blob: blob,
-              ext: ext
-            });
-          })
-          .catch(reject);
-      } catch (err) {
-        reject(err);
-      }
-    });
+        return canvasToBlob(result.canvas, format, quality).then((blob) => {
+          try {
+            result.canvas.width = 0;
+            result.canvas.height = 0;
+          } catch (_) {
+            /* ignore */
+          }
+          return {
+            width: result.width,
+            height: result.height,
+            pipeline: result.pipeline,
+            blob: blob,
+            ext: ext
+          };
+        });
+      });
   }
 
   /**
@@ -461,6 +727,8 @@
     shareOrDownload,
     triggerDownload,
     buildExportCanvas,
+    buildExportCanvasAsync,
+    processOnWorker,
     sizeFallbackLadder,
     MAX_EXPORT_LONG_EDGE,
     HARD_MAX_LONG_EDGE,

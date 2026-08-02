@@ -1167,6 +1167,7 @@
   }
 
   function prepareWorkingImage(img) {
+    invalidatePipeCache();
     const max = state.maxWorkingSize;
     let w = img.naturalWidth;
     let h = img.naturalHeight;
@@ -1469,6 +1470,68 @@
     });
   }
   if (btnZoomFit) btnZoomFit.addEventListener('click', () => fitView());
+
+  // ========== PIPE CACHE (G1 dirty flags) ==========
+  // Snapshot after grade+looks so optics/selective-only changes skip re-looks.
+  const pipeCache = {
+    gradeKey: '',
+    w: 0,
+    h: 0,
+    afterLooks: null // ImageData
+  };
+
+  function buildGradeKey(srcData, params, look, quality, fast) {
+    // Identity of everything before selective/DoF/vignette/grain
+    const p = params || {};
+    const L = look || {};
+    return [
+      srcData && srcData.width,
+      srcData && srcData.height,
+      fast ? 1 : 0,
+      quality || 'preview',
+      p.exposure,
+      p.contrast,
+      p.highlights,
+      p.shadows,
+      p.whites,
+      p.blacks,
+      p.temperature,
+      p.tint,
+      p.saturation,
+      p.vibrance,
+      p.clarity,
+      p.sharpen,
+      L.film,
+      L.filmIntensity,
+      L.camera,
+      L.cameraIntensity,
+      L.lens,
+      L.lensIntensity,
+      L.bloom,
+      L.ca,
+      L.preset,
+      L.presetIntensity,
+      L.imperfIntensity,
+      L.imperfManual ? 1 : 0,
+      L.imperf ? JSON.stringify(L.imperf) : ''
+    ].join('|');
+  }
+
+  function captureAfterLooks(data, w, h) {
+    try {
+      const copy = new Uint8ClampedArray(data);
+      pipeCache.afterLooks = new ImageData(copy, w, h);
+      pipeCache.w = w;
+      pipeCache.h = h;
+    } catch (e) {
+      pipeCache.afterLooks = null;
+    }
+  }
+
+  function invalidatePipeCache() {
+    pipeCache.gradeKey = '';
+    pipeCache.afterLooks = null;
+  }
 
   // ========== RENDER (RAF + scrub fast path) ==========
   let renderPending = false;
@@ -1901,11 +1964,27 @@
     const srcData =
       useFast && state.scrubData ? state.scrubData : state.originalData;
 
-    const processed = Engine.process(srcData, state.params, {
+    const quality = useFast ? 'preview' : state.lookQuality || 'preview';
+    const gradeKey = buildGradeKey(
+      srcData,
+      state.params,
+      state.look,
+      quality,
+      useFast
+    );
+    // Reuse after-looks buffer when only optics / vignette / grain / debug changed
+    const canReuseLooks =
+      !useFast &&
+      pipeCache.afterLooks &&
+      pipeCache.gradeKey === gradeKey &&
+      pipeCache.w === srcData.width &&
+      pipeCache.h === srcData.height;
+
+    const processOpts = {
       grain: !useFast && state.params.grain > 0,
       grainMode: 'static',
       look: state.look,
-      quality: useFast ? 'preview' : state.lookQuality || 'preview',
+      quality: quality,
       fast: useFast,
       scene: useFast ? null : state.scene,
       optics: {
@@ -1915,12 +1994,22 @@
         focusDepth: state.optics.focusDepth,
         focalRecipe: state.optics.focalRecipe || '50',
         bokehShape: state.optics.bokehShape || 'auto',
-        bokehAmount: state.optics.bokehAmount != null ? state.optics.bokehAmount : 0.55,
-          skinSoft: state.optics.skinSoft || 0,
-          subjectPunch: state.optics.subjectPunch || 0
+        bokehAmount:
+          state.optics.bokehAmount != null ? state.optics.bokehAmount : 0.55,
+        skinSoft: state.optics.skinSoft || 0,
+        subjectPunch: state.optics.subjectPunch || 0
       },
-      debugScene: useFast || state.debugScene === 'off' ? null : state.debugScene
-    });
+      debugScene: useFast || state.debugScene === 'off' ? null : state.debugScene,
+      fromAfterLooks: canReuseLooks ? pipeCache.afterLooks : null,
+      onAfterLooks: useFast
+        ? null
+        : function (data, w, h) {
+            pipeCache.gradeKey = gradeKey;
+            captureAfterLooks(data, w, h);
+          }
+    };
+
+    const processed = Engine.process(srcData, state.params, processOpts);
     if (processed) {
       drawToMain(processed, straighten);
       scheduleHistogram(processed);

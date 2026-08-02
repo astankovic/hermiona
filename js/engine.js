@@ -127,133 +127,162 @@
     }
   }
 
+  function acquireRGBA(len) {
+    const B = global.HermionaBuffers;
+    if (B && B.acquireU8) return B.acquireU8(len);
+    return new Uint8ClampedArray(len);
+  }
+
   /**
    * Process source ImageData with adjustment params.
    * @param {ImageData} srcImageData
    * @param {object} params — light/color/effects
    * @param {object} [options]
-   * @param {boolean} [options.grain=false] — apply grain pass
+   * @param {boolean} [options.grain=false]
    * @param {'static'|'random'} [options.grainMode='static']
+   * @param {boolean} [options.fast] — scrub: skip spatial / DoF / grain
+   * @param {ImageData} [options.fromAfterLooks] — dirty-flag: skip grade+looks
+   * @param {function} [options.onAfterLooks] — (Uint8ClampedArray, w, h) snapshot hook
    * @returns {ImageData|null}
    */
   function process(srcImageData, params, options) {
-    if (!srcImageData) return null;
+    if (!srcImageData && !(options && options.fromAfterLooks)) return null;
     options = options || {};
+    const Perf = global.HermionaPerf;
+    const perfAll = Perf && Perf.isEnabled() ? Perf.start('process') : null;
 
-    const w = srcImageData.width;
-    const h = srcImageData.height;
-    const data = new Uint8ClampedArray(srcImageData.data);
+    const fromLooks = options.fromAfterLooks || null;
+    const w = fromLooks ? fromLooks.width : srcImageData.width;
+    const h = fromLooks ? fromLooks.height : srcImageData.height;
+    const len = w * h * 4;
+    const data = acquireRGBA(len);
+    const srcBuf = fromLooks ? fromLooks.data : srcImageData.data;
+    data.set(srcBuf);
+
     const p = params || {};
+    const fast = !!options.fast;
+    const quality = fast ? 'preview' : options.quality || 'preview';
+    const optics = options.optics;
+    const scene = options.scene;
 
-    const exp = Math.pow(2, p.exposure || 0);
-    const contrast = ((p.contrast || 0) + 100) / 100;
-    const sat = ((p.saturation || 0) + 100) / 100;
-    const vib = (p.vibrance || 0) / 100;
-    const temp = (p.temperature || 0) / 100;
-    const tintVal = (p.tint || 0) / 100;
-    const hi = (p.highlights || 0) / 100;
-    const sh = (p.shadows || 0) / 100;
-    const wh = (p.whites || 0) / 100;
-    const bl = (p.blacks || 0) / 100;
-    const clarity = (p.clarity || 0) / 100;
-    const sharpen = (p.sharpen || 0) / 100;
     const vignette = (p.vignette || 0) / 100;
     const grainAmt = (p.grain || 0) / 100;
 
-    for (let i = 0; i < data.length; i += 4) {
-      let r = data[i] / 255;
-      let g = data[i + 1] / 255;
-      let b = data[i + 2] / 255;
+    // ——— Grade (light/color) — skip if resuming after looks ———
+    if (!fromLooks) {
+      const perfGrade = Perf && Perf.isEnabled() ? Perf.start('grade') : null;
+      const exp = Math.pow(2, p.exposure || 0);
+      const contrast = ((p.contrast || 0) + 100) / 100;
+      const sat = ((p.saturation || 0) + 100) / 100;
+      const vib = (p.vibrance || 0) / 100;
+      const temp = (p.temperature || 0) / 100;
+      const tintVal = (p.tint || 0) / 100;
+      const hi = (p.highlights || 0) / 100;
+      const sh = (p.shadows || 0) / 100;
+      const wh = (p.whites || 0) / 100;
+      const bl = (p.blacks || 0) / 100;
+      const clarity = (p.clarity || 0) / 100;
+      const sharpen = (p.sharpen || 0) / 100;
 
-      r *= exp;
-      g *= exp;
-      b *= exp;
+      for (let i = 0; i < data.length; i += 4) {
+        let r = data[i] / 255;
+        let g = data[i + 1] / 255;
+        let b = data[i + 2] / 255;
 
-      r = (r - 0.5) * contrast + 0.5;
-      g = (g - 0.5) * contrast + 0.5;
-      b = (b - 0.5) * contrast + 0.5;
+        r *= exp;
+        g *= exp;
+        b *= exp;
 
-      const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        r = (r - 0.5) * contrast + 0.5;
+        g = (g - 0.5) * contrast + 0.5;
+        b = (b - 0.5) * contrast + 0.5;
 
-      if (sh !== 0 && luma < 0.5) {
-        const amount = sh * (1 - luma * 2);
-        r += amount * 0.35;
-        g += amount * 0.35;
-        b += amount * 0.35;
+        const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+        if (sh !== 0 && luma < 0.5) {
+          const amount = sh * (1 - luma * 2);
+          r += amount * 0.35;
+          g += amount * 0.35;
+          b += amount * 0.35;
+        }
+
+        if (hi !== 0 && luma > 0.5) {
+          const amount = hi * ((luma - 0.5) * 2);
+          r -= amount * 0.25;
+          g -= amount * 0.25;
+          b -= amount * 0.25;
+        }
+
+        if (wh !== 0) {
+          const t = Math.max(0, (luma - 0.7) / 0.3);
+          r = lerp(r, r + wh * 0.3, t);
+          g = lerp(g, g + wh * 0.3, t);
+          b = lerp(b, b + wh * 0.3, t);
+        }
+        if (bl !== 0) {
+          const t = Math.max(0, (0.3 - luma) / 0.3);
+          r = lerp(r, r + bl * 0.25, t);
+          g = lerp(g, g + bl * 0.25, t);
+          b = lerp(b, b + bl * 0.25, t);
+        }
+
+        if (temp !== 0) {
+          r += temp * 0.15;
+          b -= temp * 0.15;
+        }
+        if (tintVal !== 0) {
+          g += tintVal * 0.12;
+          r -= tintVal * 0.04;
+          b -= tintVal * 0.04;
+        }
+
+        if (sat !== 1) {
+          const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          r = gray + (r - gray) * sat;
+          g = gray + (g - gray) * sat;
+          b = gray + (b - gray) * sat;
+        }
+
+        if (vib !== 0) {
+          const maxc = Math.max(r, g, b);
+          const minc = Math.min(r, g, b);
+          const satLevel = maxc === 0 ? 0 : (maxc - minc) / maxc;
+          const amount = vib * (1 - satLevel);
+          const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          r = gray + (r - gray) * (1 + amount);
+          g = gray + (g - gray) * (1 + amount);
+          b = gray + (b - gray) * (1 + amount);
+        }
+
+        data[i] = clamp(r * 255, 0, 255);
+        data[i + 1] = clamp(g * 255, 0, 255);
+        data[i + 2] = clamp(b * 255, 0, 255);
       }
 
-      if (hi !== 0 && luma > 0.5) {
-        const amount = hi * ((luma - 0.5) * 2);
-        r -= amount * 0.25;
-        g -= amount * 0.25;
-        b -= amount * 0.25;
-      }
-
-      if (wh !== 0) {
-        const t = Math.max(0, (luma - 0.7) / 0.3);
-        r = lerp(r, r + wh * 0.3, t);
-        g = lerp(g, g + wh * 0.3, t);
-        b = lerp(b, b + wh * 0.3, t);
-      }
-      if (bl !== 0) {
-        const t = Math.max(0, (0.3 - luma) / 0.3);
-        r = lerp(r, r + bl * 0.25, t);
-        g = lerp(g, g + bl * 0.25, t);
-        b = lerp(b, b + bl * 0.25, t);
-      }
-
-      if (temp !== 0) {
-        r += temp * 0.15;
-        b -= temp * 0.15;
-      }
-      if (tintVal !== 0) {
-        g += tintVal * 0.12;
-        r -= tintVal * 0.04;
-        b -= tintVal * 0.04;
-      }
-
-      if (sat !== 1) {
-        const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        r = gray + (r - gray) * sat;
-        g = gray + (g - gray) * sat;
-        b = gray + (b - gray) * sat;
-      }
-
-      if (vib !== 0) {
-        const maxc = Math.max(r, g, b);
-        const minc = Math.min(r, g, b);
-        const satLevel = maxc === 0 ? 0 : (maxc - minc) / maxc;
-        const amount = vib * (1 - satLevel);
-        const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        r = gray + (r - gray) * (1 + amount);
-        g = gray + (g - gray) * (1 + amount);
-        b = gray + (b - gray) * (1 + amount);
-      }
-
-      data[i] = clamp(r * 255, 0, 255);
-      data[i + 1] = clamp(g * 255, 0, 255);
-      data[i + 2] = clamp(b * 255, 0, 255);
+      if (!fast && clarity !== 0) applyClarity(data, w, h, clarity);
+      if (!fast && sharpen > 0) applySharpen(data, w, h, sharpen);
+      if (perfGrade) perfGrade.end();
     }
-
-    // options.fast — ultra-smooth scrub: skip spatial filters / DoF / grain
-    const fast = !!options.fast;
-
-    if (!fast && clarity !== 0) applyClarity(data, w, h, clarity);
-    if (!fast && sharpen > 0) applySharpen(data, w, h, sharpen);
 
     const Looks = global.HermionaLooks;
     const DoF = global.HermionaDoF;
     const CoC = global.HermionaCoC;
-    const optics = options.optics;
-    const scene = options.scene;
-    const quality = fast ? 'preview' : options.quality || 'preview';
 
-    // I5b: build shared CoC once for lens CA/bloom + DoF whenever scene exists
+    // CoC when needed for lens or DoF
     let cocBuilt = null;
-    if (!fast && optics && scene && scene.depthMap && CoC) {
+    const needCoc =
+      !fast &&
+      optics &&
+      scene &&
+      scene.depthMap &&
+      CoC &&
+      (options.look ||
+        (optics.enabled && (optics.strength == null ? 0 : optics.strength) > 0.01));
+
+    if (needCoc) {
+      const perfCoc = Perf && Perf.isEnabled() ? Perf.start('coc') : null;
       const focus =
         optics.focusDepth != null ? optics.focusDepth : scene.focusDepth;
-      // CoC shape from aperture + focus + focal recipe (DoF strength applied later)
       cocBuilt = CoC.buildCoCMap(w, h, {
         depthMap: scene.depthMap,
         personMask: scene.personMask,
@@ -265,12 +294,14 @@
         strength: 1,
         focalRecipe: optics.focalRecipe || '50'
       });
+      if (perfCoc) perfCoc.end();
     }
 
     const cocMap = cocBuilt ? cocBuilt.coc : null;
 
-    // Film + camera + imperfections + lens
-    if (Looks && options.look) {
+    // Film + camera + imperfections + lens (skip if fromAfterLooks)
+    if (!fromLooks && Looks && options.look) {
+      const perfLooks = Perf && Perf.isEnabled() ? Perf.start('looks') : null;
       Looks.applyLooks(
         data,
         w,
@@ -281,9 +312,15 @@
         fast ? null : cocMap,
         { fast: fast }
       );
+      if (perfLooks) perfLooks.end();
     }
 
-    // I5e: selective skin soft + subject punch (after film, before DoF)
+    // Dirty-flag snapshot: graded + looks, before selective/DoF
+    if (!fromLooks && typeof options.onAfterLooks === 'function') {
+      options.onAfterLooks(data, w, h);
+    }
+
+    // I5e selective
     const Selective = global.HermionaSelective;
     if (
       !fast &&
@@ -292,13 +329,15 @@
       optics &&
       ((optics.skinSoft || 0) > 0.01 || (optics.subjectPunch || 0) > 0.01)
     ) {
+      const perfSel = Perf && Perf.isEnabled() ? Perf.start('selective') : null;
       Selective.apply(data, w, h, scene, {
         skinSoft: optics.skinSoft || 0,
         subjectPunch: optics.subjectPunch || 0
       });
+      if (perfSel) perfSel.end();
     }
 
-    // Portrait DoF blur (same CoC)
+    // Portrait DoF
     if (
       !fast &&
       DoF &&
@@ -308,6 +347,7 @@
       scene.depthMap &&
       (optics.strength == null ? 0 : optics.strength) > 0.01
     ) {
+      const perfDof = Perf && Perf.isEnabled() ? Perf.start('dof') : null;
       DoF.apply(data, w, h, {
         coc: cocMap,
         depthMap: scene.depthMap,
@@ -324,11 +364,12 @@
         bokehAmount: optics.bokehAmount != null ? optics.bokehAmount : 0.55,
         bokehShape: optics.bokehShape || 'auto'
       });
+      if (perfDof) perfDof.end();
     }
 
     // Debug overlays
     if (!fast && DoF && options.debugScene && scene) {
-      const mode = options.debugScene; // depth | mask | coc
+      const mode = options.debugScene;
       if (mode === 'mask' && scene.personMask) {
         DoF.paintDebug(
           data,
@@ -358,6 +399,15 @@
 
     if (!fast && options.grain && grainAmt > 0) {
       applyGrain(data, w, h, grainAmt, options.grainMode || 'static');
+    }
+
+    if (perfAll) {
+      perfAll.end({
+        w: w,
+        h: h,
+        fast: fast,
+        fromLooks: !!fromLooks
+      });
     }
 
     return new ImageData(data, w, h);
