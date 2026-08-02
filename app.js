@@ -1,21 +1,21 @@
 /**
- * HERMIONA — Ultramodern iOS-style photo editor
+ * HERMIONE — Ultramodern iOS-style photo editor
  * Iris mark · SPA · Canvas · iPhone Photos UX
  */
 
 (() => {
   'use strict';
 
-  const Engine = window.HermionaEngine;
-  const Export = window.HermionaExport;
-  const Looks = window.HermionaLooks;
-  const Scene = window.HermionaScene;
-  const UserPresets = window.HermionaUserPresets;
-  const Draft = window.HermionaDraft;
-  const Borders = window.HermionaBorders;
+  const Engine = window.HermioneEngine;
+  const Export = window.HermioneExport;
+  const Looks = window.HermioneLooks;
+  const Scene = window.HermioneScene;
+  const UserPresets = window.HermioneUserPresets;
+  const Draft = window.HermioneDraft;
+  const Borders = window.HermioneBorders;
 
   if (!Engine || !Export) {
-    console.error('Hermiona: engine/export modules missing');
+    console.error('Hermione: engine/export modules missing');
     return;
   }
 
@@ -380,7 +380,7 @@
     '<path d="M32 14.5 L49.5 32 L32 49.5 L14.5 32 Z"/>' +
     '<circle cx="32" cy="32" r="2.4" fill="currentColor" stroke="none"/>' +
     '</g></svg>' +
-    '<span class="brand-word">HERMIONA</span>';
+    '<span class="brand-word">HERMIONE</span>';
 
 
   const dockBody = $('#dockBody');
@@ -523,7 +523,7 @@
   function setTopbarBrand() {
     if (!topbarTitle) return;
     topbarTitle.classList.add('topbar-title--brand');
-    topbarTitle.setAttribute('aria-label', 'Hermiona');
+    topbarTitle.setAttribute('aria-label', 'Hermione');
     topbarTitle.innerHTML = BRAND_LOCKUP_HTML;
   }
 
@@ -775,7 +775,7 @@
     if (adj.store === 'params') {
       state.params[adj.id] = val;
       // Manual tweak clears wand selection (like iOS Photos)
-      const Auto = window.HermionaAuto;
+      const Auto = window.HermioneAuto;
       if (
         state.enhanceMode &&
         Auto &&
@@ -2118,10 +2118,10 @@
   }
 
   function applyEnhanceMode(modeId) {
-    const Auto = window.HermionaAuto;
+    const Auto = window.HermioneAuto;
     if (!Auto || !state.originalData) {
-      if (window.HermionaErrors) {
-        window.HermionaErrors.showBanner('Enhance unavailable', { tone: 'info' });
+      if (window.HermioneErrors) {
+        window.HermioneErrors.showBanner('Enhance unavailable', { tone: 'info' });
       }
       return;
     }
@@ -2191,7 +2191,7 @@
       if (histoPanel) histoPanel.hidden = true;
       return;
     }
-    if (!imageData || !window.HermionaHistogram || !histoCanvas) return;
+    if (!imageData || !window.HermioneHistogram || !histoCanvas) return;
     histoPending = imageData;
     if (histoRaf) return;
     histoRaf = requestAnimationFrame(() => {
@@ -2200,7 +2200,7 @@
       histoPending = null;
       if (!src || !state.hasImage || !state.ui.showHistogram) return;
       try {
-        const H = window.HermionaHistogram;
+        const H = window.HermioneHistogram;
         const hist = H.compute(src, src.width, src.height, {
           bins: 64,
           maxSide: 256
@@ -2541,8 +2541,8 @@
     );
     if (!result.ok) {
       showToast(result.error || 'Save failed', 2200);
-      if (window.HermionaErrors) {
-        window.HermionaErrors.showBanner(result.error || 'Save failed', {
+      if (window.HermioneErrors) {
+        window.HermioneErrors.showBanner(result.error || 'Save failed', {
           tone: 'error'
         });
       }
@@ -4622,7 +4622,7 @@
         size: state.export.size,
         format: state.export.format,
         quality: state.export.quality,
-        fileName: state.sourceFileName || 'hermiona-edit',
+        fileName: state.sourceFileName || 'hermione-edit',
         workingData: state.originalData,
         workingCanvas: state.workingCanvas,
         originalImage: state.originalImage,
@@ -4664,7 +4664,7 @@
       // Keep draft after export so user can continue tweaking
       scheduleDraftSave();
     } catch (err) {
-      const Errors = window.HermionaErrors;
+      const Errors = window.HermioneErrors;
       const msg =
         (err && err.message) || 'Export failed — try a smaller size';
       if (Errors) {
@@ -5273,5 +5273,5 @@
 
   // MediaPipe / portrait pipeline stays cold until user enables DoF or taps Analyze
 
-  console.log('Hermiona ready · Iris');
+  console.log('Hermione ready · Iris');
 })();

@@ -1,4 +1,4 @@
-# Hermiona — Production roadmap
+# Hermione — Production roadmap
 
 **Status:** active  
 **Date:** 2026-08-02  

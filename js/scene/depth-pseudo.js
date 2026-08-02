@@ -1,6 +1,6 @@
 /**
  * Pseudo-depth from person mask (+ simple scene priors)
- * Exposes window.HermionaDepthPseudo
+ * Exposes window.HermioneDepthPseudo
  */
 (function (global) {
   'use strict';
@@ -123,7 +123,7 @@
     return out;
   }
 
-  global.HermionaDepthPseudo = {
+  global.HermioneDepthPseudo = {
     fromPersonMask,
     featherMask,
     medianDepthWhere,

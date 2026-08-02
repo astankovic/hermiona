@@ -1,6 +1,6 @@
 /**
  * Scene analysis — person / multiclass segmentation + face + pseudo-depth
- * I5a + I5e · Exposes window.HermionaScene
+ * I5a + I5e · Exposes window.HermioneScene
  */
 (function (global) {
   'use strict';
@@ -413,7 +413,7 @@
         landmarkCount: n
       };
     } catch (e) {
-      console.warn('Hermiona scene: face landmarker skip', e);
+      console.warn('Hermione scene: face landmarker skip', e);
       return null;
     }
   }
@@ -454,8 +454,8 @@
   async function analyze(source, options) {
     options = options || {};
     const t0 = performance.now();
-    const Pseudo = global.HermionaDepthPseudo;
-    if (!Pseudo) throw new Error('HermionaDepthPseudo missing');
+    const Pseudo = global.HermioneDepthPseudo;
+    if (!Pseudo) throw new Error('HermioneDepthPseudo missing');
 
     const proxy = toProxyCanvas(source, options.proxyLong || PROXY_LONG);
     const pw = proxy.width;
@@ -498,7 +498,7 @@
         usedML = false;
       }
     } catch (err) {
-      console.warn('Hermiona scene: MediaPipe failed, using fallback mask', err);
+      console.warn('Hermione scene: MediaPipe failed, using fallback mask', err);
       personMask = fallbackPersonMask(pw, ph);
       parts = null;
       segmenterId = 'fallback-error';
@@ -573,7 +573,7 @@
 
   function resizePartMaps(parts, ow, oh, tw, th) {
     if (!parts) return null;
-    const Pseudo = global.HermionaDepthPseudo;
+    const Pseudo = global.HermioneDepthPseudo;
     const out = {};
     const keys = Object.keys(parts);
     for (let i = 0; i < keys.length; i++) {
@@ -585,7 +585,7 @@
 
   function resizeAnalysis(analysis, tw, th) {
     if (!analysis) return null;
-    const Pseudo = global.HermionaDepthPseudo;
+    const Pseudo = global.HermioneDepthPseudo;
     if (analysis.width === tw && analysis.height === th) {
       const copy = {
         ...analysis,
@@ -683,7 +683,7 @@
     };
   }
 
-  global.HermionaScene = {
+  global.HermioneScene = {
     analyze,
     resizeAnalysis,
     preload,

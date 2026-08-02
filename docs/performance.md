@@ -1,4 +1,4 @@
-# Hermiona — Performance & GPU analysis
+# Hermione — Performance & GPU analysis
 
 **Date:** 2026-08-02  
 **Status:** analysis (A-team)  
@@ -8,7 +8,7 @@
 
 ## 1. Executive summary
 
-Hermiona is a **pure CPU, main-thread, `ImageData` pipeline**. That is the root of almost every jank and export delay.
+Hermione is a **pure CPU, main-thread, `ImageData` pipeline**. That is the root of almost every jank and export delay.
 
 You already have good **product-level** mitigations (scrub proxy ~720px, `fast` path, RAF coalescing, half-res DoF blur, lazy MediaPipe).  
 The next leap is **not more micro-opts on JS loops** — it is:
@@ -141,7 +141,7 @@ Cleaner architecture for WebGL-in-worker (limited support matrix).
 
 ## 6. GPU strategy
 
-### Recommended stack for Hermiona
+### Recommended stack for Hermione
 
 | Layer | Tech | Why |
 |-------|------|-----|
@@ -220,7 +220,7 @@ You almost do this with `fast` — formalize dirty flags so settle doesn’t red
 ## 9. Recommended roadmap
 
 ### Phase G0 — Measure *(shipped)*
-- `js/perf.js` — `?perf=1` or `localStorage hermiona.perf=1`  
+- `js/perf.js` — `?perf=1` or `localStorage hermione.perf=1`  
 - Stages: `process`, `grade`, `coc`, `looks`, `selective`, `dof` → `console.debug`
 
 ### Phase G1 — CPU hygiene *(shipped)*
@@ -280,7 +280,7 @@ You almost do this with `fast` — formalize dirty flags so settle doesn’t red
 
 ## 12. Bottom line
 
-Hermiona is **product-fast, engine-CPU-bound**.
+Hermione is **product-fast, engine-CPU-bound**.
 
 - **Parallelize:** Worker for export + optional full settle (main thread = UI).  
 - **GPU:** WebGL2 for grade pipeline first, then DoF — biggest FPS win.  

@@ -1,6 +1,6 @@
 /**
- * Hermiona G2 — WebGL2 GPU grade (light/color + film curves)
- * Exposes window.HermionaGpuGrade
+ * Hermione G2 — WebGL2 GPU grade (light/color + film curves)
+ * Exposes window.HermioneGpuGrade
  *
  * apply(data, w, h, params, film?, filmIntensity?) → boolean
  * Falls back silently; caller uses CPU on false.
@@ -285,7 +285,7 @@
 
       return true;
     } catch (e) {
-      console.warn('[HermionaGpuGrade] init failed', e);
+      console.warn('[HermioneGpuGrade] init failed', e);
       failed = true;
       gl = null;
       return false;
@@ -348,7 +348,7 @@
 
     var t = film && film.id !== 'none' ? Math.max(0, Math.min(1, filmIntensity || 0)) : 0;
     var luts = null;
-    var Looks = global.HermionaLooks;
+    var Looks = global.HermioneLooks;
     if (t > 0 && Looks && Looks.filmById && film) {
       // Prefer cached LUTs via getFilm — use public build if available
       if (typeof Looks.getFilmLUTs === 'function') {
@@ -439,12 +439,12 @@
       }
       return true;
     } catch (e) {
-      console.warn('[HermionaGpuGrade] apply failed', e);
+      console.warn('[HermioneGpuGrade] apply failed', e);
       return false;
     }
   }
 
-  global.HermionaGpuGrade = {
+  global.HermioneGpuGrade = {
     isAvailable: isAvailable,
     apply: apply,
     // for tests / debug

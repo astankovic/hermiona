@@ -1,6 +1,6 @@
 /**
- * Hermiona processing engine — pure CPU ImageData pipeline
- * Exposes window.HermionaEngine
+ * Hermione processing engine — pure CPU ImageData pipeline
+ * Exposes window.HermioneEngine
  */
 (function (global) {
   'use strict';
@@ -128,7 +128,7 @@
   }
 
   function acquireRGBA(len) {
-    const B = global.HermionaBuffers;
+    const B = global.HermioneBuffers;
     if (B && B.acquireU8) return B.acquireU8(len);
     return new Uint8ClampedArray(len);
   }
@@ -148,7 +148,7 @@
   function process(srcImageData, params, options) {
     if (!srcImageData && !(options && options.fromAfterLooks)) return null;
     options = options || {};
-    const Perf = global.HermionaPerf;
+    const Perf = global.HermionePerf;
     const perfAll = Perf && Perf.isEnabled() ? Perf.start('process') : null;
 
     const fromLooks = options.fromAfterLooks || null;
@@ -168,9 +168,9 @@
     const vignette = (p.vignette || 0) / 100;
     const grainAmt = (p.grain || 0) / 100;
 
-    const Looks = global.HermionaLooks;
-    const DoF = global.HermionaDoF;
-    const CoC = global.HermionaCoC;
+    const Looks = global.HermioneLooks;
+    const DoF = global.HermioneDoF;
+    const CoC = global.HermioneCoC;
     let gpuDidFilm = false;
 
     // ——— Grade (light/color) + optional film curves — skip if fromAfterLooks ———
@@ -190,7 +190,7 @@
 
       // G2 WebGL path
       let gpuOk = false;
-      const Gpu = global.HermionaGpuGrade;
+      const Gpu = global.HermioneGpuGrade;
       if (Gpu && !options.forceCpu && typeof Gpu.apply === 'function') {
         const perfGpu = Perf && Perf.isEnabled() ? Perf.start('grade:gpu') : null;
         gpuOk = Gpu.apply(data, w, h, p, film, filmInt);
@@ -350,7 +350,7 @@
     }
 
     // I5e selective
-    const Selective = global.HermionaSelective;
+    const Selective = global.HermioneSelective;
     if (
       !fast &&
       Selective &&
@@ -434,7 +434,7 @@
     var outW = w;
     var outH = h;
     var outData = data;
-    const Borders = global.HermionaBorders;
+    const Borders = global.HermioneBorders;
     if (
       !fast &&
       Borders &&
@@ -634,7 +634,7 @@
     return c;
   }
 
-  global.HermionaEngine = {
+  global.HermioneEngine = {
     process,
     applyGrain,
     scaleCanvasToLongEdge,

@@ -1,6 +1,6 @@
 /**
- * Hermiona export — full-res reprocess + long-edge resize
- * Exposes window.HermionaExport
+ * Hermione export — full-res reprocess + long-edge resize
+ * Exposes window.HermioneExport
  *
  * Quality rules:
  * - "full" = natural pixel size after geometry (hard cap only for memory)
@@ -179,13 +179,13 @@
     // Prefer worker when pixel count is large enough to matter
     if (w * h < 900 * 900) {
       return Promise.resolve(
-        global.HermionaEngine.process(imageData, params, processOpts)
+        global.HermioneEngine.process(imageData, params, processOpts)
       );
     }
     const worker = getExportWorker();
     if (!worker) {
       return Promise.resolve(
-        global.HermionaEngine.process(imageData, params, processOpts)
+        global.HermioneEngine.process(imageData, params, processOpts)
       );
     }
 
@@ -219,7 +219,7 @@
         delete workerPending[id];
         try {
           resolve(
-            global.HermionaEngine.process(imageData, params, processOpts)
+            global.HermioneEngine.process(imageData, params, processOpts)
           );
         } catch (e) {
           reject(e);
@@ -237,7 +237,7 @@
         // Fallback main thread
         try {
           resolve(
-            global.HermionaEngine.process(imageData, params, processOpts)
+            global.HermioneEngine.process(imageData, params, processOpts)
           );
         } catch (e2) {
           origReject(e2);
@@ -269,8 +269,8 @@
    * @param {ExportOptions} opts
    */
   function buildExportCanvas(opts) {
-    const Engine = global.HermionaEngine;
-    if (!Engine) throw new Error('HermionaEngine missing');
+    const Engine = global.HermioneEngine;
+    if (!Engine) throw new Error('HermioneEngine missing');
 
     const size = opts.size || 'working';
     const params = opts.params || {};
@@ -359,8 +359,8 @@
    * Geometry rebuild stays on main (needs DOM image/canvas).
    */
   function buildExportCanvasAsync(opts) {
-    const Engine = global.HermionaEngine;
-    if (!Engine) return Promise.reject(new Error('HermionaEngine missing'));
+    const Engine = global.HermioneEngine;
+    if (!Engine) return Promise.reject(new Error('HermioneEngine missing'));
 
     const size = opts.size || 'working';
     const params = opts.params || {};
@@ -530,7 +530,7 @@
   function triggerDownload(blob, ext) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.download = 'hermiona-edit-' + Date.now() + '.' + ext;
+    link.download = 'hermione-edit-' + Date.now() + '.' + ext;
     link.href = url;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
@@ -580,7 +580,7 @@
     let fallbackFrom = null;
     const baseName =
       (base.fileName && String(base.fileName).replace(/\.[^.]+$/, '')) ||
-      'hermiona-edit';
+      'hermione-edit';
 
     function attempt(i) {
       if (i >= ladder.length) {
@@ -667,8 +667,8 @@
         return navigator
           .share({
             files: [file],
-            title: 'Hermiona',
-            text: 'Edited with Hermiona'
+            title: 'Hermione',
+            text: 'Edited with Hermione'
           })
           .then(() => ({
             width: built.width,
@@ -723,7 +723,7 @@
     return downloadWithFallback(opts);
   }
 
-  global.HermionaExport = {
+  global.HermioneExport = {
     download,
     downloadWithFallback,
     exportBlobWithFallback,

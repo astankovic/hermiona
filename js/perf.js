@@ -1,7 +1,7 @@
 /**
- * Hermiona — lightweight performance marks (G0)
- * Enable: ?perf=1 or localStorage hermiona.perf=1
- * Exposes window.HermionaPerf
+ * Hermione — lightweight performance marks (G0)
+ * Enable: ?perf=1 or localStorage hermione.perf=1
+ * Exposes window.HermionePerf
  */
 (function (global) {
   'use strict';
@@ -10,7 +10,7 @@
   try {
     var q = new URLSearchParams(global.location && global.location.search);
     if (q.get('perf') === '1' || q.get('perf') === 'true') enabled = true;
-    if (global.localStorage && global.localStorage.getItem('hermiona.perf') === '1') {
+    if (global.localStorage && global.localStorage.getItem('hermione.perf') === '1') {
       enabled = true;
     }
   } catch (e) {
@@ -49,7 +49,7 @@
         last = { label: name, ms: Math.round(dt * 10) / 10, extra: extra || null };
         if (global.console && console.debug) {
           console.debug(
-            '[Hermiona perf]',
+            '[Hermione perf]',
             name,
             last.ms + 'ms',
             extra || ''
@@ -79,15 +79,15 @@
     enabled = !!on;
     try {
       if (global.localStorage) {
-        if (enabled) localStorage.setItem('hermiona.perf', '1');
-        else localStorage.removeItem('hermiona.perf');
+        if (enabled) localStorage.setItem('hermione.perf', '1');
+        else localStorage.removeItem('hermione.perf');
       }
     } catch (e) {
       /* ignore */
     }
   }
 
-  global.HermionaPerf = {
+  global.HermionePerf = {
     mark: mark,
     start: start,
     measure: measure,

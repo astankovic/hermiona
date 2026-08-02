@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Hermiona — histogram smoke</title>
+  <title>Hermione — histogram smoke</title>
   <style>
     body {
       margin: 0;
@@ -58,13 +58,13 @@
       function ok(msg) { lines.push('<span class="ok">✓</span> ' + msg); }
       function fail(msg) { lines.push('<span class="fail">✗</span> ' + msg); }
 
-      if (!window.HermionaHistogram) {
-        fail('HermionaHistogram not defined');
+      if (!window.HermioneHistogram) {
+        fail('HermioneHistogram not defined');
         log.innerHTML = lines.join('\n');
         return;
       }
 
-      var H = HermionaHistogram;
+      var H = HermioneHistogram;
       var w = 128;
       var h = 96;
       var data = new Uint8ClampedArray(w * h * 4);

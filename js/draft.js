@@ -1,6 +1,6 @@
 /**
- * Hermiona — session draft (IndexedDB, on-device)
- * Exposes window.HermionaDraft
+ * Hermione — session draft (IndexedDB, on-device)
+ * Exposes window.HermioneDraft
  *
  * Saves photo + edit state so refresh can resume. No cloud.
  * One slot only (latest edit).
@@ -8,7 +8,7 @@
 (function (global) {
   'use strict';
 
-  var DB_NAME = 'hermiona-draft';
+  var DB_NAME = 'hermione-draft';
   var DB_VER = 1;
   var STORE = 'drafts';
   var KEY = 'latest';
@@ -201,7 +201,7 @@
     return Math.round(hrs / 24) + 'd ago';
   }
 
-  global.HermionaDraft = {
+  global.HermioneDraft = {
     save: save,
     load: load,
     peek: peek,

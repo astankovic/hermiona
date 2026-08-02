@@ -1,7 +1,7 @@
 /**
- * Hermiona — reusable typed-array pool (G1)
+ * Hermione — reusable typed-array pool (G1)
  * Cuts GC thrash from process / DoF / selective.
- * Exposes window.HermionaBuffers (also works in workers via self)
+ * Exposes window.HermioneBuffers (also works in workers via self)
  */
 (function (global) {
   'use strict';
@@ -74,7 +74,7 @@
     pools.f32.length = 0;
   }
 
-  global.HermionaBuffers = {
+  global.HermioneBuffers = {
     acquireU8: acquireU8Exact,
     releaseU8: releaseU8,
     acquireF32: acquireF32,

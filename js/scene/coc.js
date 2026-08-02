@@ -1,6 +1,6 @@
 /**
  * Circle of Confusion — shared optics map for DoF / CA / bloom
- * Exposes window.HermionaCoC
+ * Exposes window.HermioneCoC
  */
 (function (global) {
   'use strict';
@@ -63,7 +63,7 @@
     if (mapW === imgW && mapH === imgH) {
       return map[y * imgW + x] || 0;
     }
-    const Pseudo = global.HermionaDepthPseudo;
+    const Pseudo = global.HermioneDepthPseudo;
     if (Pseudo && Pseudo.sampleMap) {
       const sx = ((x + 0.5) * mapW) / imgW - 0.5;
       const sy = ((y + 0.5) * mapH) / imgH - 0.5;
@@ -174,7 +174,7 @@
     return coc[y * w + x] || 0;
   }
 
-  global.HermionaCoC = {
+  global.HermioneCoC = {
     RECIPES: RECIPES,
     recipeById: recipeById,
     buildCoCMap: buildCoCMap,

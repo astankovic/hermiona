@@ -1,6 +1,6 @@
 /**
  * Portrait DoF — layered blur weighted by CoC / person mask
- * Exposes window.HermionaDoF
+ * Exposes window.HermioneDoF
  */
 (function (global) {
   'use strict';
@@ -140,13 +140,13 @@
       1
     );
 
-    // Prefer shared CoC from HermionaCoC
+    // Prefer shared CoC from HermioneCoC
     let coc = opts.coc || null;
     let maxBlurScale = opts.maxBlurScale || 1;
 
     if (!coc) {
       if (!opts.depthMap) return;
-      const CoC = global.HermionaCoC;
+      const CoC = global.HermioneCoC;
       if (CoC) {
         const built = CoC.buildCoCMap(w, h, {
           depthMap: opts.depthMap,
@@ -179,7 +179,7 @@
     );
 
     // Snapshot pre-blur for bokeh highlight colors (specular peaks)
-    const Bokeh = global.HermionaBokeh;
+    const Bokeh = global.HermioneBokeh;
     const bokehAmt = clamp(opts.bokehAmount != null ? opts.bokehAmount : 0, 0, 1);
     const wantBokeh = Bokeh && bokehAmt > 0.02 && strength > 0.08;
     const srcForBokeh = wantBokeh ? new Uint8ClampedArray(data) : null;
@@ -189,8 +189,8 @@
 
     // G3 — WebGL dual-level blur + CoC mix (bokeh stamps stay CPU)
     let usedGpu = false;
-    const GpuDoF = global.HermionaGpuDoF;
-    const Perf = global.HermionaPerf;
+    const GpuDoF = global.HermioneGpuDoF;
+    const Perf = global.HermionePerf;
     if (GpuDoF && !opts.forceCpu && typeof GpuDoF.apply === 'function') {
       const perfGpu = Perf && Perf.isEnabled() ? Perf.start('dof:gpu') : null;
       usedGpu = GpuDoF.apply(data, w, h, coc, {
@@ -264,7 +264,7 @@
    * Debug visualize depth or mask as RGB into data (copy source first outside)
    */
   function paintDebug(data, w, h, map, mapW, mapH, mode) {
-    const Pseudo = global.HermionaDepthPseudo;
+    const Pseudo = global.HermioneDepthPseudo;
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         let v;
@@ -296,7 +296,7 @@
     }
   }
 
-  global.HermionaDoF = {
+  global.HermioneDoF = {
     apply,
     softBlur,
     paintDebug,

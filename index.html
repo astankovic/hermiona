@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#050505" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Hermiona" />
-  <meta name="application-name" content="Hermiona" />
-  <title>Hermiona</title>
+  <meta name="apple-mobile-web-app-title" content="Hermione" />
+  <meta name="application-name" content="Hermione" />
+  <title>Hermione</title>
   <!-- Discourage HTML document caching (browsers may still ignore; asset ?v= is the real fix) -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -21,7 +21,7 @@
         if (p.has("fresh") || p.get("nocache") === "1") return String(Date.now());
         if (p.get("v")) return p.get("v");
       } catch (e) {}
-      return "202608023000"; // ← bump this when you push JS/CSS changes
+      return "202608023100"; // ← bump this when you push JS/CSS changes
     })();
     document.write(
       '<link rel="stylesheet" href="styles.css?v=' +
@@ -53,7 +53,7 @@
       </div>
 
       <div class="topbar-center">
-        <span class="topbar-title topbar-title--brand" id="topbarTitle" aria-label="Hermiona">
+        <span class="topbar-title topbar-title--brand" id="topbarTitle" aria-label="Hermione">
           <svg class="brand-iris" width="18" height="18" viewBox="0 0 64 64" fill="none" aria-hidden="true">
             <g stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter" stroke-linecap="square">
               <circle cx="32" cy="32" r="22.5"/>
@@ -61,7 +61,7 @@
               <circle cx="32" cy="32" r="2.4" fill="currentColor" stroke="none"/>
             </g>
           </svg>
-          <span class="brand-word">HERMIONA</span>
+          <span class="brand-word">HERMIONE</span>
         </span>
         <div class="header-busy" id="headerBusy" hidden>
           <svg class="iris-svg iris-svg--busy iris-svg--sm" viewBox="0 0 64 64" fill="none" aria-hidden="true">
@@ -116,7 +116,7 @@
                   <circle class="iris-spark" cx="40" cy="24" r="1" />
                 </svg>
               </div>
-              <p class="drop-wordmark hero-slot hero-slot--word" data-hero="word">HERMIONA</p>
+              <p class="drop-wordmark hero-slot hero-slot--word" data-hero="word">HERMIONE</p>
             </div>
 
             <div class="drop-invite">
@@ -580,7 +580,7 @@
       ];
       function load(i) {
         if (i >= files.length) {
-          console.info("[Hermiona] assets v=" + v);
+          console.info("[Hermione] assets v=" + v);
           return;
         }
         var s = document.createElement("script");
@@ -589,7 +589,7 @@
           load(i + 1);
         };
         s.onerror = function () {
-          console.error("[Hermiona] failed to load", files[i]);
+          console.error("[Hermione] failed to load", files[i]);
           load(i + 1);
         };
         document.body.appendChild(s);

@@ -1,7 +1,7 @@
 /**
- * Hermiona — print / instant borders (Crop section)
+ * Hermione — print / instant borders (Crop section)
  * Not a filter: frames the photo with cult formats + zoom/pan into the window.
- * Exposes window.HermionaBorders
+ * Exposes window.HermioneBorders
  */
 (function (global) {
   'use strict';
@@ -288,7 +288,7 @@
     return { id: 'none', zoom: 1, panX: 0, panY: 0 };
   }
 
-  global.HermionaBorders = {
+  global.HermioneBorders = {
     FORMATS: FORMATS,
     byId: byId,
     apply: apply,

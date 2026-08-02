@@ -1,5 +1,5 @@
 /**
- * Hermiona PWA — service worker registration (self-registers on load).
+ * Hermione PWA — service worker registration (self-registers on load).
  * Does not throw if SW is unavailable or registration fails.
  */
 (function (global) {
@@ -37,7 +37,7 @@
         return reg;
       })
       .catch(function (err) {
-        console.warn("[HermionaPWA] registration failed:", err && err.message);
+        console.warn("[HermionePWA] registration failed:", err && err.message);
         return null;
       });
   }
@@ -48,7 +48,7 @@
       return Promise.resolve(null);
     }
     return registration.update().catch(function (err) {
-      console.warn("[HermionaPWA] update check failed:", err && err.message);
+      console.warn("[HermionePWA] update check failed:", err && err.message);
       return null;
     });
   }
@@ -67,7 +67,7 @@
       try {
         if (typeof global.dispatchEvent === "function") {
           global.dispatchEvent(
-            new CustomEvent("hermiona:sw-controllerchange", {
+            new CustomEvent("hermione:sw-controllerchange", {
               detail: { registration: registration },
             })
           );
@@ -87,7 +87,7 @@
     },
   };
 
-  global.HermionaPWA = api;
+  global.HermionePWA = api;
 
   // Self-register on load so app.js need not call us.
   if (document.readyState === "loading") {

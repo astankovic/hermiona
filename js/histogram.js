@@ -1,14 +1,14 @@
 /**
- * Hermiona — live histogram + clipping stats
- * Exposes window.HermionaHistogram
+ * Hermione — live histogram + clipping stats
+ * Exposes window.HermioneHistogram
  *
  * Pure / reusable. No DOM deps except draw(canvas, …) and clippingOverlay.
  *
  * App wiring (do not auto-hook — call from app.js when ready):
- *   const h = HermionaHistogram.compute(imageData);
- *   HermionaHistogram.draw(canvas, h, { mode: 'rgb' });
+ *   const h = HermioneHistogram.compute(imageData);
+ *   HermioneHistogram.draw(canvas, h, { mode: 'rgb' });
  *   // clip % → #histoClipLow / #histoClipHigh
- *   // optional: HermionaHistogram.clippingOverlay(imageData)
+ *   // optional: HermioneHistogram.clippingOverlay(imageData)
  */
 (function (global) {
   'use strict';
@@ -319,7 +319,7 @@
     return Math.round(pct) + '%';
   }
 
-  global.HermionaHistogram = {
+  global.HermioneHistogram = {
     compute: compute,
     draw: draw,
     clippingOverlay: clippingOverlay,

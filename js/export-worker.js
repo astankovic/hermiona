@@ -1,5 +1,5 @@
 /**
- * Hermiona export worker (G1)
+ * Hermione export worker (G1)
  * Runs Engine.process off the main thread for large exports.
  *
  * Message in:
@@ -56,7 +56,7 @@ self.onmessage = function (ev) {
     if (msg.type !== 'process') {
       throw new Error('Unknown worker message');
     }
-    const Engine = self.HermionaEngine;
+    const Engine = self.HermioneEngine;
     if (!Engine || !Engine.process) {
       throw new Error('Engine missing in worker');
     }

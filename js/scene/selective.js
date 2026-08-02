@@ -1,7 +1,7 @@
 /**
- * Hermiona — selective portrait grade (I5e)
+ * Hermione — selective portrait grade (I5e)
  * Skin soft + subject punch from scene masks.
- * Exposes window.HermionaSelective
+ * Exposes window.HermioneSelective
  */
 (function (global) {
   'use strict';
@@ -237,7 +237,7 @@
     }
   }
 
-  global.HermionaSelective = {
+  global.HermioneSelective = {
     apply: apply,
     buildSkinWeight: buildSkinWeight,
     buildSubjectWeight: buildSubjectWeight

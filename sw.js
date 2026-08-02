@@ -1,8 +1,8 @@
-/* Hermiona app shell service worker — offline installable SPA.
+/* Hermione app shell service worker — offline installable SPA.
  * AI / CDN models (MediaPipe, etc.) are network-only and never precached. */
 /* eslint-disable no-restricted-globals */
 
-var CACHE_NAME = "hermiona-shell-v1";
+var CACHE_NAME = "hermione-shell-v2";
 
 var PRECACHE = [
   "./",
@@ -72,7 +72,7 @@ self.addEventListener("install", function (event) {
         return Promise.all(
           PRECACHE.map(function (url) {
             return cache.add(url).catch(function (err) {
-              console.warn("[Hermiona SW] precache skip:", url, err && err.message);
+              console.warn("[Hermione SW] precache skip:", url, err && err.message);
             });
           })
         );

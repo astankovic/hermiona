@@ -1,6 +1,6 @@
 /**
  * Optical bokeh highlights — disc / hex / anamorphic stamps
- * I5c · Exposes window.HermionaBokeh
+ * I5c · Exposes window.HermioneBokeh
  */
 (function (global) {
   'use strict';
@@ -294,7 +294,7 @@
     return 'circle';
   }
 
-  global.HermionaBokeh = {
+  global.HermioneBokeh = {
     apply: apply,
     buildKernel: buildKernel,
     collectHighlights: collectHighlights,

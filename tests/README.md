@@ -1,4 +1,4 @@
-# Hermiona smoke tests (P0-TEST)
+# Hermione smoke tests (P0-TEST)
 
 Zero-dependency browser checks for the CPU engine and export path. No MediaPipe, no real photos, no bundler.
 
@@ -6,11 +6,11 @@ Zero-dependency browser checks for the CPU engine and export path. No MediaPipe,
 
 | # | Case |
 |---|------|
-| 1 | `HermionaEngine` exists and exposes `process` |
+| 1 | `HermioneEngine` exists and exposes `process` |
 | 2 | Neutral params (all zeros) on solid gray 128 → mean RGB stays ~128 (±3) |
 | 3 | Positive `exposure` raises mean luma |
 | 4 | `process` preserves width/height |
-| 5 | `HermionaExport.buildExportCanvas({ size: 'working' })` on synthetic data does not throw; dims match |
+| 5 | `HermioneExport.buildExportCanvas({ size: 'working' })` on synthetic data does not throw; dims match |
 | 6 | `scaleCanvasToLongEdge` downscales correctly and never upscales |
 | 7 | `rebuildGeometry` with empty ops preserves size (synthetic image) |
 
@@ -29,13 +29,13 @@ Then open:
 - http://localhost:3000/tests/  
   (port may vary — follow the CLI URL)
 
-Or from parent of `hermiona` / with serve pointing at parent:
+Or from parent of `hermione` / with serve pointing at parent:
 
 ```bash
 npx serve ..
 ```
 
-→ open `/hermiona/tests/` (adjust path to match).
+→ open `/hermione/tests/` (adjust path to match).
 
 ### File URL
 

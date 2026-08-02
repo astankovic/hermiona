@@ -1,6 +1,6 @@
 /**
- * Hermiona — user-saved looks (localStorage, on-device only)
- * Exposes window.HermionaUserPresets
+ * Hermione — user-saved looks (localStorage, on-device only)
+ * Exposes window.HermioneUserPresets
  *
  * Stores light/color/effects + film/camera/lens stack + enhance mode.
  * No photos, no crop geometry.
@@ -8,7 +8,7 @@
 (function (global) {
   'use strict';
 
-  var STORAGE_KEY = 'hermiona.userLooks.v1';
+  var STORAGE_KEY = 'hermione.userLooks.v1';
   var MAX_LOOKS = 40;
   var VERSION = 1;
 
@@ -166,7 +166,7 @@
     return false;
   }
 
-  global.HermionaUserPresets = {
+  global.HermioneUserPresets = {
     list: list,
     get: get,
     save: save,

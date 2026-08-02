@@ -1,4 +1,4 @@
-# Hermiona — Scene-Aware Optics & Authentic Looks
+# Hermione — Scene-Aware Optics & Authentic Looks
 
 **Status:** Design + **I5a + I5b + I5c implemented**  
 **Date:** 2026-08-02  
@@ -13,7 +13,7 @@
 
 ## 1. Problem
 
-Current Hermiona looks (film, analog body, lens) are **global 2D grades**:
+Current Hermione looks (film, analog body, lens) are **global 2D grades**:
 
 - Soft focus blurs / flattens the whole frame  
 - Vignette and CA ignore subject distance  
@@ -30,7 +30,7 @@ Real photography is **scene-dependent**:
 | Portrait rendering | Skin / face region priors |
 | Environmental haze | Sky / far depth |
 
-To move from “Instagram preset” to **credible optical simulation**, Hermiona needs a **scene understanding layer** (masks + depth + focus) that the optics engine can consume.
+To move from “Instagram preset” to **credible optical simulation**, Hermione needs a **scene understanding layer** (masks + depth + focus) that the optics engine can consume.
 
 ---
 
@@ -500,7 +500,7 @@ No rewrite of film science required for I5a.
 
 Authentic filters at the next level are not more LUTs — they are **scene-conditioned optics**.  
 
-Hermiona should:
+Hermione should:
 
 1. **Understand** the frame (person → multiclass → depth).  
 2. **Focus** deliberately (face / tap / slider).  

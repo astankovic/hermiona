@@ -1,6 +1,6 @@
 /**
- * Hermiona P0-TEST — browser smoke tests (zero deps)
- * Expects HermionaEngine / HermionaExport globals from scripts loaded by index.html
+ * Hermione P0-TEST — browser smoke tests (zero deps)
+ * Expects HermioneEngine / HermioneExport globals from scripts loaded by index.html
  */
 (function () {
   'use strict';
@@ -101,22 +101,22 @@
   // ——— Tests ———
 
   function engine() {
-    return typeof HermionaEngine !== 'undefined' ? HermionaEngine : null;
+    return typeof HermioneEngine !== 'undefined' ? HermioneEngine : null;
   }
 
   function testEngineExists() {
     var Engine = engine();
-    assert(Engine != null && typeof Engine === 'object', 'HermionaEngine exists');
+    assert(Engine != null && typeof Engine === 'object', 'HermioneEngine exists');
     assert(
       Engine != null && typeof Engine.process === 'function',
-      'HermionaEngine.process is a function'
+      'HermioneEngine.process is a function'
     );
   }
 
   function testNeutralPassthrough() {
     var Engine = engine();
     if (!Engine || !Engine.process) {
-      assert(false, 'neutral process: HermionaEngine.process unavailable');
+      assert(false, 'neutral process: HermioneEngine.process unavailable');
       return;
     }
     var src = solidGrayImageData(64, 64, 128);
@@ -132,7 +132,7 @@
   function testExposureRaisesLuma() {
     var Engine = engine();
     if (!Engine || !Engine.process) {
-      assert(false, 'exposure test: HermionaEngine.process unavailable');
+      assert(false, 'exposure test: HermioneEngine.process unavailable');
       return;
     }
     var src = solidGrayImageData(64, 64, 128);
@@ -157,7 +157,7 @@
   function testProcessPreservesSize() {
     var Engine = engine();
     if (!Engine || !Engine.process) {
-      assert(false, 'size test: HermionaEngine.process unavailable');
+      assert(false, 'size test: HermioneEngine.process unavailable');
       return;
     }
     var src = solidGrayImageData(64, 48, 100);
@@ -169,10 +169,10 @@
   }
 
   function testExportWorking() {
-    if (typeof HermionaExport === 'undefined' || !HermionaExport.buildExportCanvas) {
+    if (typeof HermioneExport === 'undefined' || !HermioneExport.buildExportCanvas) {
       results.push({
         ok: true,
-        msg: 'HermionaExport.buildExportCanvas not present — skipped'
+        msg: 'HermioneExport.buildExportCanvas not present — skipped'
       });
       passCount++;
       return;
@@ -181,7 +181,7 @@
     var threw = null;
     var result = null;
     try {
-      result = HermionaExport.buildExportCanvas({
+      result = HermioneExport.buildExportCanvas({
         size: 'working',
         format: 'jpeg',
         quality: 0.9,
@@ -304,7 +304,7 @@
     el.innerHTML = lines.join('');
     document.title =
       (failCount === 0 ? 'PASS' : 'FAIL') +
-      ' — Hermiona tests (' +
+      ' — Hermione tests (' +
       passCount +
       '/' +
       (passCount + failCount) +

@@ -1,7 +1,7 @@
 /**
- * Hermiona — analog camera / film-scan imperfections (I6a + I6b)
+ * Hermione — analog camera / film-scan imperfections (I6a + I6b)
  * Spatial + mechanical character beyond color grading.
- * Exposes window.HermionaImperfections
+ * Exposes window.HermioneImperfections
  *
  * All noise is seeded/static so scrubbing doesn't flicker.
  */
@@ -763,7 +763,7 @@
     }
   }
 
-  global.HermionaImperfections = {
+  global.HermioneImperfections = {
     KEYS,
     emptyAmounts,
     resolve,

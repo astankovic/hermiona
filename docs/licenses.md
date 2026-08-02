@@ -1,16 +1,16 @@
 # Licenses & third-party notices
 
-Short inventory of code and assets Hermiona ships or may load at runtime.  
+Short inventory of code and assets Hermione ships or may load at runtime.  
 This is not legal advice; check upstream sources for the full text of each license.
 
-## Hermiona application code
+## Hermione application code
 
-Hermiona’s own source in this repository (HTML, CSS, JS under the app root and `js/`).
+Hermione’s own source in this repository (HTML, CSS, JS under the app root and `js/`).
 
 - If a root `LICENSE` file is present in the repository, that license applies.
 - If no `LICENSE` file is present, treat usage as “see repository” / contact the maintainers until a license is published.
 
-Brand system description and assets under `brand/` are part of the Hermiona project; see `brand/README.md`. Do not assume a separate open license for marks or photography unless stated there or in a root license.
+Brand system description and assets under `brand/` are part of the Hermione project; see `brand/README.md`. Do not assume a separate open license for marks or photography unless stated there or in a root license.
 
 ## MediaPipe Tasks Vision
 
@@ -35,7 +35,7 @@ Runtime fetches (only when optional AI is used, or for script hosting if you pin
 | **jsDelivr** (`cdn.jsdelivr.net`) | `@mediapipe/tasks-vision` ESM + WASM |
 | **Google Cloud Storage** (`storage.googleapis.com`) | MediaPipe model files (e.g. selfie segmenter) |
 
-CDN terms of use are those of the respective operators. Hermiona does not operate these hosts.
+CDN terms of use are those of the respective operators. Hermione does not operate these hosts.
 
 ## Brand assets (`brand/`)
 

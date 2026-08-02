@@ -1,6 +1,6 @@
 /**
- * Hermiona — one-tap enhance (iPhone Photos wand style)
- * Exposes window.HermionaAuto
+ * Hermione — one-tap enhance (iPhone Photos wand style)
+ * Exposes window.HermioneAuto
  *
  * Analyzes image stats → returns base light/color params only.
  * Never touches film / camera / lens / optics / crop.
@@ -264,7 +264,7 @@
     ];
   }
 
-  global.HermionaAuto = {
+  global.HermioneAuto = {
     analyze: analyze,
     suggest: suggest,
     enhance: enhance,

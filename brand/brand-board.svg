@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" fill="none" role="img" aria-label="Hermiona brand">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" fill="none" role="img" aria-label="Hermione brand">
   <rect width="1200" height="800" fill="#050505"/>
 
   <!-- subtle frame -->
@@ -22,7 +22,7 @@
     font-weight="300"
     letter-spacing="0.62em"
     text-anchor="middle"
-  >HERMIONA</text>
+  >HERMIONE</text>
 
   <!-- thin rule -->
   <line x1="540" y1="420" x2="660" y2="420" stroke="#2A2A2A" stroke-width="1"/>

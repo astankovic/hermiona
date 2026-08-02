@@ -1,4 +1,4 @@
-# Hermiona — AI / Scene backlog
+# Hermione — AI / Scene backlog
 
 **Status:** planned (research → tickets)  
 **Date:** 2026-08-02  

@@ -1,4 +1,4 @@
-# Hermiona — Premium Photo Editor
+# Hermione — Premium Photo Editor
 
 A fast, fully frontend photo editor inspired by Lightroom and iOS Photos.  
 Runs as a **single-page** app and hosts cleanly on **GitHub Pages**.
@@ -22,7 +22,7 @@ Runs as a **single-page** app and hosts cleanly on **GitHub Pages**.
 
 ## Host on GitHub Pages
 
-1. Create a GitHub repository (e.g. `hermiona-editor` or `photo-editor`)
+1. Create a GitHub repository (e.g. `hermione-editor` or `photo-editor`)
 2. Upload this folder (`index.html`, `styles.css`, `app.js`, `README.md`, `js/`, …)
 3. Go to **Settings → Pages**
 4. Under **Source** pick branch `main` (or `master`) and folder `/ (root)`
@@ -34,7 +34,7 @@ Runs as a **single-page** app and hosts cleanly on **GitHub Pages**.
 ```bash
 git init
 git add .
-git commit -m "Initial commit — Hermiona photo editor"
+git commit -m "Initial commit — Hermione photo editor"
 git branch -M main
 git remote add origin https://github.com/YOUR_USERNAME/REPO_NAME.git
 git push -u origin main
@@ -62,7 +62,7 @@ python -m http.server 8000
 
 ## Privacy
 
-Photos are processed **on your device** in the browser. Hermiona has no app backend and does not upload your images to Hermiona servers. Optional Portrait/Analyze may download on-device ML models (MediaPipe) from Google/CDN on first use. No analytics are shipped today.
+Photos are processed **on your device** in the browser. Hermione has no app backend and does not upload your images to Hermione servers. Optional Portrait/Analyze may download on-device ML models (MediaPipe) from Google/CDN on first use. No analytics are shipped today.
 
 → **[privacy.html](privacy.html)**
 

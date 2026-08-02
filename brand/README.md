@@ -1,12 +1,12 @@
-# Hermiona — brand
+# Hermione — brand
 
 ## System
 
 | | |
 |--|--|
-| **Name** | Hermiona |
+| **Name** | Hermione |
 | **Mark** | **Iris** — lens ring + diamond aperture + light point |
-| **Wordmark** | `HERMIONA` · ultra-light geometric sans · wide tracking |
+| **Wordmark** | `HERMIONE` · ultra-light geometric sans · wide tracking |
 | **Field** | `#050505` / `#0A0A0A` |
 | **Ink** | `#F5F5F2` (warm off-white, not pure #FFF) |
 

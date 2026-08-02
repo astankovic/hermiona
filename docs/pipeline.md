@@ -1,7 +1,7 @@
 # Image pipeline
 
-Authoritative order of operations for Hermiona’s pixel path.  
-Source of truth: `js/engine.js` → `HermionaEngine.process()`, with look layers in `js/looks.js` and scene optics in `js/scene/*`.
+Authoritative order of operations for Hermione’s pixel path.  
+Source of truth: `js/engine.js` → `HermioneEngine.process()`, with look layers in `js/looks.js` and scene optics in `js/scene/*`.
 
 ## Working vs export
 
@@ -40,7 +40,7 @@ working RGB
   │     → lens             (lens vignette / softness / CA / bloom; CoC-weighted when map present)
   │
   ├─ 6. Scene optics — portrait DoF / bokeh (if optics.enabled + strength + scene maps)
-  │     HermionaDoF.apply on the same CoC
+  │     HermioneDoF.apply on the same CoC
   │
   ├─ 7. Debug overlays (optional: depth | mask | coc)
   │
@@ -60,7 +60,7 @@ working RGB
 
 ## Scene analysis (off the process path)
 
-`HermionaScene.analyze(workingCanvas)` produces maps in working UV space:
+`HermioneScene.analyze(workingCanvas)` produces maps in working UV space:
 
 - person confidence mask  
 - pseudo-depth  

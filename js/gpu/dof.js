@@ -1,6 +1,6 @@
 /**
- * Hermiona G3 — WebGL2 DoF (dual-level blur + CoC mix)
- * Exposes window.HermionaGpuDoF
+ * Hermione G3 — WebGL2 DoF (dual-level blur + CoC mix)
+ * Exposes window.HermioneGpuDoF
  *
  * apply(data, w, h, coc, opts) → boolean
  * Matches CPU layered DoF intent; bokeh stamps stay on CPU after.
@@ -209,7 +209,7 @@
 
       return true;
     } catch (e) {
-      console.warn('[HermionaGpuDoF] init failed', e);
+      console.warn('[HermioneGpuDoF] init failed', e);
       failed = true;
       gl = null;
       return false;
@@ -390,12 +390,12 @@
       }
       return true;
     } catch (e) {
-      console.warn('[HermionaGpuDoF] apply failed', e);
+      console.warn('[HermioneGpuDoF] apply failed', e);
       return false;
     }
   }
 
-  global.HermionaGpuDoF = {
+  global.HermioneGpuDoF = {
     isAvailable: isAvailable,
     apply: apply
   };

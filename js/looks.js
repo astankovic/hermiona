@@ -1,6 +1,6 @@
 /**
- * Hermiona Looks — film stocks + analog cameras + lenses
- * Exposes window.HermionaLooks
+ * Hermione Looks — film stocks + analog cameras + lenses
+ * Exposes window.HermioneLooks
  */
 (function (global) {
   'use strict';
@@ -2029,7 +2029,7 @@
     applyCamera(data, w, h, camera, camInt);
 
     // I6 analog imperfections (spatial / mechanical) — between body and lens
-    const Imp = global.HermionaImperfections;
+    const Imp = global.HermioneImperfections;
     if (Imp && Imp.apply) {
       const amounts = Imp.resolve(lookState, camera, camInt);
       // Film soft highlight knee from stock when no explicit user roll
@@ -2055,7 +2055,7 @@
     applyLens(data, w, h, lens, lensInt, quality || 'preview', lookState, cocMap || null);
   }
 
-  global.HermionaLooks = {
+  global.HermioneLooks = {
     FILMS,
     CAMERAS,
     LENSES,

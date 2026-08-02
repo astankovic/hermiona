@@ -1,5 +1,5 @@
 /* ============================================
-   HERMIONA — Ultramodern iOS Photo Editor
+   HERMIONE — Ultramodern iOS Photo Editor
    Iris mark · Light · Film · Silence
    ============================================ */
 
@@ -219,7 +219,7 @@ body:not(.layout-side).has-image .topbar-title {
 
 /*
  * Idle (no photo): one brand moment only — the empty stage.
- * Topbar chrome is silent so HERMIONA is not repeated.
+ * Topbar chrome is silent so HERMIONE is not repeated.
  */
 body:not(.has-image):not(.is-exiting) .topbar {
   background: transparent;
@@ -916,7 +916,7 @@ body.layout-side.is-entering #mainCanvas.visible {
   /* during slider drag — keep snappy */
 }
 
-/* Drop / empty brand stage — single Hermiona lockup */
+/* Drop / empty brand stage — single Hermione lockup */
 .drop-overlay {
   position: absolute;
   inset: 0;

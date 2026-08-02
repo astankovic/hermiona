@@ -1,6 +1,6 @@
 /**
- * Hermiona error reporting — ring buffer + recoverable banner
- * Exposes window.HermionaErrors
+ * Hermione error reporting — ring buffer + recoverable banner
+ * Exposes window.HermioneErrors
  */
 (function (global) {
   'use strict';
@@ -34,9 +34,9 @@
     };
     pushLog(entry);
     if (context) {
-      console.error('[Hermiona]', context, error);
+      console.error('[Hermione]', context, error);
     } else {
-      console.error('[Hermiona]', error);
+      console.error('[Hermione]', error);
     }
   }
 
@@ -51,7 +51,7 @@
     if (styleInjected || typeof document === 'undefined') return;
     styleInjected = true;
     var style = document.createElement('style');
-    style.id = 'hermiona-error-banner-style';
+    style.id = 'hermione-error-banner-style';
     style.textContent =
       '#errorBanner{' +
       'position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));' +
@@ -118,8 +118,8 @@
 
   function installGlobalHandlers() {
     if (typeof window === 'undefined') return;
-    if (window.__hermionaErrorsInstalled) return;
-    window.__hermionaErrorsInstalled = true;
+    if (window.__hermioneErrorsInstalled) return;
+    window.__hermioneErrorsInstalled = true;
 
     var prevOnError = window.onerror;
     window.onerror = function (message, source, lineno, colno, error) {
@@ -144,7 +144,7 @@
     });
   }
 
-  global.HermionaErrors = {
+  global.HermioneErrors = {
     report: report,
     getLog: getLog,
     installGlobalHandlers: installGlobalHandlers,

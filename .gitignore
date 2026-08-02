@@ -68,9 +68,9 @@ testing/
 *.local.jpeg
 *.local.png
 *.local.webp
-hermiona-edit-*.jpg
-hermiona-edit-*.jpeg
-hermiona-edit-*.png
+hermione-edit-*.jpg
+hermione-edit-*.jpeg
+hermione-edit-*.png
 # legacy export names
 lumina-edit-*.jpg
 lumina-edit-*.jpeg
