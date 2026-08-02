@@ -306,7 +306,10 @@
       detailActive: false,
       detailLong: 0,
       /** Last HQ tile in full-frame pixel coords (source space) */
-      detailRoi: null
+      detailRoi: null,
+      /** Non-blocking ROI HUD while HQ detail is rendering */
+      detailHud: false,
+      detailPendingRoi: null
     },
     export: {
       size: 'working',
@@ -320,6 +323,8 @@
       presetCategory: 'all',
       scrubbing: false,
       comparing: false,
+      /** Vertical split: left original | right edit (pan/zoom shared) */
+      splitCompare: false,
       /** Optional live histogram overlay (off by default) */
       showHistogram: false
     },
@@ -356,9 +361,18 @@
 
   const canvas = $('#mainCanvas');
   const ctx = canvas.getContext('2d', { willReadFrequently: false, alpha: false });
+  const beforeCanvas = $('#beforeCanvas');
+  const beforeCtx = beforeCanvas
+    ? beforeCanvas.getContext('2d', { willReadFrequently: false, alpha: false })
+    : null;
+  const splitDivider = $('#splitDivider');
+  const btnSplitCompare = $('#btnSplitCompare');
   const fileInput = $('#fileInput');
   const dropOverlay = $('#dropOverlay');
   const canvasArea = $('#canvasArea');
+  const detailRoiLayer = $('#detailRoiLayer');
+  const detailRoiFrame = $('#detailRoiFrame');
+  const detailRoiChip = $('#detailRoiChip');
   const dock = $('#dock');
   const topbarTitle = $('#topbarTitle');
   const histoPanel = $('#histoPanel');
@@ -511,15 +525,21 @@
     clearTimeout(panelAnimTimer);
   }
 
-  /** Soft pulse on dial value when scrubbing */
+  /**
+   * Soft pulse on dial value — never force reflow mid-scrub
+   * (void el.offsetWidth every input made the dial feel sticky).
+   */
   function tickDialValue() {
     const el = document.getElementById('dialValue');
-    if (!el || prefersReducedMotion()) return;
-    el.classList.remove('is-ticking');
-    void el.offsetWidth;
+    if (!el || prefersReducedMotion() || state.ui.scrubbing) return;
+    if (tickDialValue._busy) return;
+    tickDialValue._busy = true;
     el.classList.add('is-ticking');
     clearTimeout(tickDialValue._t);
-    tickDialValue._t = setTimeout(() => el.classList.remove('is-ticking'), 180);
+    tickDialValue._t = setTimeout(() => {
+      el.classList.remove('is-ticking');
+      tickDialValue._busy = false;
+    }, 160);
   }
 
   function setTopbarBrand() {
@@ -556,6 +576,8 @@
   const cropFrame = $('#cropFrame');
   const cropRectEl = $('#cropRect');
   const canvasWrap = $('#canvasWrap');
+  const canvasWrapBefore = $('#canvasWrapBefore');
+  const splitPaneBefore = $('#splitPaneBefore');
   const zoomHud = $('#zoomHud');
   const btnZoomIn = $('#btnZoomIn');
   const btnZoomOut = $('#btnZoomOut');
@@ -1357,6 +1379,11 @@
     canvas.style.width = fitW + 'px';
     canvas.style.height = fitH + 'px';
 
+    if (beforeCanvas) {
+      beforeCanvas.style.width = fitW + 'px';
+      beforeCanvas.style.height = fitH + 'px';
+    }
+
     // Clamp pan so image stays reachable
     clampPan();
     applyViewTransform();
@@ -1382,13 +1409,24 @@
     }
   }
 
+  /** Apply the same pan/zoom transform to every photo wrap (edit + original). */
   function applyViewTransform() {
-    if (!canvasWrap) return;
     const z = state.view.zoom;
     const x = state.view.panX;
     const y = state.view.panY;
-    canvasWrap.style.transform =
-      'translate3d(' + x + 'px,' + y + 'px,0) scale(' + z + ')';
+    const t = 'translate3d(' + x + 'px,' + y + 'px,0) scale(' + z + ')';
+    if (canvasWrap) canvasWrap.style.transform = t;
+    if (canvasWrapBefore) canvasWrapBefore.style.transform = t;
+    // Detail ROI frame tracks live pan/zoom (HUD only — never blocks gestures)
+    if (state.view.detailHud) {
+      if (typeof getVisibleImageRoi === 'function') {
+        state.view.detailPendingRoi =
+          getVisibleImageRoi(0.2) || state.view.detailPendingRoi;
+      }
+      if (typeof updateDetailRoiHudPosition === 'function') {
+        updateDetailRoiHudPosition();
+      }
+    }
   }
 
   function updateZoomHud() {
@@ -1422,15 +1460,18 @@
 
     state.view.zoom = z;
     clampPan();
-    if (animate && canvasWrap) {
-      canvasWrap.classList.add('zoom-animate');
+    if (animate) {
+      if (canvasWrap) canvasWrap.classList.add('zoom-animate');
+      if (canvasWrapBefore) canvasWrapBefore.classList.add('zoom-animate');
       applyViewTransform();
       clearTimeout(setZoom._t);
       setZoom._t = setTimeout(() => {
         if (canvasWrap) canvasWrap.classList.remove('zoom-animate');
+        if (canvasWrapBefore) canvasWrapBefore.classList.remove('zoom-animate');
       }, 200);
     } else {
       if (canvasWrap) canvasWrap.classList.remove('zoom-animate');
+      if (canvasWrapBefore) canvasWrapBefore.classList.remove('zoom-animate');
       applyViewTransform();
     }
     updateZoomHud();
@@ -1511,6 +1552,7 @@
     state.view.zoom = z;
     clampPan();
     if (canvasWrap) canvasWrap.classList.remove('zoom-animate');
+    if (canvasWrapBefore) canvasWrapBefore.classList.remove('zoom-animate');
     applyViewTransform();
     updateZoomHud();
     if (state.crop.active) updateCropOverlay();
@@ -1618,6 +1660,10 @@
       clampPan();
       applyViewTransform();
       if (state.crop.active) updateCropOverlay();
+      // Expand / move HQ region while dragging — non-blocking, debounced
+      if (state.view.zoom > DETAIL_ZOOM_MIN) {
+        scheduleDetailRender(220);
+      }
     });
     const endPan = () => {
       if (!panDrag.active) return;
@@ -1968,11 +2014,15 @@
   }
 
   /**
+   * Draw ImageData onto a display canvas (main or before).
+   * @param {HTMLCanvasElement} target
+   * @param {CanvasRenderingContext2D} tctx
    * @param {ImageData} imageData
    * @param {number} straightenDeg
    * @param {{native?:boolean}} [opts] native=true keeps ImageData pixel size (HQ zoom detail)
    */
-  function drawToMain(imageData, straightenDeg, opts) {
+  function drawToCanvas(target, tctx, imageData, straightenDeg, opts) {
+    if (!target || !tctx || !imageData) return;
     opts = opts || {};
     const w = imageData.width;
     const h = imageData.height;
@@ -1980,21 +2030,21 @@
     // HQ path: keep full pixel density on canvas; CSS fit size is separate
     if (opts.native) {
       if (!straightenDeg) {
-        if (canvas.width !== w || canvas.height !== h) {
-          canvas.width = w;
-          canvas.height = h;
+        if (target.width !== w || target.height !== h) {
+          target.width = w;
+          target.height = h;
         }
-        ctx.putImageData(imageData, 0, 0);
+        tctx.putImageData(imageData, 0, 0);
         return;
       }
       const bctx = ensureBlit(w, h);
       bctx.putImageData(imageData, 0, 0);
       const rotated = Engine.rotateCoverCanvas(blitCanvas, straightenDeg);
-      if (canvas.width !== rotated.width || canvas.height !== rotated.height) {
-        canvas.width = rotated.width;
-        canvas.height = rotated.height;
+      if (target.width !== rotated.width || target.height !== rotated.height) {
+        target.width = rotated.width;
+        target.height = rotated.height;
       }
-      ctx.drawImage(rotated, 0, 0);
+      tctx.drawImage(rotated, 0, 0);
       return;
     }
 
@@ -2010,19 +2060,19 @@
     const needsUpscale = w !== targetW || h !== targetH;
 
     if (!straightenDeg) {
-      if (canvas.width !== targetW || canvas.height !== targetH) {
-        canvas.width = targetW;
-        canvas.height = targetH;
+      if (target.width !== targetW || target.height !== targetH) {
+        target.width = targetW;
+        target.height = targetH;
       }
       if (!needsUpscale) {
-        ctx.putImageData(imageData, 0, 0);
+        tctx.putImageData(imageData, 0, 0);
         return;
       }
       const bctx = ensureBlit(w, h);
       bctx.putImageData(imageData, 0, 0);
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'low';
-      ctx.drawImage(blitCanvas, 0, 0, w, h, 0, 0, targetW, targetH);
+      tctx.imageSmoothingEnabled = true;
+      tctx.imageSmoothingQuality = 'low';
+      tctx.drawImage(blitCanvas, 0, 0, w, h, 0, 0, targetW, targetH);
       return;
     }
 
@@ -2042,11 +2092,20 @@
     }
 
     const rotated = Engine.rotateCoverCanvas(src, straightenDeg);
-    if (canvas.width !== rotated.width || canvas.height !== rotated.height) {
-      canvas.width = rotated.width;
-      canvas.height = rotated.height;
+    if (target.width !== rotated.width || target.height !== rotated.height) {
+      target.width = rotated.width;
+      target.height = rotated.height;
     }
-    ctx.drawImage(rotated, 0, 0);
+    tctx.drawImage(rotated, 0, 0);
+  }
+
+  function drawToMain(imageData, straightenDeg, opts) {
+    drawToCanvas(canvas, ctx, imageData, straightenDeg, opts);
+  }
+
+  function drawToBefore(imageData, straightenDeg, opts) {
+    if (!beforeCanvas || !beforeCtx) return;
+    drawToCanvas(beforeCanvas, beforeCtx, imageData, straightenDeg, opts);
   }
 
   // ——— High-res filter detail for zoom (ROI only: visible + 20% margin) ———
@@ -2066,36 +2125,152 @@
     return touch ? DETAIL_MAX_LONG_TOUCH : DETAIL_MAX_LONG;
   }
 
+  // ——— Non-blocking detail ROI HUD (never freezes pan/zoom) ———
+  let detailHudRaf = 0;
+  let detailHudFinishTimer = 0;
+
   function cancelDetailRender() {
     clearTimeout(detailTimer);
     detailTimer = null;
     detailToken++;
-    busyEnd('detail');
-    if (canvasArea) canvasArea.classList.remove('detail-render');
+    // Do not busyEnd('detail') — detail never uses the modal busy stack
+    hideDetailRoiHud(true);
   }
+
+  function showDetailRoiHud(workRoi) {
+    if (!detailRoiLayer) return;
+    clearTimeout(detailHudFinishTimer);
+    detailRoiLayer.classList.remove('is-finishing');
+    state.view.detailHud = true;
+    state.view.detailPendingRoi =
+      workRoi || getVisibleImageRoi(DETAIL_ROI_MARGIN);
+    detailRoiLayer.hidden = false;
+    if (detailRoiChip) {
+      const z = Math.round((state.view.zoom || 1) * 100);
+      const lab = detailRoiChip.querySelector('.detail-roi-label');
+      if (lab) lab.textContent = 'Rendering detail · ' + z + '%';
+    }
+    updateDetailRoiHudPosition();
+    if (!detailHudRaf) {
+      const tick = () => {
+        if (!state.view.detailHud) {
+          detailHudRaf = 0;
+          return;
+        }
+        // Keep frame glued to the live view while work runs
+        state.view.detailPendingRoi =
+          getVisibleImageRoi(DETAIL_ROI_MARGIN) || state.view.detailPendingRoi;
+        updateDetailRoiHudPosition();
+        detailHudRaf = requestAnimationFrame(tick);
+      };
+      detailHudRaf = requestAnimationFrame(tick);
+    }
+  }
+
+  function hideDetailRoiHud(immediate) {
+    state.view.detailHud = false;
+    state.view.detailPendingRoi = null;
+    if (detailHudRaf) {
+      cancelAnimationFrame(detailHudRaf);
+      detailHudRaf = 0;
+    }
+    if (!detailRoiLayer) return;
+    if (immediate || detailRoiLayer.hidden) {
+      detailRoiLayer.hidden = true;
+      detailRoiLayer.classList.remove('is-finishing');
+      return;
+    }
+    detailRoiLayer.classList.add('is-finishing');
+    clearTimeout(detailHudFinishTimer);
+    detailHudFinishTimer = setTimeout(() => {
+      if (!state.view.detailHud) {
+        detailRoiLayer.hidden = true;
+        detailRoiLayer.classList.remove('is-finishing');
+      }
+    }, 340);
+  }
+
+  /** Map working-image ROI → CSS box inside #canvasArea */
+  function updateDetailRoiHudPosition() {
+    if (!detailRoiFrame || !canvasArea || !state.view.detailPendingRoi) return;
+    const roi = state.view.detailPendingRoi;
+    const iw = roi.iw || (state.workingCanvas && state.workingCanvas.width) || 1;
+    const ih = roi.ih || (state.workingCanvas && state.workingCanvas.height) || 1;
+    const fw = state.view.fitW || 1;
+    const fh = state.view.fitH || 1;
+    const z = state.view.zoom || 1;
+    const panX = state.view.panX || 0;
+    const panY = state.view.panY || 0;
+    const area = canvasArea.getBoundingClientRect();
+    const acx = area.width / 2;
+    const acy = area.height / 2;
+
+    function imageToLocal(ix, iy) {
+      const dx = (ix / iw - 0.5) * fw;
+      const dy = (iy / ih - 0.5) * fh;
+      return {
+        x: acx + panX + dx * z,
+        y: acy + panY + dy * z
+      };
+    }
+
+    const p0 = imageToLocal(roi.x, roi.y);
+    const p1 = imageToLocal(roi.x + roi.w, roi.y + roi.h);
+    const left = Math.min(p0.x, p1.x);
+    const top = Math.min(p0.y, p1.y);
+    const width = Math.max(8, Math.abs(p1.x - p0.x));
+    const height = Math.max(8, Math.abs(p1.y - p0.y));
+
+    detailRoiFrame.style.transform =
+      'translate3d(' + left.toFixed(1) + 'px,' + top.toFixed(1) + 'px,0)';
+    detailRoiFrame.style.width = width.toFixed(1) + 'px';
+    detailRoiFrame.style.height = height.toFixed(1) + 'px';
+
+    // Pin chip just under the ROI when it fits; else stay at bottom
+    if (detailRoiChip) {
+      const chipBottom = area.height - (top + height) - 10;
+      if (chipBottom > 56 && top + height < area.height - 48) {
+        detailRoiChip.style.bottom = 'auto';
+        detailRoiChip.style.top = Math.min(area.height - 40, top + height + 10).toFixed(1) + 'px';
+        detailRoiChip.style.left = Math.max(12, Math.min(area.width - 12, left + width / 2)).toFixed(1) + 'px';
+        detailRoiChip.style.transform = 'translateX(-50%)';
+      } else {
+        detailRoiChip.style.top = 'auto';
+        detailRoiChip.style.bottom = 'max(18px, calc(var(--safe-bottom) + 12px))';
+        detailRoiChip.style.left = '50%';
+        detailRoiChip.style.transform = 'translateX(-50%)';
+      }
+    }
+  }
+
 
   function scheduleDetailRender(delay) {
     clearTimeout(detailTimer);
     // Invalidate any in-flight HQ job (new zoom / filter supersedes it)
     detailToken++;
-    busyEnd('detail');
-    if (canvasArea) canvasArea.classList.remove('detail-render');
 
-    if (!state.hasImage) return;
+    if (!state.hasImage) {
+      hideDetailRoiHud(true);
+      return;
+    }
     if (state.view.zoom <= DETAIL_ZOOM_MIN) {
+      hideDetailRoiHud(true);
       if (state.view.detailActive) {
         state.view.detailActive = false;
         state.view.detailLong = 0;
         state.view.detailRoi = null;
-        // Drop back to working-res preview
         scheduleRender(false);
       }
       return;
     }
     // Skip re-render if current tile still covers the view (with margin slack)
     if (state.view.detailActive && detailRoiStillValid()) {
+      hideDetailRoiHud(true);
       return;
     }
+    // Live HUD: show where we will sharpen; user may still pan/zoom
+    const previewRoi = getVisibleImageRoi(DETAIL_ROI_MARGIN);
+    showDetailRoiHud(previewRoi);
     const myToken = detailToken;
     detailTimer = setTimeout(() => {
       if (myToken !== detailToken) return;
@@ -2323,6 +2498,7 @@
       state.view.detailLong >= targetLong * 0.92 &&
       detailRoiStillValid()
     ) {
+      hideDetailRoiHud(true);
       return;
     }
 
@@ -2331,34 +2507,33 @@
     // Full-frame path only: skip if no resolution gain. ROI path always worth it when
     // the tile is clearly smaller than the full frame (fewer pixels to process).
     if (!useRoi || !workRoi) {
-      if (targetLong < workLong * 1.12) return;
+      if (targetLong < workLong * 1.12) {
+        hideDetailRoiHud(true);
+        return;
+      }
     } else {
       const areaFrac =
         (workRoi.w * workRoi.h) / Math.max(1, workRoi.iw * workRoi.ih);
-      if (areaFrac > 0.92 && targetLong < workLong * 1.12) return;
+      if (areaFrac > 0.92 && targetLong < workLong * 1.12) {
+        hideDetailRoiHud(true);
+        return;
+      }
     }
 
     const token = detailToken;
-    const pct = Math.round(zoom * 100);
-    const roiLabel =
-      workRoi && useRoi
-        ? Math.round((workRoi.w * workRoi.h) / ((workRoi.iw * workRoi.ih) || 1) * 100) +
-          '% frame'
-        : 'full';
-    busyStart(
-      'detail',
-      'Rendering filter detail…',
-      pct + '% · ' + targetLong + 'px · ' + roiLabel
-    );
-    if (canvasArea) canvasArea.classList.add('detail-render');
+    // Non-blocking: ROI frame + chip only — canvas stays fully interactive
+    showDetailRoiHud(workRoi || getVisibleImageRoi(DETAIL_ROI_MARGIN));
 
     try {
-      // Yield so busy UI paints
-      await new Promise((r) => setTimeout(r, 24));
+      // Yield so UI paints the ROI frame before heavy work
+      await new Promise((r) => setTimeout(r, 16));
       if (token !== detailToken) return;
 
       const fullData = buildDetailSource(targetLong);
-      if (!fullData || token !== detailToken) return;
+      if (!fullData || token !== detailToken) {
+        if (token === detailToken) hideDetailRoiHud(true);
+        return;
+      }
 
       const fullW = fullData.width;
       const fullH = fullData.height;
@@ -2476,8 +2651,7 @@
       console.warn('Detail render failed', err);
     } finally {
       if (token === detailToken) {
-        busyEnd('detail');
-        if (canvasArea) canvasArea.classList.remove('detail-render');
+        hideDetailRoiHud(false);
       }
     }
   }
@@ -2607,13 +2781,21 @@
 
     const straighten = state.crop.active ? state.params.rotation : 0;
 
-    if (state.isComparing) {
+    // Hold-to-compare (full frame original) — not the same as split toggle
+    if (state.isComparing && !state.ui.splitCompare) {
       cancelDetailRender();
       const src = fast && state.scrubData ? state.scrubData : state.originalData;
       drawToMain(src, straighten);
       layoutViewport();
       updateCropOverlay();
       return;
+    }
+
+    // Split compare: paint original on beforeCanvas every frame (cheap), edit on main
+    if (state.ui.splitCompare && beforeCanvas && beforeCtx) {
+      const beforeSrc =
+        fast && state.scrubData ? state.scrubData : state.originalData;
+      if (beforeSrc) drawToBefore(beforeSrc, straighten);
     }
 
     const useFast = !!fast || state.ui.scrubbing;
@@ -3782,6 +3964,9 @@
   function setCropMode(active) {
     state.crop.active = active && state.hasImage;
     if (canvasArea) canvasArea.classList.toggle('crop-mode', !!state.crop.active);
+    // Split compare is for edit preview — off during crop overlay
+    if (state.crop.active && state.ui.splitCompare) setSplitCompare(false);
+    if (btnSplitCompare) btnSplitCompare.disabled = !state.hasImage || state.crop.active;
     if (!cropLayer) return;
     if (state.crop.active) {
       cropLayer.hidden = false;
@@ -4378,9 +4563,14 @@
     showToast(adj.label + ' reset', 900);
   }
 
-  // Dial input
+  // Dial input — Photos-like continuous scrub (capture + rAF-coalesced paint)
   if (activeDial) {
-    activeDial.addEventListener('pointerdown', () => beginScrub());
+    activeDial.addEventListener('pointerdown', (e) => {
+      beginScrub();
+      try {
+        if (e.pointerId != null) activeDial.setPointerCapture(e.pointerId);
+      } catch (_) { /* Safari may throw if not primary */ }
+    });
     activeDial.addEventListener('input', () => {
       const adj = findAdj(state.ui.activeAdj);
       if (!adj) return;
@@ -4389,16 +4579,26 @@
       if (dialValue) {
         dialValue.textContent = formatAdjValue(adj, val);
         dialValue.classList.toggle('neutral', !isAdjModified(adj));
-        tickDialValue();
       }
       if (dialReset) dialReset.hidden = !isAdjModified(adj);
-      markChipModified();
-      updateToolDots();
+      // Defer chip/dot chrome to end of scrub — keeps the dial buttery
       scheduleRender(true);
     });
-    activeDial.addEventListener('change', () => endScrub());
-    activeDial.addEventListener('pointerup', () => endScrub());
-    activeDial.addEventListener('pointercancel', () => endScrub());
+    activeDial.addEventListener('change', () => {
+      markChipModified();
+      updateToolDots();
+      endScrub();
+    });
+    activeDial.addEventListener('pointerup', () => {
+      markChipModified();
+      updateToolDots();
+      endScrub();
+    });
+    activeDial.addEventListener('pointercancel', () => {
+      markChipModified();
+      updateToolDots();
+      endScrub();
+    });
   }
 
   if (dialReset) {
@@ -4445,7 +4645,12 @@
   });
 
   if (lookIntensity) {
-    lookIntensity.addEventListener('pointerdown', () => beginScrub());
+    lookIntensity.addEventListener('pointerdown', (e) => {
+      beginScrub();
+      try {
+        if (e.pointerId != null) lookIntensity.setPointerCapture(e.pointerId);
+      } catch (_) {}
+    });
     lookIntensity.addEventListener('input', () => {
       const tab = state.ui.looksTab || 'presets';
       const val = parseFloat(lookIntensity.value);
@@ -4454,7 +4659,7 @@
         if (state.look.preset && state.look.preset !== 'none') {
           applyPreset(state.look.preset, val, { fast: true });
         }
-        if (lookIntensityValue) lookIntensityValue.textContent = String(val);
+        if (lookIntensityValue) lookIntensityValue.textContent = String(Math.round(val));
         return;
       }
       const meta = LOOK_INTENSITY[tab];
@@ -4470,13 +4675,20 @@
         }
       }
       state.lookQuality = 'preview';
-      if (lookIntensityValue) lookIntensityValue.textContent = String(val);
-      updateLookChip();
-      updateToolDots();
+      if (lookIntensityValue) lookIntensityValue.textContent = String(Math.round(val));
       scheduleRender(true);
     });
-    lookIntensity.addEventListener('change', () => endScrub());
-    lookIntensity.addEventListener('pointerup', () => endScrub());
+    lookIntensity.addEventListener('change', () => {
+      updateLookChip();
+      updateToolDots();
+      endScrub();
+    });
+    lookIntensity.addEventListener('pointerup', () => {
+      updateLookChip();
+      updateToolDots();
+      endScrub();
+    });
+    lookIntensity.addEventListener('pointercancel', () => endScrub());
   }
 
   // ========== LONG PRESS / FINE ADJUST ==========
@@ -4586,12 +4798,66 @@
     window.addEventListener('pointercancel', up);
   }
 
-  // ========== HOLD PHOTO TO COMPARE ==========
+  // ========== SPLIT COMPARE (topbar toggle) ==========
+  // Left = original, right = edit. Pan/zoom shared via canvasWrap transform.
+  function syncSplitCompareUI() {
+    const on = !!state.ui.splitCompare;
+    if (canvasArea) canvasArea.classList.toggle('split-compare', on);
+    if (splitPaneBefore) splitPaneBefore.hidden = !on;
+    if (beforeCanvas) {
+      beforeCanvas.classList.toggle('visible', on);
+      if (!on) {
+        // free GPU buffer when off
+        beforeCanvas.width = 1;
+        beforeCanvas.height = 1;
+      }
+    }
+    if (splitDivider) splitDivider.hidden = !on;
+    if (btnSplitCompare) {
+      btnSplitCompare.classList.toggle('active', on);
+      btnSplitCompare.setAttribute('aria-pressed', on ? 'true' : 'false');
+      btnSplitCompare.title = on
+        ? 'Exit compare'
+        : 'Compare: original | edit';
+    }
+    // Keep both wraps in sync (in case toggle happens mid-gesture)
+    applyViewTransform();
+  }
+
+  function setSplitCompare(on) {
+    on = !!on;
+    if (on && (!state.hasImage || state.crop.active)) return;
+    if (state.ui.splitCompare === on) {
+      syncSplitCompareUI();
+      return;
+    }
+    // Exit hold-compare if entering split
+    if (on && state.isComparing) endCompare();
+    state.ui.splitCompare = on;
+    syncSplitCompareUI();
+    layoutViewport();
+    render(false);
+    if (on) hapticLight();
+  }
+
+  function toggleSplitCompare() {
+    setSplitCompare(!state.ui.splitCompare);
+  }
+
+  if (btnSplitCompare) {
+    btnSplitCompare.addEventListener('click', () => {
+      if (btnSplitCompare.disabled) return;
+      toggleSplitCompare();
+    });
+  }
+
+  // ========== HOLD PHOTO TO COMPARE (momentary full original) ==========
   let compareTimer = null;
   let comparePointerId = null;
 
   function startCompare() {
     if (!state.hasImage || state.crop.active) return;
+    if (state.ui.splitCompare) return; // split mode owns the view
     state.isComparing = true;
     if (canvasArea) canvasArea.classList.add('comparing');
     render(false);
@@ -4704,6 +4970,10 @@
     if (btnReset) btnReset.disabled = !enabled;
     if (btnClose) btnClose.disabled = !enabled;
     if (btnSaveLook) btnSaveLook.disabled = !enabled;
+    if (btnSplitCompare) {
+      btnSplitCompare.disabled = !enabled || state.crop.active;
+      if (!enabled && state.ui.splitCompare) setSplitCompare(false);
+    }
     if (!enabled) {
       state.ui.showHistogram = false;
       syncHistoToggleUI();
@@ -4859,16 +5129,34 @@
   // Borders framing sliders
   function bindBorderSlider(el, key, scale, formatVal) {
     if (!el) return;
+    el.addEventListener('pointerdown', (e) => {
+      beginScrub();
+      try {
+        if (e.pointerId != null) el.setPointerCapture(e.pointerId);
+      } catch (_) {}
+    });
     el.addEventListener('input', () => {
       if (!state.border) return;
       const raw = parseFloat(el.value);
       if (key === 'zoom') state.border.zoom = clamp(raw / 100, 1, 2.5);
       else if (key === 'panX') state.border.panX = clamp(raw / 100, -1, 1);
       else if (key === 'panY') state.border.panY = clamp(raw / 100, -1, 1);
-      syncBorderUI();
-      scheduleRender(false);
+      // Update values only — full syncBorderUI rebuilds chips and feels sticky
+      if (key === 'zoom' && borderZoomVal) {
+        borderZoomVal.textContent = (state.border.zoom || 1).toFixed(2) + '×';
+      } else if (key === 'panX' && borderPanXVal) {
+        borderPanXVal.textContent = String(Math.round((state.border.panX || 0) * 100));
+      } else if (key === 'panY' && borderPanYVal) {
+        borderPanYVal.textContent = String(Math.round((state.border.panY || 0) * 100));
+      }
+      scheduleRender(true);
     });
-    el.addEventListener('change', () => scheduleHistoryPush());
+    el.addEventListener('change', () => {
+      endScrub();
+      scheduleHistoryPush();
+    });
+    el.addEventListener('pointerup', () => endScrub());
+    el.addEventListener('pointercancel', () => endScrub());
   }
   bindBorderSlider(borderZoom, 'zoom');
   bindBorderSlider(borderPanX, 'panX');
@@ -5131,7 +5419,9 @@
           state.ops = [];
           state.scene = null;
           state.sourceFileName = null;
+          if (state.ui.splitCompare) setSplitCompare(false);
           canvas.classList.remove('visible');
+          if (beforeCanvas) beforeCanvas.classList.remove('visible');
           if (dock) dock.hidden = true;
           if (typeof setImmersive === 'function') setImmersive(false);
           if (typeof setChromeHidden === 'function') setChromeHidden(false);
