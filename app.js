@@ -449,16 +449,25 @@
     }, 420);
   }
 
-  /** Re-trigger panel/chip entrance when switching tools */
+  /** Single panel entrance when switching tools (no double dockIn + panelEnter) */
   function playPanelEnter() {
     if (!dockBody || prefersReducedMotion()) return;
-    dockBody.classList.remove('is-panel-enter');
-    void dockBody.offsetWidth;
-    dockBody.classList.add('is-panel-enter');
+    // Skip while the whole editor is still entering (that sequence already animates dock-body)
+    if (document.body.classList.contains('is-entering')) return;
     clearTimeout(panelAnimTimer);
-    panelAnimTimer = setTimeout(() => {
-      dockBody.classList.remove('is-panel-enter');
-    }, 520);
+    dockBody.classList.remove('is-panel-enter');
+    // Double rAF: wait until hidden toggles + chip DOM rebuild are painted once
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!dockBody) return;
+        void dockBody.offsetWidth;
+        dockBody.classList.add('is-panel-enter');
+        panelAnimTimer = setTimeout(() => {
+          // Safe to drop class: animations have no fill-mode "both"
+          dockBody.classList.remove('is-panel-enter');
+        }, 380);
+      });
+    });
   }
 
   /** Soft pulse on dial value when scrubbing */
@@ -3183,6 +3192,8 @@
 
   // ========== UI: TOOLS / CHIPS / DIAL ==========
   function setTool(tool) {
+    const prevTool = state.ui.tool;
+    const toolChanged = tool !== prevTool;
     state.ui.tool = tool;
     $$('.tool-btn').forEach((b) => {
       const on = b.dataset.tool === tool;
@@ -3280,8 +3291,9 @@
       }
     }
 
-    if (state.hasImage) {
-      requestAnimationFrame(() => playPanelEnter());
+    // Animate panel only when the tool actually changes (re-tap same icon = no blink)
+    if (state.hasImage && toolChanged) {
+      playPanelEnter();
     }
   }
 
