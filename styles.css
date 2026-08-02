@@ -615,6 +615,60 @@ body:not(.layout-side) .zoom-hud {
   margin-bottom: 18px;
 }
 
+/* Session draft resume */
+.draft-resume {
+  margin: 22px auto 0;
+  max-width: 280px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  text-align: center;
+}
+
+.draft-resume[hidden] {
+  display: none !important;
+}
+
+.draft-resume-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 4px;
+  color: var(--text);
+}
+
+.draft-resume-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+}
+
+.draft-resume-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.draft-resume-actions .btn-ghost-wide.sm {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
+  width: auto;
+  min-width: 0;
+  background: transparent;
+  border: 0.5px solid rgba(255, 255, 255, 0.14);
+  color: var(--text-secondary);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.draft-resume-actions .btn-ghost-wide.sm:active {
+  transform: scale(0.96);
+}
+
 .btn-pill {
   display: inline-flex;
   align-items: center;

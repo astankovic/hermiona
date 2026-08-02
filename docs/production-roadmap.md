@@ -252,7 +252,9 @@ On export JPEG, preserve orientation-safe metadata where possible.
 [x] P0-PWA / HIST / SAFE / TEST / TRUST
 [x] P1-WAND     — Auto · Soft · Vivid one-tap enhance
 [x] P1-PRESET   — Save look / Mine (localStorage)
-[ ] P1-META / optional LOCAL
+[x] DRAFT       — Continue last edit (IndexedDB)
+[x] SHARE       — Web Share when available, else download
+[ ] I5e / optional LOCAL library
 ```
 
 *When a ticket lands, check it here and in git commit message (`P0-HIST: …`).*

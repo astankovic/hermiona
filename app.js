@@ -11,6 +11,7 @@
   const Looks = window.HermionaLooks;
   const Scene = window.HermionaScene;
   const UserPresets = window.HermionaUserPresets;
+  const Draft = window.HermionaDraft;
 
   if (!Engine || !Export) {
     console.error('Hermiona: engine/export modules missing');
@@ -235,6 +236,8 @@
     enhanceMode: null,
     /** Active user-saved look id (Mine) or null */
     userLookId: null,
+    /** Source file name for draft / export */
+    sourceFileName: null,
     look: {
       film: 'none',
       filmIntensity: 100,
@@ -349,6 +352,10 @@
   const enhanceBar = $('#enhanceBar');
   const btnSaveLook = $('#btnSaveLook');
   const userLooksHint = $('#userLooksHint');
+  const draftResume = $('#draftResume');
+  const draftResumeSub = $('#draftResumeSub');
+  const btnDraftContinue = $('#btnDraftContinue');
+  const btnDraftDismiss = $('#btnDraftDismiss');
 
   /** Iris + wordmark for idle topbar (must match index.html brand lockup) */
   const BRAND_LOCKUP_HTML =
@@ -767,6 +774,7 @@
     }
     history.index = history.stack.length - 1;
     updateHistoryButtons();
+    scheduleDraftSave();
   }
 
   function undo() {
@@ -804,58 +812,236 @@
     historyDebounce = setTimeout(() => pushHistory(), 320);
   }
 
+  // ========== SESSION DRAFT ==========
+  let draftSaveTimer = null;
+  let draftPending = false;
+
+  function hideDraftResume() {
+    if (draftResume) draftResume.hidden = true;
+  }
+
+  function scheduleDraftSave() {
+    if (!state.hasImage || !Draft) return;
+    draftPending = true;
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer = setTimeout(() => {
+      draftPending = false;
+      saveDraftNow().catch(() => {});
+    }, 1800);
+  }
+
+  function saveDraftNow() {
+    if (!Draft || !state.hasImage) return Promise.resolve(false);
+    const src = state.originalImage || state.workingCanvas;
+    if (!src) return Promise.resolve(false);
+
+    return Draft.blobFromImage(src, 2400, 0.9)
+      .then((blob) =>
+        Draft.save({
+          blob: blob,
+          fileName: state.sourceFileName || 'photo.jpg',
+          params: { ...state.params },
+          look: JSON.parse(JSON.stringify(state.look)),
+          ops: (state.ops || []).slice(),
+          enhanceMode: state.enhanceMode,
+          optics: {
+            enabled: state.optics.enabled,
+            strength: state.optics.strength,
+            apertureStrength: state.optics.apertureStrength,
+            apertureSlider: state.optics.apertureSlider,
+            focusDepth: state.optics.focusDepth,
+            focusManual: state.optics.focusManual,
+            focalRecipe: state.optics.focalRecipe,
+            bokehShape: state.optics.bokehShape,
+            bokehAmount: state.optics.bokehAmount
+          },
+          userLookId: state.userLookId
+        })
+      )
+      .then(() => true)
+      .catch((err) => {
+        console.warn('Draft save failed', err);
+        return false;
+      });
+  }
+
+  function clearDraft() {
+    clearTimeout(draftSaveTimer);
+    if (!Draft) return Promise.resolve();
+    return Draft.clear().catch(() => {});
+  }
+
+  function openImageFromBlob(blob, fileName, restore) {
+    busyStart('load', restore ? 'Restoring edit…' : 'Loading photo…', fileName || '');
+    dropOverlay.classList.add('hidden');
+    hideDraftResume();
+
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      state.originalImage = img;
+      state.sourceFileName = fileName || 'photo.jpg';
+      state.ops = restore && restore.ops ? restore.ops.slice() : [];
+      prepareWorkingImage(img);
+
+      if (restore) {
+        Object.assign(state.params, restore.params || {});
+        if (restore.look) {
+          Object.assign(state.look, restore.look);
+          if (!state.look.imperf) state.look.imperf = emptyImperf();
+        }
+        if (restore.optics) Object.assign(state.optics, restore.optics);
+        state.enhanceMode = restore.enhanceMode || null;
+        state.userLookId = restore.userLookId || null;
+      } else {
+        resetParams(true);
+        resetLooks(true);
+        state.enhanceMode = null;
+        state.userLookId = null;
+        state.optics.focusManual = false;
+      }
+
+      resetCropRect();
+      state.scene = null;
+      state.hasImage = true;
+      document.body.classList.add('has-image');
+      enableControls(true);
+      updateEnhanceBarUI();
+      if (btnSceneAnalyze) btnSceneAnalyze.disabled = false;
+      if (dock) dock.hidden = false;
+      canvas.classList.add('visible');
+      if (typeof setChromeHidden === 'function') setChromeHidden(false);
+      if (opticsEnabledEl) opticsEnabledEl.checked = !!state.optics.enabled;
+      if (compareHint && !restore) {
+        compareHint.hidden = false;
+        compareHint.classList.add('show');
+        setTimeout(() => compareHint.classList.remove('show'), 2800);
+      }
+      setTool(state.ui.tool || 'adjust');
+      syncLookUI();
+      updateDialUI();
+      markChipModified();
+      updateToolDots();
+      busyEnd('load');
+      resetHistory();
+      if (typeof updateLayoutMode === 'function') updateLayoutMode();
+      render(false);
+      if (state.crop.active) updateCropOverlay();
+      if (restore) showToast('Restored · ' + (Draft.formatAge(restore.savedAt) || 'draft'), 1400);
+      scheduleDraftSave();
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      busyEnd('load');
+      dropOverlay.classList.remove('hidden');
+      showToast('Could not restore photo');
+    };
+    img.src = url;
+  }
+
+  function checkDraftOnBoot() {
+    if (!Draft || !draftResume) return;
+    Draft.peek().then((rec) => {
+      if (!rec || !rec.blob || state.hasImage) return;
+      // Stale after 14 days
+      if (rec.savedAt && Date.now() - rec.savedAt > 14 * 24 * 60 * 60 * 1000) {
+        Draft.clear();
+        return;
+      }
+      draftResume.hidden = false;
+      if (draftResumeSub) {
+        const age = Draft.formatAge(rec.savedAt);
+        draftResumeSub.textContent =
+          (rec.fileName || 'Photo') + (age ? ' · ' + age : '') + ' · this device';
+      }
+      draftResume._record = rec;
+    });
+  }
+
+  function continueDraft() {
+    const rec = draftResume && draftResume._record;
+    if (!rec || !rec.blob) {
+      hideDraftResume();
+      return;
+    }
+    openImageFromBlob(rec.blob, rec.fileName, {
+      params: rec.params,
+      look: rec.look,
+      ops: rec.ops,
+      enhanceMode: rec.enhanceMode,
+      optics: rec.optics,
+      userLookId: rec.userLookId,
+      savedAt: rec.savedAt
+    });
+  }
+
+  function dismissDraft() {
+    hideDraftResume();
+    clearDraft();
+    showToast('Draft dismissed', 900);
+  }
+
   // ========== IMAGE LOADING ==========
   function loadImage(file) {
     if (!file || !file.type.startsWith('image/')) return;
+
+    // New photo replaces draft later on save; clear old resume UI
+    hideDraftResume();
 
     busyStart('load', 'Loading photo…', file.name || '');
     dropOverlay.classList.add('hidden');
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        state.originalImage = img;
-        state.ops = [];
-        prepareWorkingImage(img);
-        resetParams(true);
-        resetLooks(true);
-        resetCropRect();
-        state.scene = null;
-        state.optics.focusManual = false;
-        state.enhanceMode = null;
-        state.hasImage = true;
-        document.body.classList.add('has-image');
-        enableControls(true);
-        updateEnhanceBarUI();
-        if (btnSceneAnalyze) btnSceneAnalyze.disabled = false;
-        if (dock) dock.hidden = false;
-        canvas.classList.add('visible');
-        if (typeof setChromeHidden === 'function') setChromeHidden(false);
-        if (compareHint) {
-          compareHint.hidden = false;
-          compareHint.classList.add('show');
-          setTimeout(() => compareHint.classList.remove('show'), 2800);
-        }
-        setTool(state.ui.tool || 'adjust');
-        busyEnd('load');
-        resetHistory();
-        if (typeof updateLayoutMode === 'function') updateLayoutMode();
-        render(false);
-        if (state.crop.active) updateCropOverlay();
-        // Portrait/DoF off by default — no auto scene analysis on load
-      };
-      img.onerror = () => {
-        busyEnd('load');
-        dropOverlay.classList.remove('hidden');
-        alert('Could not load the image.');
-      };
-      img.src = e.target.result;
+      // Prefer blob path for draft fidelity
+      fetch(e.target.result)
+        .then((r) => r.blob())
+        .then((blob) => {
+          openImageFromBlob(blob, file.name || 'photo.jpg', null);
+        })
+        .catch(() => {
+          // Fallback classic path
+          const img = new Image();
+          img.onload = () => {
+            state.originalImage = img;
+            state.sourceFileName = file.name || 'photo.jpg';
+            state.ops = [];
+            prepareWorkingImage(img);
+            resetParams(true);
+            resetLooks(true);
+            resetCropRect();
+            state.scene = null;
+            state.optics.focusManual = false;
+            state.enhanceMode = null;
+            state.userLookId = null;
+            state.hasImage = true;
+            document.body.classList.add('has-image');
+            enableControls(true);
+            updateEnhanceBarUI();
+            if (btnSceneAnalyze) btnSceneAnalyze.disabled = false;
+            if (dock) dock.hidden = false;
+            canvas.classList.add('visible');
+            if (typeof setChromeHidden === 'function') setChromeHidden(false);
+            setTool(state.ui.tool || 'adjust');
+            busyEnd('load');
+            resetHistory();
+            if (typeof updateLayoutMode === 'function') updateLayoutMode();
+            render(false);
+            scheduleDraftSave();
+          };
+          img.onerror = () => {
+            busyEnd('load');
+            dropOverlay.classList.remove('hidden');
+            showToast('Could not load the image.');
+          };
+          img.src = e.target.result;
+        });
     };
     reader.onerror = () => {
       busyEnd('load');
       dropOverlay.classList.remove('hidden');
-      alert('Could not read the file.');
+      showToast('Could not read the file.');
     };
     reader.readAsDataURL(file);
   }
@@ -3646,10 +3832,13 @@
 
     try {
       busyUpdate('export', 'Applying filters…', sizeLabel);
-      const result = await Export.download({
+      const shareFn =
+        Export.shareOrDownload || Export.downloadWithFallback || Export.download;
+      const result = await shareFn({
         size: state.export.size,
         format: state.export.format,
         quality: state.export.quality,
+        fileName: state.sourceFileName || 'hermiona-edit',
         workingData: state.originalData,
         workingCanvas: state.workingCanvas,
         originalImage: state.originalImage,
@@ -3668,7 +3857,11 @@
         },
         maxWorkingSize: state.maxWorkingSize
       });
-      if (result.fallbackFrom) {
+      if (result.cancelled) {
+        showToast('Share cancelled', 900);
+      } else if (result.shared) {
+        showToast('Shared · ' + result.width + '×' + result.height);
+      } else if (result.fallbackFrom) {
         showToast(
           'Saved at ' +
             result.width +
@@ -3681,6 +3874,8 @@
       } else {
         showToast('Saved · ' + result.width + '×' + result.height);
       }
+      // Keep draft after export so user can continue tweaking
+      scheduleDraftSave();
     } catch (err) {
       const Errors = window.HermionaErrors;
       const msg =
@@ -3738,6 +3933,8 @@
   });
   dropOverlay.addEventListener('click', (e) => {
     if (e.target.closest('button')) return;
+    if (e.target.closest('a')) return;
+    if (e.target.closest('#draftResume')) return;
     fileInput.click();
   });
 
@@ -3749,7 +3946,8 @@
         fileInput.click();
         return;
       }
-      if (confirm('Close and load a new photo? Unsaved edits will be lost.')) {
+      if (confirm('Close and load a new photo? This clears the on-device draft.')) {
+        clearDraft();
         state.hasImage = false;
         document.body.classList.remove('has-image');
         state.originalImage = null;
@@ -3758,6 +3956,7 @@
         state.workingCanvas = null;
         state.ops = [];
         state.scene = null;
+        state.sourceFileName = null;
         canvas.classList.remove('visible');
         if (dock) dock.hidden = true;
         if (typeof setChromeHidden === 'function') setChromeHidden(false);
@@ -3771,6 +3970,23 @@
       }
     });
   }
+
+  if (btnDraftContinue) {
+    btnDraftContinue.addEventListener('click', (e) => {
+      e.stopPropagation();
+      continueDraft();
+    });
+  }
+  if (btnDraftDismiss) {
+    btnDraftDismiss.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dismissDraft();
+    });
+  }
+
+  window.addEventListener('pagehide', () => {
+    if (state.hasImage) saveDraftNow();
+  });
   if (btnUndo) btnUndo.addEventListener('click', () => undo());
   if (btnRedo) btnRedo.addEventListener('click', () => redo());
 
@@ -4027,6 +4243,7 @@
   state.optics.apertureStrength = apInit.strength;
   if (dock) dock.hidden = true;
   enableControls(false);
+  checkDraftOnBoot();
 
   // MediaPipe / portrait pipeline stays cold until user enables DoF or taps Analyze
 

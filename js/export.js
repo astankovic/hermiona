@@ -298,17 +298,20 @@
   }
 
   /**
-   * Export with automatic size fallback on memory-ish failures.
+   * Build export blob with size fallback (does not trigger download).
    * Ladder: requested → next smaller (full → 2048 → 1080 → working).
    *
    * @param {ExportOptions} opts
-   * @returns {Promise<{width:number,height:number,pipeline?:string,fallbackFrom?:string}>}
+   * @returns {Promise<{width:number,height:number,pipeline?:string,fallbackFrom?:string,blob:Blob,ext:string,fileName:string}>}
    */
-  function downloadWithFallback(opts) {
+  function exportBlobWithFallback(opts) {
     const base = opts || {};
     const requested = base.size || 'working';
     const ladder = sizeFallbackLadder(requested);
     let fallbackFrom = null;
+    const baseName =
+      (base.fileName && String(base.fileName).replace(/\.[^.]+$/, '')) ||
+      'hermiona-edit';
 
     function attempt(i) {
       if (i >= ladder.length) {
@@ -321,21 +324,21 @@
 
       return buildAndBlob(tryOpts)
         .then((built) => {
-          triggerDownload(built.blob, built.ext);
           const out = {
             width: built.width,
             height: built.height,
-            pipeline: built.pipeline
+            pipeline: built.pipeline,
+            blob: built.blob,
+            ext: built.ext,
+            fileName: baseName + '-' + Date.now() + '.' + built.ext
           };
           if (fallbackFrom) out.fallbackFrom = fallbackFrom;
           else if (size !== requested) out.fallbackFrom = requested;
           return out;
         })
         .catch(() => {
-          // Step down ladder on any build/toBlob failure (OOM often has opaque messages)
           if (i + 1 < ladder.length) {
             if (!fallbackFrom) fallbackFrom = requested;
-            // Small yield so browser can reclaim canvas memory
             return new Promise((r) => setTimeout(r, 30)).then(() => attempt(i + 1));
           }
           throw new Error('Export failed — try a smaller size');
@@ -358,17 +361,105 @@
   }
 
   /**
+   * Export with automatic size fallback on memory-ish failures.
+   * @param {ExportOptions} opts
+   * @returns {Promise<{width:number,height:number,pipeline?:string,fallbackFrom?:string,shared?:boolean}>}
+   */
+  function downloadWithFallback(opts) {
+    return exportBlobWithFallback(opts).then((built) => {
+      triggerDownload(built.blob, built.ext);
+      return {
+        width: built.width,
+        height: built.height,
+        pipeline: built.pipeline,
+        fallbackFrom: built.fallbackFrom,
+        shared: false,
+        fileName: built.fileName
+      };
+    });
+  }
+
+  /**
+   * Share via Web Share API when available; otherwise download.
+   * @param {ExportOptions} opts
+   */
+  function shareOrDownload(opts) {
+    return exportBlobWithFallback(opts).then((built) => {
+      const file = new File([built.blob], built.fileName, {
+        type: built.blob.type || 'image/jpeg'
+      });
+      const canShare =
+        typeof navigator !== 'undefined' &&
+        navigator.share &&
+        navigator.canShare &&
+        navigator.canShare({ files: [file] });
+
+      if (canShare) {
+        return navigator
+          .share({
+            files: [file],
+            title: 'Hermiona',
+            text: 'Edited with Hermiona'
+          })
+          .then(() => ({
+            width: built.width,
+            height: built.height,
+            pipeline: built.pipeline,
+            fallbackFrom: built.fallbackFrom,
+            shared: true,
+            fileName: built.fileName
+          }))
+          .catch((err) => {
+            // User cancelled share → still offer download only if not abort
+            if (err && (err.name === 'AbortError' || err.name === 'NotAllowedError')) {
+              return {
+                width: built.width,
+                height: built.height,
+                pipeline: built.pipeline,
+                fallbackFrom: built.fallbackFrom,
+                shared: false,
+                cancelled: true,
+                fileName: built.fileName
+              };
+            }
+            triggerDownload(built.blob, built.ext);
+            return {
+              width: built.width,
+              height: built.height,
+              pipeline: built.pipeline,
+              fallbackFrom: built.fallbackFrom,
+              shared: false,
+              fileName: built.fileName
+            };
+          });
+      }
+
+      triggerDownload(built.blob, built.ext);
+      return {
+        width: built.width,
+        height: built.height,
+        pipeline: built.pipeline,
+        fallbackFrom: built.fallbackFrom,
+        shared: false,
+        fileName: built.fileName
+      };
+    });
+  }
+
+  /**
    * @param {ExportOptions} opts
    * @returns {Promise<{width:number,height:number,pipeline?:string,fallbackFrom?:string}>}
    */
   function download(opts) {
-    // Resilient by default — size ladder on OOM / build / toBlob failures
     return downloadWithFallback(opts);
   }
 
   global.HermionaExport = {
     download,
     downloadWithFallback,
+    exportBlobWithFallback,
+    shareOrDownload,
+    triggerDownload,
     buildExportCanvas,
     sizeFallbackLadder,
     MAX_EXPORT_LONG_EDGE,

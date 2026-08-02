@@ -21,7 +21,7 @@
         if (p.has("fresh") || p.get("nocache") === "1") return String(Date.now());
         if (p.get("v")) return p.get("v");
       } catch (e) {}
-      return "202608020530"; // ← bump this when you push JS/CSS changes
+      return "202608020600"; // ← bump this when you push JS/CSS changes
     })();
     document.write(
       '<link rel="stylesheet" href="styles.css?v=' +
@@ -99,6 +99,17 @@
             <p class="drop-title">Add a photo</p>
             <p class="drop-sub">Tap or drop · quick edit</p>
             <button type="button" class="btn-pill" id="btnUpload">Upload</button>
+
+            <!-- Session restore (IndexedDB draft) -->
+            <div class="draft-resume" id="draftResume" hidden>
+              <p class="draft-resume-title">Continue last edit?</p>
+              <p class="draft-resume-sub" id="draftResumeSub">Saved on this device</p>
+              <div class="draft-resume-actions">
+                <button type="button" class="btn-pill sm" id="btnDraftContinue">Continue</button>
+                <button type="button" class="btn-ghost-wide sm" id="btnDraftDismiss">Dismiss</button>
+              </div>
+            </div>
+
             <p class="fine-print"><a href="privacy.html">Privacy</a></p>
           </div>
         </div>
@@ -479,6 +490,7 @@
         "js/histogram.js",
         "js/auto.js",
         "js/user-presets.js",
+        "js/draft.js",
         "js/scene/depth-pseudo.js",
         "js/scene/coc.js",
         "js/scene/bokeh.js",

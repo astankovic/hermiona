@@ -55,6 +55,8 @@ python -m http.server 8000
 - For smoother mobile performance, large photos are downscaled for live editing (working long edge ~1400px).
 - Download re-runs the full pipeline at the chosen export size/quality.
 - Works offline after the first load (portrait AI only downloads when DoF / Analyze is used).
+- **Continue last edit** after refresh (on-device draft; dismiss anytime).
+- **Share** uses the system sheet when the browser supports it; otherwise downloads.
 
 ## Privacy
 
