@@ -1598,7 +1598,7 @@
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className =
-        'ratio-chip frame-chip border-chip' +
+        'ratio-chip border-chip' +
         (fmt.id === (state.border && state.border.id) ? ' active' : '');
       btn.dataset.border = fmt.id;
       btn.title = fmt.desc || fmt.name;
@@ -3337,8 +3337,8 @@
 
   if (cropRectEl) cropRectEl.addEventListener('pointerdown', cropPointerDown);
 
-  // Studio frame chips
-  $$('.frame-chip').forEach((btn) => {
+  // Studio frame chips (Crop only — never Border format chips)
+  $$('.frame-chip[data-frame]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.frame || 'full';
       ensureSubjectForCrop().then(() => applyStudioFrame(id));
