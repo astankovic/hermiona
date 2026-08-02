@@ -279,8 +279,8 @@ body:not(.layout-side) .stage {
 body:not(.layout-side) {
   --photos-rail-h: 56px;
   --photos-rail-gap: 10px;
-  --photos-panel-h: 156px; /* fixed shell — no per-tool jump */
-  --photos-enhance-h: 72px; /* circle row + labels */
+  --photos-panel-h: 152px; /* fixed shell — content designed to fit, no scroll */
+  --photos-enhance-h: 68px; /* circle row + labels */
   --photos-side: 18px;
   --photos-safe: max(14px, var(--safe-bottom));
   --photos-rail-bottom: var(--photos-safe);
@@ -426,16 +426,22 @@ body:not(.layout-side) .dock-body {
   min-height: var(--photos-panel-h) !important;
   max-height: var(--photos-panel-h) !important;
   margin: 0 !important;
-  padding: 8px 10px 6px !important;
-  border-radius: 20px;
-  border: 0.5px solid rgba(255, 255, 255, 0.12);
-  background: rgba(22, 22, 24, 0.48);
-  backdrop-filter: blur(32px) saturate(200%);
-  -webkit-backdrop-filter: blur(32px) saturate(200%);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.38);
+  padding: 8px 12px 6px !important;
+  border-radius: 22px;
+  border: 0.5px solid rgba(255, 255, 255, 0.14);
+  background: rgba(18, 18, 20, 0.52);
+  backdrop-filter: blur(40px) saturate(210%);
+  -webkit-backdrop-filter: blur(40px) saturate(210%);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.42),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
   overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow-y: hidden; /* no vertical scroll — content is designed to fit */
+  -webkit-overflow-scrolling: auto;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center;
+  gap: 2px;
   flex: none !important;
   transition: opacity 0.28s ease, transform 0.34s var(--ease-cinematic);
 }
@@ -613,48 +619,69 @@ body.tool-session-crop #headerBusy {
   display: none !important;
 }
 
-/* Mobile: topbar Done/Cancel own the crop commit — hide dock Apply */
-body:not(.layout-side).tool-session-crop #btnCropApply {
-  display: none !important;
-}
-
+/* Mobile: topbar Done/Cancel own the crop commit — hide dock Apply / Reset slab */
+body:not(.layout-side).tool-session-crop #btnCropApply,
 body:not(.layout-side).tool-session-crop .crop-apply-row {
-  display: flex;
-}
-
-body:not(.layout-side).tool-session-crop .crop-apply-row .btn-ghost-wide {
-  flex: 1;
+  display: none !important;
 }
 
 /* Crop / portrait panel structure (heights live with dock-body rules below) */
 body:not(.layout-side) #panelCrop {
-  padding: 0 10px 2px;
+  padding: 0;
   overflow: hidden;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-/* Aspect + rotate only on phone — hide studio frame dump (Subject via chip when shown on desktop) */
+/* Aspect + rotate only on phone — hide studio frame dump */
 body:not(.layout-side) #panelCrop .acc-group[data-acc="frame"] {
   display: none;
 }
 
 body:not(.layout-side) #panelCrop .crop-tools {
-  justify-content: space-around;
-  gap: 4px;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 0;
+  padding: 0 2px;
 }
 
-body:not(.layout-side) #panelCrop .crop-apply-row {
-  margin-top: 0;
-  padding-top: 0;
+body:not(.layout-side) #panelCrop .tool-icon-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 6px 4px 5px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  gap: 3px;
+  font-size: 9.5px;
+  letter-spacing: -0.01em;
+}
+
+body:not(.layout-side) #panelCrop .tool-icon-btn svg {
+  width: 18px;
+  height: 18px;
+  opacity: 0.92;
+}
+
+body:not(.layout-side) #panelCrop .ratio-scroll {
+  margin: 0;
+  padding: 0 0 0;
+  gap: 6px;
+}
+
+body:not(.layout-side) #panelCrop .ratio-chip {
+  height: 28px;
+  padding: 0 11px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 body:not(.layout-side) #panelPortrait {
   padding: 0;
   max-height: none;
   overflow: visible;
-}
-
-body:not(.layout-side) #panelCrop {
-  padding: 0;
+  flex: 0 0 auto;
 }
 
 /* ========== TOP BAR ========== */
@@ -1811,7 +1838,7 @@ body:not(.layout-side) .subpanel-compact .acc-group {
 
 body:not(.layout-side) .subpanel-compact .acc-group .acc-body {
   display: block !important;
-  padding: 0 2px 6px;
+  padding: 0;
   animation: none;
 }
 
@@ -1826,26 +1853,26 @@ body:not(.layout-side) .subpanel-compact .crop-hint {
 }
 
 body:not(.layout-side) .subpanel-compact {
-  padding: 2px 10px 4px;
+  padding: 0;
+  max-height: none;
+  overflow: visible;
 }
 
 body:not(.layout-side) .subpanel-compact .crop-tools {
-  margin: 2px 0 4px;
+  margin: 0;
   gap: 6px;
 }
 
 body:not(.layout-side) .subpanel-compact .crop-apply-row {
-  margin-top: 4px;
-  padding-top: 2px;
+  display: none; /* Cancel/Done live in topbar on phone */
 }
 
 body:not(.layout-side) .subpanel-compact .scene-status {
-  margin-bottom: 6px;
-  font-size: 11px;
+  display: none; /* status is noise under Analyze on phone */
 }
 
 body:not(.layout-side) .subpanel-compact .portrait-actions {
-  margin-bottom: 6px;
+  margin: 0 0 4px;
 }
 
 /* Tighter filmstrips on overlay */
@@ -1853,8 +1880,9 @@ body:not(.layout-side) .frame-scroll,
 body:not(.layout-side) .ratio-scroll,
 body:not(.layout-side) .focal-scroll,
 body:not(.layout-side) .bokeh-scroll {
-  margin-bottom: 4px;
-  padding-bottom: 2px;
+  margin: 0;
+  padding: 0;
+  gap: 6px;
 }
 
 .subpanel-compact {
@@ -1911,12 +1939,16 @@ body:not(.layout-side) .bokeh-scroll {
 
 /* Mobile dock-body / rail sizes live in the Photos floating-island block above */
 
-/* Filters: iPhone-style horizontal filmstrip */
-/* Filters — compact filmstrip for fixed panel shell */
+/* ========== Filters — Photos filmstrip (fits fixed shell, no V-scroll) ========== */
 body:not(.layout-side) .dock[data-tool="looks"] .subpanel {
   max-height: none;
   overflow: visible;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .preset-hint {
@@ -1924,62 +1956,87 @@ body:not(.layout-side) .dock[data-tool="looks"] .preset-hint {
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .subpanel-seg {
-  margin-bottom: 4px;
+  margin: 0;
+  padding: 2px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .seg-btn {
   min-width: 0;
-  height: 26px;
-  font-size: 11px;
-  padding: 0 5px;
+  height: 28px;
+  font-size: 12px;
+  font-weight: 560;
+  padding: 0 6px;
+  border-radius: 8px;
 }
 
+body:not(.layout-side) .dock[data-tool="looks"] .seg-btn.active {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* Save look is secondary on phone — hide to free filmstrip height */
 body:not(.layout-side) .dock[data-tool="looks"] .user-looks-bar {
-  padding: 0 0 4px;
-}
-
-body:not(.layout-side) .dock[data-tool="looks"] .user-looks-hint {
   display: none;
 }
 
-body:not(.layout-side) .dock[data-tool="looks"] .user-looks-bar .btn-pill {
-  height: 26px;
-  font-size: 11px;
-  padding: 0 10px;
+body:not(.layout-side) .dock[data-tool="looks"] .presets-pane {
+  gap: 6px;
+  min-height: 0;
+  flex: 1 1 auto;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .preset-cats {
-  padding-bottom: 0;
-  margin-bottom: 2px;
+  padding: 0;
+  margin: 0;
+  gap: 6px;
+  mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 20px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 20px), transparent 100%);
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .preset-cat {
-  height: 24px;
-  padding: 0 10px;
-  font-size: 10.5px;
+  height: 26px;
+  padding: 0 11px;
+  font-size: 11px;
+  font-weight: 550;
+  background: rgba(255, 255, 255, 0.08);
 }
 
-body:not(.layout-side) .dock[data-tool="looks"] .preset-scroll {
+body:not(.layout-side) .dock[data-tool="looks"] .preset-scroll,
+body:not(.layout-side) .dock[data-tool="looks"] .look-scroll {
   min-height: 0;
-  gap: 8px;
-  padding: 0 0 2px;
+  gap: 10px;
+  padding: 2px 0 0;
+  flex: 1 1 auto;
+  align-items: flex-start;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .preset-card {
-  width: 64px;
+  width: 56px;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .preset-swatch {
-  width: 64px;
-  height: 64px;
-  border-radius: 10px;
-  margin-bottom: 3px;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  margin-bottom: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .preset-card-name {
-  max-width: 64px;
+  max-width: 56px;
   font-size: 10px;
+  font-weight: 500;
   text-align: center;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+body:not(.layout-side) .dock[data-tool="looks"] .preset-card.active .preset-card-name,
+body:not(.layout-side) .dock[data-tool="looks"] .look-card.active .look-card-name {
+  color: #fff;
+  font-weight: 600;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .preset-card-recipe {
@@ -1987,68 +2044,296 @@ body:not(.layout-side) .dock[data-tool="looks"] .preset-card-recipe {
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .look-card {
-  width: 58px;
+  width: 56px;
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .look-swatch {
-  width: 58px;
-  height: 58px;
-  border-radius: 10px;
-  margin-bottom: 3px;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  margin-bottom: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .look-card-name {
   font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.72);
 }
 
 body:not(.layout-side) .dock[data-tool="looks"] .look-intensity {
   padding: 0;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* When strength slider is open, shrink filmstrip so everything fits */
+body:not(.layout-side) .dock[data-tool="looks"] #panelLooks:has(#lookIntensityWrap:not([hidden])) .preset-swatch,
+body:not(.layout-side) .dock[data-tool="looks"] #panelLooks:has(#lookIntensityWrap:not([hidden])) .look-swatch {
+  width: 48px;
+  height: 48px;
+}
+
+body:not(.layout-side) .dock[data-tool="looks"] #panelLooks:has(#lookIntensityWrap:not([hidden])) .preset-card,
+body:not(.layout-side) .dock[data-tool="looks"] #panelLooks:has(#lookIntensityWrap:not([hidden])) .look-card {
+  width: 48px;
+}
+
+body:not(.layout-side) .dock[data-tool="looks"] #panelLooks:has(#lookIntensityWrap:not([hidden])) .preset-cats {
+  display: none; /* free vertical space while tuning strength */
+}
+
+body:not(.layout-side) .dock[data-tool="looks"] .look-intensity .slider-line {
+  grid-template-columns: 58px 1fr 32px;
+}
+
+body:not(.layout-side) .dock[data-tool="looks"] .look-intensity .slider-line-label {
+  font-size: 11px;
 }
 
 body:not(.layout-side) .dial-hint {
   display: none; /* reclaim vertical space on phone */
 }
 
-/* Adjust / Age: denser dial + chips */
-/* dial / chips / enhance mobile density: see Photos blocks below enhance + dial */
-
-/* Portrait: one compact stack */
-body:not(.layout-side) .dock[data-tool="portrait"] .portrait-actions {
+/* ========== Portrait — single toolbar + dial + chips ========== */
+body:not(.layout-side) .dock[data-tool="portrait"] #panelPortrait {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 4px;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 auto;
+  max-height: none;
+  overflow: visible;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] #panelPortrait .acc-group,
+body:not(.layout-side) .dock[data-tool="portrait"] #panelPortrait .acc-group .acc-body {
+  display: contents !important; /* beat .subpanel-compact .acc-body { display:block } */
 }
 
 body:not(.layout-side) .dock[data-tool="portrait"] .scene-status {
-  margin-bottom: 4px;
-  opacity: 0.85;
+  display: none !important;
 }
 
-body:not(.layout-side) .dock[data-tool="portrait"] .focal-scroll,
+/* One horizontal toolbar: Analyze · DoF · 35/50/85 */
+body:not(.layout-side) .dock[data-tool="portrait"] .portrait-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] .portrait-actions .btn-pill {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] .ios-switch {
+  transform: scale(0.88);
+  transform-origin: left center;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] .ios-switch-label {
+  font-size: 11.5px;
+}
+
 body:not(.layout-side) .dock[data-tool="portrait"] .bokeh-scroll {
-  margin-bottom: 2px;
+  display: none !important;
 }
 
-/* Crop apply: no solid slab — floating card already has glass */
+body:not(.layout-side) .dock[data-tool="portrait"] .focal-scroll {
+  display: inline-flex;
+  margin: 0;
+  padding: 0;
+  gap: 4px;
+  flex: 0 0 auto;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] .focal-scroll .ratio-chip {
+  height: 26px;
+  padding: 0 9px;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/*
+ * Rebuild portrait header as one flex row via a pseudo-group:
+ * portrait-actions + focal-scroll sit on one line using a wrapper trick —
+ * both are flex children of #panelPortrait which becomes a row.
+ */
+body:not(.layout-side) .dock[data-tool="portrait"] #panelPortrait {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] #panelPortrait::-webkit-scrollbar {
+  display: none;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] .dial-row {
+  padding: 0;
+  gap: 0;
+  /* absorb 1–2px flex rounding so shell never scrolls */
+  margin-top: -2px;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] .dial-value {
+  font-size: 15px;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] .dial-name {
+  font-size: 10px;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] .dial-track-wrap {
+  height: 24px;
+  padding: 0;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] .ios-dial {
+  height: 24px;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] .dial-ticks {
+  height: 18px;
+  margin-top: -9px;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] .ios-dial::-webkit-slider-thumb {
+  height: 20px;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] .chips-scroll {
+  padding: 0;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] .chip {
+  min-width: 44px;
+  gap: 2px;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] .chip-icon {
+  width: 30px;
+  height: 30px;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] .chip-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+body:not(.layout-side) .dock[data-tool="portrait"] .chip-label {
+  font-size: 8.5px;
+  max-width: 46px;
+}
+
+/* Crop: dial + tools + ratios — no apply slab */
 body:not(.layout-side) .dock[data-tool="crop"] .crop-apply-row {
-  position: sticky;
-  bottom: 0;
-  background: transparent;
-  padding-bottom: 2px;
-  margin-top: 2px;
+  display: none !important;
+}
+
+body:not(.layout-side) .dock[data-tool="crop"] .dial-row {
+  padding: 0;
+}
+
+body:not(.layout-side) .dock[data-tool="crop"] .dial-value {
+  font-size: 17px;
+}
+
+body:not(.layout-side) .dock[data-tool="crop"] .dial-name {
+  font-size: 10.5px;
+}
+
+body:not(.layout-side) .dock[data-tool="crop"] .dial-track-wrap {
+  height: 28px;
+  padding: 0;
+}
+
+body:not(.layout-side) .dock[data-tool="crop"] .ios-dial {
+  height: 28px;
+}
+
+body:not(.layout-side) .dock[data-tool="crop"] #panelCrop .acc-group[data-acc="transform"] .acc-body,
+body:not(.layout-side) .dock[data-tool="crop"] #panelCrop .acc-group[data-acc="ratio"] .acc-body {
+  padding: 0;
+}
+
+body:not(.layout-side) .dock[data-tool="crop"] #panelCrop {
+  gap: 4px;
+}
+
+/* Unwrap crop accordion so tools + ratios are tight siblings */
+body:not(.layout-side) .dock[data-tool="crop"] #panelCrop .acc-group[data-acc="transform"],
+body:not(.layout-side) .dock[data-tool="crop"] #panelCrop .acc-group[data-acc="ratio"],
+body:not(.layout-side) .dock[data-tool="crop"] #panelCrop .acc-group[data-acc="transform"] .acc-body,
+body:not(.layout-side) .dock[data-tool="crop"] #panelCrop .acc-group[data-acc="ratio"] .acc-body {
+  display: contents !important;
+}
+
+/* Frame suggestions stay off on phone (must win over contents unwrap) */
+body:not(.layout-side) .dock[data-tool="crop"] #panelCrop .acc-group[data-acc="frame"] {
+  display: none !important;
+}
+
+body:not(.layout-side) .dock[data-tool="crop"] .tool-icon-btn {
+  padding: 5px 2px 4px;
+  min-height: 0;
+}
+
+body:not(.layout-side) .dock[data-tool="crop"] .ratio-chip {
+  height: 26px;
+  padding: 0 10px;
+  font-size: 11.5px;
 }
 
 /* tool-rail / tool-btn mobile island styles: see Photos floating block near top */
 
-/* Border tool panel */
+/* ========== Border / Frame tool ========== */
 #panelBorder .frame-scroll {
-  margin-bottom: 4px;
+  margin-bottom: 0;
+}
+
+body:not(.layout-side) #panelBorder {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+  height: 100%;
+}
+
+body:not(.layout-side) #panelBorder .frame-scroll {
+  padding: 0;
+  margin: 0;
+  gap: 6px;
+}
+
+body:not(.layout-side) #panelBorder .ratio-chip {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12.5px;
+  font-weight: 560;
 }
 
 .border-framing {
-  margin-top: 4px;
-  padding-top: 4px;
+  margin-top: 0;
+  padding-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .border-framing[hidden],
@@ -2060,6 +2345,7 @@ body.layout-side .dock[data-tool="border"] #panelBorder {
   flex: 0 0 auto;
 }
 
+/* Legacy class names kept for any leftover markup */
 .border-slider-row {
   display: flex;
   align-items: baseline;
@@ -2090,6 +2376,118 @@ body.layout-side .dock[data-tool="border"] #panelBorder {
 .border-chip.active {
   border-color: rgba(255, 214, 10, 0.45);
   color: var(--accent);
+}
+
+/* —— Compact single-line sliders (iOS Settings feel) —— */
+.slider-line {
+  display: grid;
+  grid-template-columns: 48px 1fr 40px;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 1px 0;
+}
+
+.slider-line-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.slider-line-val {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  text-align: right;
+  letter-spacing: -0.02em;
+  min-width: 0;
+}
+
+.compact-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-x;
+}
+
+.compact-range:focus {
+  outline: none;
+}
+
+.compact-range::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.compact-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8.5px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.35),
+    0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  transition: transform 0.12s var(--ease-spring), box-shadow 0.15s;
+}
+
+.compact-range:active::-webkit-slider-thumb {
+  transform: scale(1.12);
+  box-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.4),
+    0 0 0 5px rgba(255, 214, 10, 0.18);
+}
+
+.compact-range::-moz-range-track {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: none;
+}
+
+.compact-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* Mobile denser slider lines */
+body:not(.layout-side) .slider-line {
+  grid-template-columns: 44px 1fr 38px;
+  gap: 6px;
+  min-height: 26px;
+}
+
+body:not(.layout-side) .slider-line-label {
+  font-size: 11.5px;
+}
+
+body:not(.layout-side) .slider-line-val {
+  font-size: 11.5px;
+}
+
+body:not(.layout-side) .compact-range {
+  height: 26px;
+}
+
+body:not(.layout-side) .compact-range::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  margin-top: -7.5px;
 }
 
 /* User saved looks */
@@ -2376,34 +2774,39 @@ body:not(.layout-side) .enhance-btn.active .enhance-label {
   transform: translateX(-50%);
 }
 
-/* Mobile Photos tick dial */
+/* ========== Mobile Photos tick dial (Adjust / Age / Crop / Portrait) ========== */
 body:not(.layout-side) .dial-row {
-  padding: 2px 4px 0;
+  padding: 0 2px;
   gap: 0;
+  flex: 0 0 auto;
 }
 
 body:not(.layout-side) .dial-meta {
   flex-direction: column;
   align-items: center;
-  gap: 1px;
+  gap: 0;
   min-height: 0;
+  margin-bottom: 2px;
 }
 
 body:not(.layout-side) .dial-name {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.5);
   order: 1;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 
 body:not(.layout-side) .dial-value {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 500;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
   color: #fff;
   min-width: 0;
   order: 0;
-  line-height: 1.15;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
 body:not(.layout-side) .dial-value.neutral {
@@ -2411,8 +2814,8 @@ body:not(.layout-side) .dial-value.neutral {
 }
 
 body:not(.layout-side) .dial-track-wrap {
-  padding: 4px 0 2px;
-  height: 36px;
+  padding: 2px 0 0;
+  height: 32px;
   display: flex;
   align-items: center;
 }
@@ -2420,62 +2823,63 @@ body:not(.layout-side) .dial-track-wrap {
 body:not(.layout-side) .dial-ticks {
   display: block;
   position: absolute;
-  left: 4px;
-  right: 4px;
+  left: 2px;
+  right: 2px;
   top: 50%;
-  height: 28px;
-  margin-top: -14px;
+  height: 24px;
+  margin-top: -12px;
   pointer-events: none;
-  /* Fine tick ruler (Photos-style) */
+  /* Fine tick ruler — calm, Photos-like */
   background:
     repeating-linear-gradient(
       to right,
-      rgba(255, 255, 255, 0.22) 0,
-      rgba(255, 255, 255, 0.22) 1px,
+      rgba(255, 255, 255, 0.18) 0,
+      rgba(255, 255, 255, 0.18) 1px,
       transparent 1px,
-      transparent 8px
+      transparent 7px
     );
   mask-image: linear-gradient(
     to right,
     transparent 0%,
-    #000 8%,
-    #000 92%,
+    #000 6%,
+    #000 94%,
     transparent 100%
   );
   -webkit-mask-image: linear-gradient(
     to right,
     transparent 0%,
-    #000 8%,
-    #000 92%,
+    #000 6%,
+    #000 94%,
     transparent 100%
   );
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
-/* Major ticks every 5th — thicker via second layer */
+/* Major ticks every ~5 minor */
 body:not(.layout-side) .dial-ticks::after {
   content: '';
   position: absolute;
   inset: 0;
   background: repeating-linear-gradient(
     to right,
-    rgba(255, 255, 255, 0.45) 0,
-    rgba(255, 255, 255, 0.45) 1.5px,
+    rgba(255, 255, 255, 0.42) 0,
+    rgba(255, 255, 255, 0.42) 1.5px,
     transparent 1.5px,
-    transparent 40px
+    transparent 35px
   );
 }
 
 body:not(.layout-side) .dial-center-mark {
-  height: 18px;
-  margin-top: -9px;
-  width: 2px;
-  background: rgba(255, 255, 255, 0.55);
+  height: 16px;
+  margin-top: -8px;
+  width: 1.5px;
+  background: rgba(255, 255, 255, 0.45);
   z-index: 2;
+  border-radius: 1px;
 }
 
 body:not(.layout-side) .ios-dial {
-  height: 36px;
+  height: 32px;
   position: relative;
   z-index: 1;
 }
@@ -2490,70 +2894,138 @@ body:not(.layout-side) .ios-dial::-moz-range-track {
   background: transparent;
 }
 
+/* Vertical bar thumb — Photos dial indicator */
 body:not(.layout-side) .ios-dial::-webkit-slider-thumb {
-  width: 4px;
-  height: 28px;
-  border-radius: 2px;
+  width: 3px;
+  height: 26px;
+  border-radius: 1.5px;
   background: #fff;
   margin-top: 0;
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.25),
-    0 2px 8px rgba(0, 0, 0, 0.4);
+    0 0 0 1px rgba(0, 0, 0, 0.2),
+    0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 body:not(.layout-side) .ios-dial:active::-webkit-slider-thumb {
-  transform: scaleY(1.08) scaleX(1.2);
+  transform: scaleY(1.06) scaleX(1.35);
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.25),
-    0 2px 12px rgba(0, 0, 0, 0.45),
-    0 0 0 4px rgba(255, 214, 10, 0.2);
+    0 0 0 1px rgba(0, 0, 0, 0.2),
+    0 2px 10px rgba(0, 0, 0, 0.4),
+    0 0 0 4px rgba(255, 214, 10, 0.16);
 }
 
 body:not(.layout-side) .ios-dial::-moz-range-thumb {
-  width: 4px;
-  height: 28px;
-  border-radius: 2px;
+  width: 3px;
+  height: 26px;
+  border-radius: 1.5px;
   background: #fff;
+  border: none;
 }
 
 body:not(.layout-side) .dial-reset {
-  top: 4px;
-  right: 4px;
-  width: 28px;
-  height: 28px;
+  top: 0;
+  right: 0;
+  width: 26px;
+  height: 26px;
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* Chips filmstrip under dial */
 body:not(.layout-side) .chips-scroll {
-  padding: 0 2px 2px;
+  padding: 4px 0 0;
+  flex: 0 0 auto;
+}
+
+body:not(.layout-side) .chips {
+  gap: 12px;
+  padding: 2px 2px 0;
 }
 
 body:not(.layout-side) .chip {
-  min-width: 52px;
+  min-width: 50px;
+  gap: 4px;
+  padding: 2px 1px 0;
 }
 
 body:not(.layout-side) .chip-icon {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.08);
-  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+}
+
+body:not(.layout-side) .chip-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
 body:not(.layout-side) .chip-label {
   font-size: 9.5px;
+  font-weight: 500;
   max-width: 52px;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: -0.01em;
+}
+
+body:not(.layout-side) .chip.active {
+  color: #fff;
+}
+
+body:not(.layout-side) .chip.active .chip-label {
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 600;
 }
 
 body:not(.layout-side) .chip.active .chip-icon {
   background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.38);
+  transform: scale(1.04);
 }
 
 body:not(.layout-side) .chip.modified .chip-icon {
   background: var(--accent);
   border-color: var(--accent);
   color: #1a1400;
+}
+
+body:not(.layout-side) .chip.modified .chip-label {
+  color: var(--accent);
+}
+
+/* Age: same density as Adjust — labels must not clip */
+body:not(.layout-side) .dock[data-tool="age"] .chips-scroll {
+  min-height: 0 !important;
+  padding: 2px 0 0 !important;
+}
+
+body:not(.layout-side) .dock[data-tool="age"] .chip {
+  min-width: 50px;
+}
+
+body:not(.layout-side) .dock[data-tool="age"] .chip-icon {
+  width: 38px;
+  height: 38px;
+}
+
+body:not(.layout-side) .dock[data-tool="age"] .chip-label {
+  max-width: 52px;
+  font-size: 9.5px;
+}
+
+body:not(.layout-side) .dock[data-tool="age"] .dial-row,
+body:not(.layout-side) .dock[data-tool="adjust"] .dial-row {
+  padding: 0;
+}
+
+body:not(.layout-side) .dock[data-tool="age"] .dial-track-wrap,
+body:not(.layout-side) .dock[data-tool="adjust"] .dial-track-wrap {
+  height: 30px;
+}
+
+body:not(.layout-side) .dock[data-tool="age"] .ios-dial,
+body:not(.layout-side) .dock[data-tool="adjust"] .ios-dial {
+  height: 30px;
 }
 
 .dial-reset {

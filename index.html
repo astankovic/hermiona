@@ -21,7 +21,7 @@
         if (p.has("fresh") || p.get("nocache") === "1") return String(Date.now());
         if (p.get("v")) return p.get("v");
       } catch (e) {}
-      return "202608023100"; // ← bump this when you push JS/CSS changes
+      return "202608023200"; // ← bump this when you push JS/CSS changes
     })();
     document.write(
       '<link rel="stylesheet" href="styles.css?v=' +
@@ -332,11 +332,11 @@
           <div class="look-scroll" id="cameraLooks" hidden></div>
           <div class="look-scroll" id="lensLooks" hidden></div>
           <div class="look-intensity" id="lookIntensityWrap" hidden>
-            <div class="dial-meta compact">
-              <span class="dial-name" id="lookIntensityName">Strength</span>
-              <span class="dial-value" id="lookIntensityValue">100</span>
+            <div class="slider-line">
+              <label class="slider-line-label" id="lookIntensityName" for="lookIntensity">Strength</label>
+              <input type="range" id="lookIntensity" class="compact-range" min="0" max="100" step="1" value="100" />
+              <span class="slider-line-val" id="lookIntensityValue">100</span>
             </div>
-            <input type="range" id="lookIntensity" class="ios-dial" min="0" max="100" step="1" value="100" />
           </div>
         </div>
 
@@ -436,21 +436,21 @@
             </button>
             <div class="acc-body">
               <div class="border-framing" id="borderFraming">
-                <div class="border-slider-row">
-                  <label class="border-slider-label" for="borderZoom">Zoom</label>
-                  <span class="border-slider-val" id="borderZoomVal">1.00×</span>
+                <div class="slider-line">
+                  <label class="slider-line-label" for="borderZoom">Zoom</label>
+                  <input type="range" id="borderZoom" class="compact-range" min="100" max="250" step="1" value="100" />
+                  <span class="slider-line-val" id="borderZoomVal">1.00×</span>
                 </div>
-                <input type="range" id="borderZoom" class="ios-dial" min="100" max="250" step="1" value="100" />
-                <div class="border-slider-row">
-                  <label class="border-slider-label" for="borderPanX">Pan H</label>
-                  <span class="border-slider-val" id="borderPanXVal">0</span>
+                <div class="slider-line">
+                  <label class="slider-line-label" for="borderPanX">Pan H</label>
+                  <input type="range" id="borderPanX" class="compact-range" min="-100" max="100" step="1" value="0" />
+                  <span class="slider-line-val" id="borderPanXVal">0</span>
                 </div>
-                <input type="range" id="borderPanX" class="ios-dial" min="-100" max="100" step="1" value="0" />
-                <div class="border-slider-row">
-                  <label class="border-slider-label" for="borderPanY">Pan V</label>
-                  <span class="border-slider-val" id="borderPanYVal">0</span>
+                <div class="slider-line">
+                  <label class="slider-line-label" for="borderPanY">Pan V</label>
+                  <input type="range" id="borderPanY" class="compact-range" min="-100" max="100" step="1" value="0" />
+                  <span class="slider-line-val" id="borderPanYVal">0</span>
                 </div>
-                <input type="range" id="borderPanY" class="ios-dial" min="-100" max="100" step="1" value="0" />
                 <p class="crop-hint">Recompose inside the frame · does not change crop aspect</p>
               </div>
             </div>

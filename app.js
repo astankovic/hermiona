@@ -183,10 +183,10 @@
   }
 
   const LOOK_INTENSITY = {
-    film: { id: 'filmIntensity', label: 'Film strength', def: 100 },
-    camera: { id: 'cameraIntensity', label: 'Camera strength', def: 100 },
-    lens: { id: 'lensIntensity', label: 'Lens strength', def: 100 },
-    presets: { id: 'presetIntensity', label: 'Preset strength', def: 100 }
+    film: { id: 'filmIntensity', label: 'Strength', def: 100 },
+    camera: { id: 'cameraIntensity', label: 'Strength', def: 100 },
+    lens: { id: 'lensIntensity', label: 'Strength', def: 100 },
+    presets: { id: 'presetIntensity', label: 'Strength', def: 100 }
   };
 
   /** Base grade keys a preset may set (geometry/rotation excluded) */
@@ -2853,7 +2853,7 @@
         const hasPreset = state.look.preset && state.look.preset !== 'none';
         lookIntensityWrap.hidden = !hasPreset;
         if (hasPreset) {
-          if (lookIntensityName) lookIntensityName.textContent = 'Preset strength';
+          if (lookIntensityName) lookIntensityName.textContent = 'Strength';
           const v = state.look.presetIntensity != null ? state.look.presetIntensity : 100;
           if (lookIntensity) lookIntensity.value = v;
           if (lookIntensityValue) lookIntensityValue.textContent = String(v);
