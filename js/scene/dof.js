@@ -184,37 +184,50 @@
     const wantBokeh = Bokeh && bokehAmt > 0.02 && strength > 0.08;
     const srcForBokeh = wantBokeh ? new Uint8ClampedArray(data) : null;
 
-    // Two blur layers
-    const r1 = Math.max(1, Math.round(maxR * 0.35));
-    const r2 = Math.max(2, maxR);
-    const blur1 = softBlur(data, w, h, r1);
-    const blur2 = softBlur(data, w, h, r2);
-
-    // Optional horizontal stretch bias for anamorphic recipe on blur composite
     const anamoBlur =
       (opts.focalRecipe === 'anamo' || opts.bokehShape === 'anamorphic') && maxR >= 4;
 
-    for (let i = 0; i < w * h; i++) {
-      // strength scales blur amount when shared CoC was built at full range
-      const c = clamp((coc[i] || 0) * strength, 0, 1);
-      const pi = i * 4;
-      if (c < 0.02) continue;
+    // G3 — WebGL dual-level blur + CoC mix (bokeh stamps stay CPU)
+    let usedGpu = false;
+    const GpuDoF = global.HermionaGpuDoF;
+    const Perf = global.HermionaPerf;
+    if (GpuDoF && !opts.forceCpu && typeof GpuDoF.apply === 'function') {
+      const perfGpu = Perf && Perf.isEnabled() ? Perf.start('dof:gpu') : null;
+      usedGpu = GpuDoF.apply(data, w, h, coc, {
+        strength: strength,
+        maxR: maxR,
+        anamo: anamoBlur
+      });
+      if (perfGpu) perfGpu.end({ ok: usedGpu ? 1 : 0 });
+    }
 
-      // 0..0.45 → sharp↔blur1, 0.45..1 → blur1↔blur2
-      if (c < 0.45) {
-        const t = c / 0.45;
-        data[pi] = lerp(data[pi], blur1[pi], t);
-        data[pi + 1] = lerp(data[pi + 1], blur1[pi + 1], t);
-        data[pi + 2] = lerp(data[pi + 2], blur1[pi + 2], t);
-      } else {
-        const t = (c - 0.45) / 0.55;
-        data[pi] = lerp(blur1[pi], blur2[pi], t);
-        data[pi + 1] = lerp(blur1[pi + 1], blur2[pi + 1], t);
-        data[pi + 2] = lerp(blur1[pi + 2], blur2[pi + 2], t);
+    if (!usedGpu) {
+      // CPU fallback — two blur layers
+      const r1 = Math.max(1, Math.round(maxR * 0.35));
+      const r2 = Math.max(2, maxR);
+      const blur1 = softBlur(data, w, h, r1);
+      const blur2 = softBlur(data, w, h, r2);
+
+      for (let i = 0; i < w * h; i++) {
+        const c = clamp((coc[i] || 0) * strength, 0, 1);
+        const pi = i * 4;
+        if (c < 0.02) continue;
+
+        if (c < 0.45) {
+          const t = c / 0.45;
+          data[pi] = lerp(data[pi], blur1[pi], t);
+          data[pi + 1] = lerp(data[pi + 1], blur1[pi + 1], t);
+          data[pi + 2] = lerp(data[pi + 2], blur1[pi + 2], t);
+        } else {
+          const t = (c - 0.45) / 0.55;
+          data[pi] = lerp(blur1[pi], blur2[pi], t);
+          data[pi + 1] = lerp(blur1[pi + 1], blur2[pi + 1], t);
+          data[pi + 2] = lerp(blur1[pi + 2], blur2[pi + 2], t);
+        }
       }
     }
 
-    // I5c — specular bokeh orbs
+    // I5c — specular bokeh orbs (CPU; works on GPU or CPU base)
     if (wantBokeh) {
       let shape = opts.bokehShape || 'circle';
       if (shape === 'auto' && Bokeh.shapeFromRecipe) {
@@ -225,13 +238,11 @@
         dofStrength: strength,
         shape: shape,
         quality: opts.quality || 'preview',
-        maxRadius: Math.max(6, Math.round(maxR * (opts.quality === 'export' ? 1.15 : 0.95)))
+        maxRadius: Math.max(
+          6,
+          Math.round(maxR * (opts.quality === 'export' ? 1.15 : 0.95))
+        )
       });
-
-      // Extra soft horizontal haze for anamorphic
-      if (anamoBlur && strength > 0.25) {
-        // very light horizontal pass already in anamorphic kernels
-      }
     }
   }
 

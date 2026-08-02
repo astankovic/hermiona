@@ -239,12 +239,13 @@ You almost do this with `fast` — formalize dirty flags so settle doesn’t red
 
 **Expected:** snappier light/color/film scrub; camera/imperf/lens still CPU.
 
-### Phase G3 — WebGL DoF (1–2 weeks)
-1. CoC texture from CPU map (or gen on GPU later)  
-2. Dual Kawase blur levels + mix by coc  
-3. Bokeh highlights optional second pass  
+### Phase G3 — WebGL DoF *(shipped)*
+1. `js/gpu/dof.js` — dual-level separable blur (half-res) + CoC composite  
+2. Wired in `dof.js` with CPU fallback; specular bokeh stamps stay CPU  
+3. Perf mark `dof:gpu` when `?perf=1`  
+4. Anamorphic: horizontal bias in blur direction  
 
-**Expected:** Portrait usable with DoF on while scrubbing aperture.
+**Expected:** much smoother aperture/focus with DoF enabled on GPU devices.
 
 ### Phase G4 — WebGPU opt-in (later)
 - Same shaders via WGSL where available  

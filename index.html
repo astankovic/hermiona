@@ -21,7 +21,7 @@
         if (p.has("fresh") || p.get("nocache") === "1") return String(Date.now());
         if (p.get("v")) return p.get("v");
       } catch (e) {}
-      return "202608021045"; // ← bump this when you push JS/CSS changes
+      return "202608021100"; // ← bump this when you push JS/CSS changes
     })();
     document.write(
       '<link rel="stylesheet" href="styles.css?v=' +
@@ -532,6 +532,7 @@
         "js/scene/selective.js",
         "js/scene/analyze.js",
         "js/gpu/grade.js",
+        "js/gpu/dof.js",
         "js/engine.js",
         "js/export.js",
         "app.js",
