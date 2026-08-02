@@ -183,6 +183,34 @@ body:not(.layout-side).has-image .topbar-title {
   display: none;
 }
 
+/*
+ * Idle (no photo): one brand moment only — the empty stage.
+ * Topbar chrome is silent so HERMIONA is not repeated.
+ */
+body:not(.has-image) .topbar {
+  background: transparent;
+  border-bottom: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body:not(.has-image) .topbar-left,
+body:not(.has-image) .topbar-right {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+body:not(.has-image) .topbar-title {
+  display: none !important;
+}
+
+body:not(.has-image) .tb-cluster {
+  box-shadow: none;
+  background: transparent;
+  border: none;
+}
+
 body:not(.layout-side) .header-busy {
   background: rgba(0, 0, 0, 0.45);
   border: 0.5px solid rgba(255, 214, 10, 0.25);
@@ -527,7 +555,7 @@ body:not(.layout-side) .zoom-hud {
   /* during slider drag — keep snappy */
 }
 
-/* Drop / empty brand stage */
+/* Drop / empty brand stage — single Hermiona lockup */
 .drop-overlay {
   position: absolute;
   inset: 0;
@@ -537,7 +565,8 @@ body:not(.layout-side) .zoom-hud {
   z-index: 10;
   transition: opacity 0.28s var(--ease-out), visibility 0.28s;
   background:
-    radial-gradient(ellipse at 50% 38%, rgba(245, 245, 242, 0.035) 0%, transparent 52%);
+    radial-gradient(ellipse at 50% 36%, rgba(245, 245, 242, 0.04) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(255, 214, 10, 0.03) 0%, transparent 42%);
 }
 
 .drop-overlay.hidden {
@@ -548,53 +577,75 @@ body:not(.layout-side) .zoom-hud {
 
 .drop-content {
   text-align: center;
-  padding: 28px 24px;
-  max-width: 320px;
+  padding: 32px 28px;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.drop-brand {
+/* Iris + wordmark as one mark */
+.drop-mark {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
+  gap: 16px;
+  margin-bottom: 36px;
   color: var(--brand-ink);
 }
 
 .drop-iris {
-  width: 56px;
-  height: 56px;
-  opacity: 0.92;
+  width: 64px;
+  height: 64px;
+  opacity: 0.94;
+  filter: drop-shadow(0 0 28px rgba(245, 245, 242, 0.06));
 }
 
 .drop-wordmark {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 300;
-  letter-spacing: 0.55em;
+  letter-spacing: 0.48em;
   color: var(--brand-ink);
-  margin: 0 0 28px;
-  padding-right: 0.35em; /* balance wide tracking */
+  margin: 0;
+  padding-right: 0.32em; /* optical: tracking steals end space */
   line-height: 1;
+  opacity: 0.9;
+}
+
+.drop-invite {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
 }
 
 .drop-title {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 500;
-  letter-spacing: -0.02em;
-  margin-bottom: 6px;
+  letter-spacing: -0.03em;
+  margin: 0 0 8px;
   color: var(--text);
 }
 
 .drop-sub {
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 400;
   color: var(--text-secondary);
-  margin-bottom: 24px;
+  margin: 0 0 28px;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  max-width: 22em;
+}
+
+.drop-invite .btn-pill {
+  min-width: 148px;
 }
 
 .fine-print {
-  margin-top: 18px;
-  font-size: 12px;
+  margin-top: 28px;
+  font-size: 11px;
   color: var(--text-tertiary);
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
 }
 
 .fine-print a {
@@ -610,6 +661,7 @@ body:not(.layout-side) .zoom-hud {
 }
 
 /* legacy class if referenced */
+.drop-brand,
 .drop-icon {
   color: var(--text-tertiary);
   margin-bottom: 18px;
@@ -2966,7 +3018,26 @@ body.layout-side .look-chip {
 }
 
 body.layout-side .drop-content {
-  max-width: 360px;
+  max-width: 340px;
+}
+
+body.layout-side .drop-mark {
+  margin-bottom: 40px;
+  gap: 18px;
+}
+
+body.layout-side .drop-iris {
+  width: 72px;
+  height: 72px;
+}
+
+body.layout-side .drop-wordmark {
+  font-size: 13px;
+  letter-spacing: 0.5em;
+}
+
+body.layout-side .drop-title {
+  font-size: 22px;
 }
 
 body.layout-side .crop-tools {
@@ -3155,26 +3226,31 @@ body.layout-compact:not(.layout-side) .canvas-area {
 }
 
 body.layout-compact .drop-title {
-  font-size: 16px;
+  font-size: 17px;
 }
 
 body.layout-compact .drop-sub {
-  margin-bottom: 12px;
+  margin-bottom: 20px;
+  font-size: 12px;
 }
 
-body.layout-compact .drop-brand {
-  margin-bottom: 12px;
+body.layout-compact .drop-mark {
+  margin-bottom: 24px;
+  gap: 12px;
 }
 
 body.layout-compact .drop-iris {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
 }
 
 body.layout-compact .drop-wordmark {
   font-size: 11px;
-  letter-spacing: 0.48em;
-  margin-bottom: 18px;
+  letter-spacing: 0.42em;
+}
+
+body.layout-compact .fine-print {
+  margin-top: 20px;
 }
 
 body.layout-compact .drop-icon {
