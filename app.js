@@ -1,6 +1,6 @@
 /**
  * HERMIONA — Ultramodern iOS-style photo editor
- * SPA · Canvas pipeline · iPhone Photos UX
+ * Iris mark · SPA · Canvas · iPhone Photos UX
  */
 
 (() => {
@@ -337,6 +337,31 @@
   const canvasArea = $('#canvasArea');
   const dock = $('#dock');
   const topbarTitle = $('#topbarTitle');
+
+  /** Iris + wordmark for idle topbar (must match index.html brand lockup) */
+  const BRAND_LOCKUP_HTML =
+    '<svg class="brand-iris" width="18" height="18" viewBox="0 0 64 64" fill="none" aria-hidden="true">' +
+    '<g stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter" stroke-linecap="square">' +
+    '<circle cx="32" cy="32" r="22.5"/>' +
+    '<path d="M32 14.5 L49.5 32 L32 49.5 L14.5 32 Z"/>' +
+    '<circle cx="32" cy="32" r="2.4" fill="currentColor" stroke="none"/>' +
+    '</g></svg>' +
+    '<span class="brand-word">HERMIONA</span>';
+
+  function setTopbarBrand() {
+    if (!topbarTitle) return;
+    topbarTitle.classList.add('topbar-title--brand');
+    topbarTitle.setAttribute('aria-label', 'Hermiona');
+    topbarTitle.innerHTML = BRAND_LOCKUP_HTML;
+  }
+
+  function setTopbarToolTitle(label) {
+    if (!topbarTitle) return;
+    topbarTitle.classList.remove('topbar-title--brand');
+    topbarTitle.removeAttribute('aria-label');
+    topbarTitle.textContent = label;
+  }
+
   const btnUpload = $('#btnUpload');
   const btnDownload = $('#btnDownload');
   const btnReset = $('#btnReset');
@@ -2633,7 +2658,11 @@
         crop: 'Crop',
         portrait: 'Portrait'
       };
-      topbarTitle.textContent = state.hasImage ? titles[tool] || 'Edit' : 'Hermiona';
+      if (state.hasImage) {
+        setTopbarToolTitle(titles[tool] || 'Edit');
+      } else {
+        setTopbarBrand();
+      }
     }
   }
 
@@ -3404,7 +3433,7 @@
         dropOverlay.classList.remove('hidden');
         enableControls(false);
         if (lookChip) lookChip.hidden = true;
-        if (topbarTitle) topbarTitle.textContent = 'Hermiona';
+        setTopbarBrand();
         if (typeof updateLayoutMode === 'function') updateLayoutMode();
         fileInput.value = '';
         fileInput.click();
@@ -3800,5 +3829,5 @@
 
   // MediaPipe / portrait pipeline stays cold until user enables DoF or taps Analyze
 
-  console.log('Hermiona ready ✦ iOS editor UI');
+  console.log('Hermiona ready · Iris');
 })();

@@ -57,4 +57,4 @@ python -m http.server 8000
 
 ---
 
-Built with care. Enjoy editing. ✦
+Built with care. Enjoy editing.

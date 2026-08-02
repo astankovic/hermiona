@@ -1,18 +1,19 @@
 /* ============================================
    HERMIONA — Ultramodern iOS Photo Editor
-   Photos.app-inspired · Glass · Smooth
+   Iris mark · Light · Film · Silence
    ============================================ */
 
 :root {
-  --bg: #000000;
+  --bg: #050505;
   --bg-elevated: #0a0a0a;
+  --brand-ink: #f5f5f2;
   --surface: rgba(28, 28, 30, 0.92);
   --surface-solid: #1c1c1e;
   --surface-2: #2c2c2e;
   --surface-3: #3a3a3c;
   --separator: rgba(255, 255, 255, 0.08);
   --separator-strong: rgba(255, 255, 255, 0.14);
-  --text: #f5f5f7;
+  --text: #f5f5f2;
   --text-secondary: rgba(235, 235, 245, 0.6);
   --text-tertiary: rgba(235, 235, 245, 0.38);
   --accent: #ffd60a;
@@ -149,16 +150,32 @@ body:not(.layout-side) .topbar .tb-done {
 }
 
 body:not(.layout-side) .topbar-title {
-  font-size: 13px;
-  font-weight: 600;
-  padding: 4px 10px;
+  padding: 5px 12px 5px 10px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.32);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 0.5px solid rgba(255, 255, 255, 0.1);
   text-shadow: none;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(245, 245, 242, 0.95);
+}
+
+body:not(.layout-side) .topbar-title--brand {
+  font-size: 11px;
+  letter-spacing: 0.34em;
+  gap: 7px;
+}
+
+body:not(.layout-side) .topbar-title--brand .brand-iris {
+  width: 14px;
+  height: 14px;
+}
+
+body:not(.layout-side) .topbar-title:not(.topbar-title--brand) {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  padding: 4px 10px;
 }
 
 /* Hide title when editing (more room / cleaner) — keep busy pill */
@@ -325,6 +342,37 @@ body.chrome-dragging:not(.layout-side) .tool-rail {
   letter-spacing: -0.02em;
   color: var(--text);
   white-space: nowrap;
+}
+
+/* Brand lockup (idle / no photo) */
+.topbar-title--brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 300;
+  letter-spacing: 0.38em;
+  font-size: 12px;
+  color: var(--brand-ink);
+  padding-right: 0.2em; /* optical: tracking steals end space */
+}
+
+.topbar-title--brand .brand-iris {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--brand-ink);
+  opacity: 0.95;
+}
+
+.topbar-title--brand .brand-word {
+  line-height: 1;
+  transform: translateY(0.5px);
+}
+
+.topbar-title:not(.topbar-title--brand) {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-size: 16px;
 }
 
 .tb-btn {
@@ -505,7 +553,7 @@ body.chrome-dragging:not(.layout-side) .tool-rail {
   /* during slider drag — keep snappy */
 }
 
-/* Drop */
+/* Drop / empty brand stage */
 .drop-overlay {
   position: absolute;
   inset: 0;
@@ -515,7 +563,7 @@ body.chrome-dragging:not(.layout-side) .tool-rail {
   z-index: 10;
   transition: opacity 0.28s var(--ease-out), visibility 0.28s;
   background:
-    radial-gradient(ellipse at 50% 40%, rgba(255, 214, 10, 0.04) 0%, transparent 55%);
+    radial-gradient(ellipse at 50% 38%, rgba(245, 245, 242, 0.035) 0%, transparent 52%);
 }
 
 .drop-overlay.hidden {
@@ -527,25 +575,51 @@ body.chrome-dragging:not(.layout-side) .tool-rail {
 .drop-content {
   text-align: center;
   padding: 28px 24px;
-  max-width: 300px;
+  max-width: 320px;
 }
 
-.drop-icon {
-  color: var(--text-tertiary);
-  margin-bottom: 18px;
+.drop-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  color: var(--brand-ink);
+}
+
+.drop-iris {
+  width: 56px;
+  height: 56px;
+  opacity: 0.92;
+}
+
+.drop-wordmark {
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.55em;
+  color: var(--brand-ink);
+  margin: 0 0 28px;
+  padding-right: 0.35em; /* balance wide tracking */
+  line-height: 1;
 }
 
 .drop-title {
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -0.03em;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
   margin-bottom: 6px;
+  color: var(--text);
 }
 
 .drop-sub {
   font-size: 14px;
   color: var(--text-secondary);
-  margin-bottom: 22px;
+  margin-bottom: 24px;
+}
+
+/* legacy class if referenced */
+.drop-icon {
+  color: var(--text-tertiary);
+  margin-bottom: 18px;
 }
 
 .btn-pill {
@@ -2471,12 +2545,31 @@ body.layout-side .topbar .tb-btn {
 }
 
 body.layout-side .topbar-title {
-  display: inline;
+  display: inline-flex;
   font-size: 16px;
   padding: 0;
   background: none;
   border: none;
   backdrop-filter: none;
+}
+
+body.layout-side .topbar-title--brand {
+  font-size: 12px;
+  letter-spacing: 0.4em;
+  gap: 9px;
+  padding: 0;
+}
+
+body.layout-side .topbar-title--brand .brand-iris {
+  width: 17px;
+  height: 17px;
+}
+
+body.layout-side .topbar-title:not(.topbar-title--brand) {
+  display: inline;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 body.layout-side .dock {
@@ -2662,8 +2755,19 @@ body.layout-compact .topbar {
   padding-right: max(4px, var(--safe-right));
 }
 
-body.layout-compact .topbar-title {
+body.layout-compact .topbar-title:not(.topbar-title--brand) {
   font-size: 14px;
+}
+
+body.layout-compact .topbar-title--brand {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  gap: 6px;
+}
+
+body.layout-compact .topbar-title--brand .brand-iris {
+  width: 13px;
+  height: 13px;
 }
 
 body.layout-compact .tb-btn {
@@ -2800,6 +2904,21 @@ body.layout-compact .drop-title {
 
 body.layout-compact .drop-sub {
   margin-bottom: 12px;
+}
+
+body.layout-compact .drop-brand {
+  margin-bottom: 12px;
+}
+
+body.layout-compact .drop-iris {
+  width: 40px;
+  height: 40px;
+}
+
+body.layout-compact .drop-wordmark {
+  font-size: 11px;
+  letter-spacing: 0.48em;
+  margin-bottom: 18px;
 }
 
 body.layout-compact .drop-icon {

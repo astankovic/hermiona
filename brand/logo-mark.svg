@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Hermiona">
+  <!--
+    Hermiona mark — Iris
+    Four aperture blades form a diamond of light.
+    Hairline geometry. Pure, optical, silent.
+  -->
+  <g stroke="#F5F5F2" stroke-width="1.25" stroke-linejoin="miter" stroke-linecap="square">
+    <!-- outer lens ring -->
+    <circle cx="32" cy="32" r="22.5"/>
+    <!-- diamond aperture (rotated square) -->
+    <path d="M32 14.5 L49.5 32 L32 49.5 L14.5 32 Z"/>
+    <!-- inner light point -->
+    <circle cx="32" cy="32" r="2.25" fill="#F5F5F2" stroke="none"/>
+  </g>
+</svg>
