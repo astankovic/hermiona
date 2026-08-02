@@ -10,6 +10,7 @@
   const Export = window.HermionaExport;
   const Looks = window.HermionaLooks;
   const Scene = window.HermionaScene;
+  const UserPresets = window.HermionaUserPresets;
 
   if (!Engine || !Export) {
     console.error('Hermiona: engine/export modules missing');
@@ -232,6 +233,8 @@
     },
     /** One-tap enhance: null | 'auto' | 'soft' | 'vivid' */
     enhanceMode: null,
+    /** Active user-saved look id (Mine) or null */
+    userLookId: null,
     look: {
       film: 'none',
       filmIntensity: 100,
@@ -344,6 +347,8 @@
   const histoClipLow = $('#histoClipLow');
   const histoClipHigh = $('#histoClipHigh');
   const enhanceBar = $('#enhanceBar');
+  const btnSaveLook = $('#btnSaveLook');
+  const userLooksHint = $('#userLooksHint');
 
   /** Iris + wordmark for idle topbar (must match index.html brand lockup) */
   const BRAND_LOCKUP_HTML =
@@ -1749,7 +1754,8 @@
   function buildPresetCategories() {
     if (!presetCatsEl || !Looks || !Looks.PRESET_CATEGORIES) return;
     presetCatsEl.innerHTML = '';
-    Looks.PRESET_CATEGORIES.forEach((cat) => {
+    const cats = [{ id: 'mine', name: 'Mine' }].concat(Looks.PRESET_CATEGORIES);
+    cats.forEach((cat) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className =
@@ -1762,25 +1768,184 @@
           b.classList.toggle('active', b.dataset.cat === cat.id);
         });
         buildPresetCards();
+        if (presetHint) {
+          presetHint.textContent =
+            cat.id === 'mine'
+              ? 'Your saved looks · this device only'
+              : 'Ready looks · film + camera + lens';
+        }
       });
       presetCatsEl.appendChild(btn);
     });
   }
 
+  function applyUserLook(id) {
+    if (!UserPresets) return;
+    const item = UserPresets.get(id);
+    if (!item) {
+      showToast('Look not found');
+      return;
+    }
+    pushHistory();
+    // Full stack from snapshot
+    PRESET_PARAM_KEYS.forEach((k) => {
+      state.params[k] =
+        item.params && item.params[k] != null ? item.params[k] : 0;
+    });
+    const L = item.look || {};
+    state.look.film = L.film || 'none';
+    state.look.filmIntensity = L.filmIntensity != null ? L.filmIntensity : 100;
+    state.look.camera = L.camera || 'none';
+    state.look.cameraIntensity =
+      L.cameraIntensity != null ? L.cameraIntensity : 100;
+    state.look.lens = L.lens || 'none';
+    state.look.lensIntensity = L.lensIntensity != null ? L.lensIntensity : 100;
+    state.look.bloom = L.bloom || 0;
+    state.look.ca = L.ca || 0;
+    state.look.imperf = Object.assign(emptyImperf(), L.imperf || {});
+    state.look.imperfManual = !!L.imperfManual;
+    state.look.imperfIntensity =
+      L.imperfIntensity != null ? L.imperfIntensity : 100;
+    state.look.preset = 'none';
+    state.look.presetIntensity = 100;
+    state.enhanceMode = item.enhanceMode || null;
+    state.userLookId = item.id;
+    syncLookUI();
+    updateDialUI();
+    markChipModified();
+    updateToolDots();
+    updateEnhanceBarUI();
+    buildPresetCards();
+    scheduleRender(false);
+    pushHistory();
+    hapticLight();
+    showToast(item.name, 900);
+  }
+
+  function saveCurrentLook() {
+    if (!UserPresets || !state.hasImage) return;
+    const n = (UserPresets.list() || []).length + 1;
+    const defaultName = 'My look ' + n;
+    let name = defaultName;
+    try {
+      const typed = window.prompt('Name this look', defaultName);
+      if (typed === null) return; // cancel
+      name = typed.trim() || defaultName;
+    } catch (_) {
+      /* prompt blocked — use default */
+    }
+    const result = UserPresets.save(
+      {
+        params: state.params,
+        look: state.look,
+        enhanceMode: state.enhanceMode
+      },
+      name.slice(0, 40)
+    );
+    if (!result.ok) {
+      showToast(result.error || 'Save failed', 2200);
+      if (window.HermionaErrors) {
+        window.HermionaErrors.showBanner(result.error || 'Save failed', {
+          tone: 'error'
+        });
+      }
+      return;
+    }
+    state.userLookId = result.item.id;
+    state.ui.presetCategory = 'mine';
+    buildPresetCategories();
+    buildPresetCards();
+    updateUserLooksHint();
+    showToast('Saved · ' + result.item.name, 1200);
+  }
+
+  function deleteUserLook(id, e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (!UserPresets) return;
+    const item = UserPresets.get(id);
+    if (!item) return;
+    if (!window.confirm('Delete “' + item.name + '”?')) return;
+    UserPresets.remove(id);
+    if (state.userLookId === id) state.userLookId = null;
+    buildPresetCards();
+    updateUserLooksHint();
+    showToast('Deleted');
+  }
+
+  function updateUserLooksHint() {
+    if (!userLooksHint) return;
+    if (!UserPresets) {
+      userLooksHint.textContent = '';
+      return;
+    }
+    const n = UserPresets.list().length;
+    userLooksHint.textContent =
+      n === 0 ? 'On this device only' : n + ' saved · this device';
+  }
+
   function buildPresetCards() {
     if (!presetLooksEl || !Looks || !Looks.PRESETS) return;
     const cat = state.ui.presetCategory || 'all';
+    presetLooksEl.innerHTML = '';
+
+    // ——— Mine (user looks) ———
+    if (cat === 'mine') {
+      const mine = UserPresets ? UserPresets.list() : [];
+      if (!mine.length) {
+        const empty = document.createElement('p');
+        empty.className = 'preset-hint';
+        empty.style.padding = '12px 8px';
+        empty.textContent = 'No saved looks yet · edit a photo, then Save look';
+        presetLooksEl.appendChild(empty);
+        return;
+      }
+      mine.forEach((item) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className =
+          'preset-card user-look' +
+          (item.id === state.userLookId ? ' active' : '');
+        btn.dataset.id = item.id;
+        btn.title = item.name;
+        btn.innerHTML =
+          '<span class="preset-swatch"></span>' +
+          '<span class="preset-card-name"></span>' +
+          '<span class="preset-card-recipe">Saved look</span>' +
+          '<span class="preset-delete" data-del="' +
+          item.id +
+          '" title="Delete" aria-label="Delete">×</span>';
+        btn.querySelector('.preset-card-name').textContent = item.name;
+        btn.addEventListener('click', (ev) => {
+          if (ev.target.closest('.preset-delete')) {
+            deleteUserLook(item.id, ev);
+            return;
+          }
+          applyUserLook(item.id);
+        });
+        presetLooksEl.appendChild(btn);
+      });
+      return;
+    }
+
+    // ——— Curated ———
     const list =
       Looks.presetsByCategory
         ? Looks.presetsByCategory(cat)
-        : Looks.PRESETS.filter((p) => cat === 'all' || p.category === cat || p.id === 'none');
+        : Looks.PRESETS.filter(
+            (p) => cat === 'all' || p.category === cat || p.id === 'none'
+          );
 
-    presetLooksEl.innerHTML = '';
     list.forEach((p) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className =
-        'preset-card' + (p.id === (state.look.preset || 'none') ? ' active' : '');
+        'preset-card' +
+        (p.id === (state.look.preset || 'none') && !state.userLookId
+          ? ' active'
+          : '');
       btn.dataset.id = p.id;
       btn.title = (p.desc || p.name) + (p.recipe ? ' · ' + p.recipe : '');
       btn.innerHTML =
@@ -1795,7 +1960,11 @@
         '</span>';
       btn.addEventListener('click', () => {
         pushHistory();
-        applyPreset(p.id, state.look.presetIntensity != null ? state.look.presetIntensity : 100);
+        state.userLookId = null;
+        applyPreset(
+          p.id,
+          state.look.presetIntensity != null ? state.look.presetIntensity : 100
+        );
         pushHistory();
         hapticLight();
         if (p.id !== 'none') showToast(p.name, 900);
@@ -3208,6 +3377,7 @@
     if (!state.exporting) btnDownload.disabled = !enabled;
     if (btnReset) btnReset.disabled = !enabled;
     if (btnClose) btnClose.disabled = !enabled;
+    if (btnSaveLook) btnSaveLook.disabled = !enabled;
     if (!enabled) {
       setHistoVisible(false);
       if (enhanceBar) enhanceBar.hidden = true;
@@ -3539,6 +3709,10 @@
     });
   }
 
+  if (btnSaveLook) {
+    btnSaveLook.addEventListener('click', () => saveCurrentLook());
+  }
+
   btnUpload.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', (e) => {
     if (e.target.files[0]) loadImage(e.target.files[0]);
@@ -3848,6 +4022,7 @@
 
   // Init
   buildLookCards();
+  updateUserLooksHint();
   const apInit = apertureFromSlider(55);
   state.optics.apertureStrength = apInit.strength;
   if (dock) dock.hidden = true;

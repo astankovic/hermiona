@@ -18,6 +18,7 @@ var PRECACHE = [
   "./js/imperfections.js",
   "./js/histogram.js",
   "./js/auto.js",
+  "./js/user-presets.js",
   "./js/errors.js",
   "./js/pwa.js",
   "./js/scene/depth-pseudo.js",

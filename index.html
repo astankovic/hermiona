@@ -21,7 +21,7 @@
         if (p.has("fresh") || p.get("nocache") === "1") return String(Date.now());
         if (p.get("v")) return p.get("v");
       } catch (e) {}
-      return "202608020500"; // ← bump this when you push JS/CSS changes
+      return "202608020530"; // ← bump this when you push JS/CSS changes
     })();
     document.write(
       '<link rel="stylesheet" href="styles.css?v=' +
@@ -213,8 +213,14 @@
             <button type="button" class="seg-btn" data-looks="lens">Lens</button>
           </div>
 
-          <!-- Curated recipes -->
+          <!-- Curated recipes + user saved looks -->
           <div class="presets-pane" id="presetsPane">
+            <div class="user-looks-bar" id="userLooksBar">
+              <button type="button" class="btn-pill sm" id="btnSaveLook" disabled>
+                Save look
+              </button>
+              <span class="user-looks-hint" id="userLooksHint">On this device only</span>
+            </div>
             <div class="preset-cats" id="presetCats" role="tablist" aria-label="Categories"></div>
             <div class="preset-scroll" id="presetLooks"></div>
             <p class="preset-hint" id="presetHint">Ready looks · film + camera + lens</p>
@@ -472,6 +478,7 @@
         "js/imperfections.js",
         "js/histogram.js",
         "js/auto.js",
+        "js/user-presets.js",
         "js/scene/depth-pseudo.js",
         "js/scene/coc.js",
         "js/scene/bokeh.js",

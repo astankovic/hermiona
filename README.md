@@ -9,7 +9,7 @@ Runs as a **single-page** app and hosts cleanly on **GitHub Pages**.
 - **Light**: Exposure, Contrast, Highlights, Shadows, Whites, Blacks
 - **Color**: Temperature, Tint, Saturation, Vibrance
 - **Effects**: Clarity, Sharpen, Vignette, Grain
-- **Presets**: ready looks (Portra, Cinestill, HP5, Lomo, Holga…) = film + camera + lens + grade
+- **Presets**: ready looks (Portra, Cinestill, HP5, Lomo, Holga…) + **Save look** (Mine, this device only)
 - **Age**: analog imperfections — soft corners, light leak, dust, scratches, film gate, barrel, CA, ghost, stains, Polaroid border, date stamp, halation
 - **Crop**: 90° rotate, flip, straighten
 - Before / After compare (hold photo or Space)

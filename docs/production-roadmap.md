@@ -210,8 +210,8 @@ Tap again to off. Manual dial on those params clears active mode. Film/looks unt
 ## P1-LOCAL — Linear + radial masks *(later, still simple)*
 One mask system with minimal controls — only if needed after wand + dials.
 
-## P1-PRESET — User presets
-Serialize params + look to JSON; localStorage; import/export file.
+## P1-PRESET — User presets *(shipped)*
+**Save look** in Presets tab → **Mine** category. localStorage, on-device only. Apply + delete.
 
 ## P1-META — EXIF preserve
 On export JPEG, preserve orientation-safe metadata where possible.
@@ -251,7 +251,8 @@ On export JPEG, preserve orientation-safe metadata where possible.
 [x] production-roadmap.md
 [x] P0-PWA / HIST / SAFE / TEST / TRUST
 [x] P1-WAND     — Auto · Soft · Vivid one-tap enhance
-[ ] P1-PRESET / META / optional LOCAL
+[x] P1-PRESET   — Save look / Mine (localStorage)
+[ ] P1-META / optional LOCAL
 ```
 
 *When a ticket lands, check it here and in git commit message (`P0-HIST: …`).*
