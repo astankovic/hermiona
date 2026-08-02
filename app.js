@@ -4444,6 +4444,9 @@
     }
     chromeState.hidden = !!hidden;
     document.body.classList.toggle('chrome-hidden', chromeState.hidden);
+    // Hard-hide panel stack (more reliable than max-height alone on iOS)
+    const bodyEl = document.getElementById('dockBody');
+    if (bodyEl) bodyEl.hidden = chromeState.hidden;
     const handle = document.getElementById('dockHandleHit');
     if (handle) {
       const open = !chromeState.hidden;
@@ -4515,18 +4518,40 @@
   bindChromeGestures();
   bindAccordions();
 
+  // ========== VIEWPORT HEIGHT (iOS Safari dynamic chrome) ==========
+  function syncVisualViewportHeight() {
+    const vv = window.visualViewport;
+    // Prefer visualViewport — matches what the user actually sees on iPhone Safari
+    const h = vv && vv.height ? vv.height : window.innerHeight || 0;
+    if (h > 0) {
+      document.documentElement.style.setProperty('--vvh', h + 'px');
+    }
+    if (vv) {
+      // Offset when Safari shifts the layout during scroll/keyboard
+      document.documentElement.style.setProperty('--vv-offset-top', (vv.offsetTop || 0) + 'px');
+    }
+  }
+  syncVisualViewportHeight();
+  window.addEventListener('resize', syncVisualViewportHeight);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', syncVisualViewportHeight);
+    window.visualViewport.addEventListener('scroll', syncVisualViewportHeight);
+  }
+
   // ========== RESPONSIVE LAYOUT (portrait bottom dock · landscape/desktop side dock) ==========
   function updateLayoutMode() {
+    syncVisualViewportHeight();
     const w = window.innerWidth || document.documentElement.clientWidth || 0;
     const h = window.innerHeight || document.documentElement.clientHeight || 0;
     const landscape = w > h;
-    // Side panel: desktop/tablet, or landscape with enough height to not crush the photo
+    // Phones (short edge < 500 or long edge < 900) always use bottom overlay dock.
+    // Previous rules (landscape && w>=780 && h>=360) wrongly put iPhone landscape into side layout.
+    const isPhone = Math.min(w, h) < 500 || Math.max(w, h) < 900;
     const side =
-      (w >= 860 && h >= 500) ||
-      (landscape && w >= 700 && h >= 420) ||
-      (landscape && w >= 780 && h >= 360);
+      !isPhone &&
+      ((w >= 900 && h >= 560) || (landscape && w >= 1000 && h >= 600));
     // Compact chrome when height is tight (phone landscape)
-    const compact = h > 0 && h < 500 && (landscape || w < 860);
+    const compact = h > 0 && h < 500;
 
     document.body.classList.toggle('layout-side', side);
     document.body.classList.toggle('layout-compact', compact);

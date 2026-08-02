@@ -87,11 +87,13 @@ button, input {
 #app {
   display: flex;
   flex-direction: column;
+  /* --vvh set by JS from visualViewport (critical on iPhone Safari) */
   height: 100%;
   height: 100dvh;
+  height: var(--vvh, 100dvh);
+  max-height: 100%;
   max-height: 100dvh;
-  /* iOS fill when dvh is flaky */
-  max-height: -webkit-fill-available;
+  max-height: var(--vvh, 100dvh);
   background: var(--bg);
   overflow: hidden;
   min-height: 0;
@@ -272,11 +274,11 @@ body:not(.layout-side) .dock {
     0 -8px 32px rgba(0, 0, 0, 0.5),
     0 -1px 0 rgba(255, 255, 255, 0.06);
   background: rgba(12, 12, 14, 0.92);
-  /* Cap so photo stays visible; home indicator sits in padding-bottom */
-  max-height: min(62dvh, 480px);
+  /* Cap relative to visible viewport (not layout viewport / address bar) */
+  max-height: min(58dvh, calc(var(--vvh, 100dvh) * 0.58), 480px);
   overflow: hidden;
   transform: none;
-  padding-bottom: max(var(--safe-bottom), 8px);
+  padding-bottom: max(var(--safe-bottom), 10px);
   transition:
     box-shadow 0.28s var(--ease-out),
     background 0.28s ease;
@@ -302,18 +304,18 @@ body.chrome-hidden:not(.layout-side) .dock {
   max-height: none;
 }
 
-body.chrome-hidden:not(.layout-side) .dock-body {
+/* JS also sets dockBody.hidden — display:none is the reliable collapse on iOS */
+body.chrome-hidden:not(.layout-side) .dock-body,
+.dock-body[hidden] {
+  display: none !important;
   max-height: 0 !important;
   min-height: 0 !important;
   flex: 0 0 0 !important;
-  opacity: 0;
-  overflow: hidden !important;
-  pointer-events: none;
-  visibility: hidden;
   margin: 0 !important;
   padding: 0 !important;
   border: none;
-  transition: max-height 0.22s var(--ease-out), opacity 0.12s ease;
+  overflow: hidden !important;
+  pointer-events: none;
 }
 
 /* Main tool menu always visible & interactive when collapsed */
@@ -1346,7 +1348,7 @@ body:not(.layout-side) .look-chip {
   display: none !important;
 }
 
-/* Chevron-only collapse control (no label text) */
+/* Chevron-only collapse control (no label text) — large hit target for thumbs */
 .dock-handle-hit {
   flex: 0 0 auto;
   flex-shrink: 0;
@@ -1354,11 +1356,11 @@ body:not(.layout-side) .look-chip {
   align-items: center;
   justify-content: center;
   margin: 0;
-  padding: 8px 20px 4px;
-  min-height: 32px;
+  padding: 10px 24px 6px;
+  min-height: 40px;
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
   touch-action: manipulation;
   user-select: none;
@@ -1367,6 +1369,8 @@ body:not(.layout-side) .look-chip {
   width: 100%;
   appearance: none;
   -webkit-appearance: none;
+  position: relative;
+  z-index: 5;
 }
 
 .dock-handle-hit:active {
