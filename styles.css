@@ -37,6 +37,12 @@
     'Inter', system-ui, sans-serif;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.2, 0.64, 1);
+  --ease-cinematic: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 0.18s;
+  --dur-med: 0.36s;
+  --dur-slow: 0.55s;
+  --dur-epic: 0.72s;
   --blur: saturate(180%) blur(24px);
   --shadow-sheet: 0 -8px 40px rgba(0, 0, 0, 0.55);
 }
@@ -514,7 +520,7 @@ body:not(.layout-side) .zoom-hud {
   height: auto;
   max-width: none;
   max-height: none;
-  border-radius: 0;
+  border-radius: 2px;
   box-shadow: 0 0 0 0 transparent;
   touch-action: none;
   transform: translateZ(0);
@@ -524,6 +530,16 @@ body:not(.layout-side) .zoom-hud {
 
 #mainCanvas.visible {
   display: block;
+}
+
+/* Photo settles into the stage (triggered via body.is-entering) */
+body.is-entering #mainCanvas.visible {
+  animation: photoReveal var(--dur-epic) var(--ease-cinematic) both;
+}
+
+body.layout-side.is-entering #mainCanvas.visible {
+  animation-name: photoRevealSide;
+  animation-duration: 0.65s;
 }
 
 /* Studio crop mode — dimmer stage, more room for tools */
@@ -563,16 +579,23 @@ body:not(.layout-side) .zoom-hud {
   align-items: center;
   justify-content: center;
   z-index: 10;
-  transition: opacity 0.28s var(--ease-out), visibility 0.28s;
+  transition:
+    opacity var(--dur-slow) var(--ease-cinematic),
+    visibility var(--dur-slow),
+    transform var(--dur-epic) var(--ease-cinematic),
+    filter var(--dur-slow) var(--ease-soft);
   background:
     radial-gradient(ellipse at 50% 36%, rgba(245, 245, 242, 0.04) 0%, transparent 55%),
     radial-gradient(ellipse at 50% 100%, rgba(255, 214, 10, 0.03) 0%, transparent 42%);
+  will-change: opacity, transform;
 }
 
 .drop-overlay.hidden {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+  transform: scale(1.035);
+  filter: blur(10px);
 }
 
 .drop-content {
@@ -894,9 +917,11 @@ body:not(.layout-side) .look-chip {
   flex-direction: column;
   min-height: 0;
   transition:
-    max-height 0.32s var(--ease-out),
-    box-shadow 0.28s var(--ease-out),
-    background 0.28s ease;
+    max-height 0.38s var(--ease-cinematic),
+    box-shadow 0.32s var(--ease-out),
+    background 0.32s ease,
+    transform 0.45s var(--ease-cinematic),
+    opacity 0.35s var(--ease-soft);
 }
 
 .dock[hidden] {
@@ -2104,7 +2129,12 @@ body.layout-compact .preset-scroll {
   color: var(--text-tertiary);
   cursor: pointer;
   padding: 6px 4px;
-  transition: color 0.15s, transform 0.12s var(--ease-spring);
+  position: relative;
+  border-radius: 12px;
+  transition:
+    color 0.22s var(--ease-soft),
+    transform 0.18s var(--ease-spring),
+    background 0.22s var(--ease-soft);
 }
 
 .tool-btn span {
@@ -2259,6 +2289,12 @@ body.layout-compact .preset-scroll {
 
 .tool-btn.active {
   color: var(--accent);
+  background: rgba(255, 214, 10, 0.08);
+}
+
+.tool-btn.active svg {
+  filter: drop-shadow(0 0 6px rgba(255, 214, 10, 0.35));
+  transition: filter 0.28s var(--ease-out);
 }
 
 .tool-btn.has-edits:not(.active) {
@@ -2272,6 +2308,7 @@ body.layout-compact .preset-scroll {
   border-radius: 50%;
   background: var(--accent);
   margin-top: -1px;
+  box-shadow: 0 0 6px rgba(255, 214, 10, 0.55);
 }
 
 /* ========== CROP OVERLAY ========== */
@@ -2785,14 +2822,14 @@ body.layout-compact .zoom-btn.zoom-label {
   outline-offset: -2px;
 }
 
-/* Animations */
+/* ========== MOTION SYSTEM ========== */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
 @keyframes dockIn {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -2808,6 +2845,386 @@ body.layout-compact .zoom-btn.zoom-label {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Hero boot — Iris finds focus */
+@keyframes heroMarkIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes heroInviteIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroPrintIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Photo into the void */
+@keyframes photoReveal {
+  0% {
+    opacity: 0;
+    transform: scale(1.045);
+    filter: brightness(0.55) saturate(0.85);
+  }
+  55% {
+    opacity: 1;
+    filter: brightness(1.04) saturate(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1) saturate(1);
+  }
+}
+
+@keyframes photoRevealSide {
+  0% {
+    opacity: 0;
+    transform: scale(1.03) translateX(-10px);
+    filter: brightness(0.6);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+    filter: brightness(1);
+  }
+}
+
+@keyframes photoOut {
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+    filter: brightness(0.5) blur(4px);
+  }
+}
+
+/* Mobile dock rises; desktop slides in from the side */
+@keyframes dockRise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 28%, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes dockSink {
+  to {
+    opacity: 0;
+    transform: translate3d(0, 22%, 0);
+  }
+}
+
+@keyframes dockSlideIn {
+  from {
+    opacity: 0;
+    transform: translate3d(18px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes dockSlideOut {
+  to {
+    opacity: 0;
+    transform: translate3d(24px, 0, 0);
+  }
+}
+
+@keyframes chromeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes chromeOut {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes panelEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes chipPop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes railBtnIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes zoomHudIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* —— Hero ready (boot / return) —— */
+body.hero-ready .drop-mark {
+  animation: heroMarkIn 0.75s var(--ease-cinematic) both;
+}
+
+body.hero-ready .drop-invite {
+  animation: heroInviteIn 0.6s 0.12s var(--ease-cinematic) both;
+}
+
+body.hero-ready .fine-print {
+  animation: heroPrintIn 0.5s 0.32s var(--ease-soft) both;
+}
+
+body.hero-ready .draft-resume:not([hidden]) {
+  animation: heroInviteIn 0.5s 0.2s var(--ease-cinematic) both;
+}
+
+/* —— Enter editor —— */
+body.is-entering:not(.layout-side) .dock:not([hidden]) {
+  animation: dockRise 0.7s var(--ease-cinematic) both;
+}
+
+body.is-entering.layout-side .dock:not([hidden]) {
+  animation: dockSlideIn 0.6s 0.06s var(--ease-cinematic) both;
+}
+
+body.is-entering .topbar-left,
+body.is-entering .topbar-right {
+  animation: chromeIn 0.5s var(--ease-cinematic) both;
+}
+
+body.is-entering .topbar-left {
+  animation-delay: 0.1s;
+}
+
+body.is-entering .topbar-right {
+  animation-delay: 0.16s;
+}
+
+body.is-entering.layout-side .topbar {
+  animation: chromeIn 0.45s var(--ease-cinematic) both;
+}
+
+body.is-entering .tool-btn {
+  animation: railBtnIn 0.42s var(--ease-cinematic) both;
+}
+
+body.is-entering .tool-btn:nth-child(1) { animation-delay: 0.22s; }
+body.is-entering .tool-btn:nth-child(2) { animation-delay: 0.26s; }
+body.is-entering .tool-btn:nth-child(3) { animation-delay: 0.3s; }
+body.is-entering .tool-btn:nth-child(4) { animation-delay: 0.34s; }
+body.is-entering .tool-btn:nth-child(5) { animation-delay: 0.38s; }
+body.is-entering .tool-btn:nth-child(6) { animation-delay: 0.42s; }
+body.is-entering .tool-btn:nth-child(7) { animation-delay: 0.46s; }
+
+body.is-entering .zoom-hud:not([hidden]) {
+  animation: zoomHudIn 0.45s 0.35s var(--ease-cinematic) both;
+}
+
+body.is-entering .dock-body {
+  animation: panelEnter 0.48s 0.28s var(--ease-cinematic) both;
+}
+
+/* —— Exit editor → hero —— */
+body.is-exiting:not(.layout-side) .dock:not([hidden]) {
+  animation: dockSink 0.4s var(--ease-soft) forwards;
+  pointer-events: none;
+}
+
+body.is-exiting.layout-side .dock:not([hidden]) {
+  animation: dockSlideOut 0.38s var(--ease-soft) forwards;
+  pointer-events: none;
+}
+
+body.is-exiting .topbar-left,
+body.is-exiting .topbar-right {
+  animation: chromeOut 0.32s var(--ease-soft) forwards;
+  pointer-events: none;
+}
+
+body.is-exiting #mainCanvas.visible {
+  animation: photoOut 0.4s var(--ease-soft) forwards;
+}
+
+body.is-exiting .zoom-hud {
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+/* —— Tool / panel switch —— */
+.dock-body.is-panel-enter > .dial-row:not([hidden]),
+.dock-body.is-panel-enter > .chips-scroll:not([hidden]),
+.dock-body.is-panel-enter > .subpanel:not([hidden]),
+.dock-body.is-panel-enter > .enhance-bar:not([hidden]) {
+  animation: panelEnter 0.38s var(--ease-cinematic) both;
+}
+
+.dock-body.is-panel-enter .chip {
+  animation: chipPop 0.4s var(--ease-spring) both;
+}
+
+.dock-body.is-panel-enter .chip:nth-child(1) { animation-delay: 0.02s; }
+.dock-body.is-panel-enter .chip:nth-child(2) { animation-delay: 0.04s; }
+.dock-body.is-panel-enter .chip:nth-child(3) { animation-delay: 0.06s; }
+.dock-body.is-panel-enter .chip:nth-child(4) { animation-delay: 0.08s; }
+.dock-body.is-panel-enter .chip:nth-child(5) { animation-delay: 0.1s; }
+.dock-body.is-panel-enter .chip:nth-child(6) { animation-delay: 0.12s; }
+.dock-body.is-panel-enter .chip:nth-child(7) { animation-delay: 0.14s; }
+.dock-body.is-panel-enter .chip:nth-child(8) { animation-delay: 0.16s; }
+.dock-body.is-panel-enter .chip:nth-child(9) { animation-delay: 0.18s; }
+.dock-body.is-panel-enter .chip:nth-child(10) { animation-delay: 0.2s; }
+.dock-body.is-panel-enter .chip:nth-child(n + 11) { animation-delay: 0.22s; }
+
+.dock-body.is-panel-enter .preset-card,
+.dock-body.is-panel-enter .look-card,
+.dock-body.is-panel-enter .ratio-chip,
+.dock-body.is-panel-enter .frame-chip,
+.dock-body.is-panel-enter .seg-btn {
+  animation: chipPop 0.36s var(--ease-spring) both;
+}
+
+.dock-body.is-panel-enter .preset-card:nth-child(1),
+.dock-body.is-panel-enter .look-card:nth-child(1) { animation-delay: 0.03s; }
+.dock-body.is-panel-enter .preset-card:nth-child(2),
+.dock-body.is-panel-enter .look-card:nth-child(2) { animation-delay: 0.06s; }
+.dock-body.is-panel-enter .preset-card:nth-child(3),
+.dock-body.is-panel-enter .look-card:nth-child(3) { animation-delay: 0.09s; }
+.dock-body.is-panel-enter .preset-card:nth-child(4),
+.dock-body.is-panel-enter .look-card:nth-child(4) { animation-delay: 0.12s; }
+.dock-body.is-panel-enter .preset-card:nth-child(n + 5),
+.dock-body.is-panel-enter .look-card:nth-child(n + 5) { animation-delay: 0.15s; }
+
+/* Dial value tick */
+.dial-value {
+  transition: color 0.2s, transform 0.2s var(--ease-spring);
+}
+
+.dial-value.is-ticking {
+  transform: scale(1.08);
+  color: var(--accent);
+}
+
+/* Topbar idle ↔ editor */
+body.has-image .topbar-left,
+body.has-image .topbar-right {
+  transition:
+    opacity 0.4s var(--ease-cinematic),
+    visibility 0.4s,
+    transform 0.45s var(--ease-cinematic);
+}
+
+body:not(.layout-side).has-image .topbar {
+  transition:
+    background 0.4s var(--ease-soft),
+    border-color 0.4s,
+    opacity 0.35s;
+}
+
+/* Sheet polish */
+.sheet-backdrop {
+  transition: opacity 0.32s var(--ease-soft);
+}
+
+.sheet {
+  transition: transform 0.42s var(--ease-cinematic);
+}
+
+/* Busy — softer */
+.busy-overlay {
+  animation: fadeIn 0.28s var(--ease-soft);
+}
+
+.busy-card {
+  animation: heroInviteIn 0.35s var(--ease-cinematic) both;
+}
+
+/* Drag over pulse */
+.canvas-area.drag-over {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  transition: outline-color 0.2s;
+  animation: dragPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes dragPulse {
+  0%, 100% { outline-color: rgba(255, 214, 10, 0.55); }
+  50% { outline-color: rgba(255, 214, 10, 1); }
+}
+
+/* Reduced motion — keep usable, drop the spectacle */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .drop-overlay.hidden {
+    transform: none;
+    filter: none;
+  }
+
+  body.is-entering #mainCanvas.visible,
+  body.is-entering:not(.layout-side) .dock:not([hidden]),
+  body.is-entering.layout-side .dock:not([hidden]) {
+    animation: fadeIn 0.2s ease both !important;
+  }
 }
 
 /* ========== LAYOUT: SIDE DOCK (wide / landscape desktop-tablet) ==========
@@ -2948,26 +3365,71 @@ body.layout-side .dial-row {
   flex-shrink: 0;
 }
 
+/* Keep name + value visible — never clip under overflow */
+body.layout-side .dial-meta {
+  flex-shrink: 0;
+  min-height: 24px;
+}
+
+body.layout-side .dial-name {
+  color: rgba(245, 245, 242, 0.78);
+}
+
+body.layout-side .dial-value {
+  color: var(--accent);
+}
+
 body.layout-side .chips-scroll {
   flex-shrink: 0;
-  padding: 4px 12px 12px;
+  padding: 4px 12px 14px;
+  /* wrap needs both axes visible or second chip row is clipped */
   overflow-x: visible;
+  overflow-y: visible;
 }
 
 body.layout-side .chips {
   flex-wrap: wrap;
   width: 100%;
-  justify-content: center;
-  gap: 10px 12px;
-  padding: 2px 0;
+  justify-content: flex-start;
+  gap: 12px 10px;
+  padding: 4px 0 6px;
+  /* override max-content so wrap works in the side column */
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+body.layout-side .chip {
+  min-width: 52px;
+  flex: 0 0 auto;
 }
 
 body.layout-side .subpanel {
   max-height: none;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
+  overflow: visible;
+  padding: 10px 14px 8px;
+}
+
+/* Portrait panel sits first in DOM — keep it compact & always fully readable */
+body.layout-side .dock[data-tool="portrait"] #panelPortrait {
+  flex: 0 0 auto;
+  border-bottom: 0.5px solid var(--separator);
+  margin-bottom: 2px;
+  padding-bottom: 10px;
+}
+
+body.layout-side .dock[data-tool="portrait"] .dock-body {
+  /* ensure scroll starts at top; body can scroll for chips */
   overflow-y: auto;
-  padding: 12px 14px 10px;
+}
+
+body.layout-side .focal-scroll,
+body.layout-side .bokeh-scroll {
+  flex-wrap: wrap;
+  overflow-x: visible;
+  gap: 6px;
+  max-width: 100%;
 }
 
 body.layout-side .look-scroll {

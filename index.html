@@ -21,7 +21,7 @@
         if (p.has("fresh") || p.get("nocache") === "1") return String(Date.now());
         if (p.get("v")) return p.get("v");
       } catch (e) {}
-      return "202608020710"; // ← bump this when you push JS/CSS changes
+      return "202608020730"; // ← bump this when you push JS/CSS changes
     })();
     document.write(
       '<link rel="stylesheet" href="styles.css?v=' +
@@ -198,6 +198,66 @@
           <button type="button" class="enhance-btn" data-enhance="vivid" title="Vivid optimize">Vivid</button>
         </div>
 
+        <!-- Portrait / scene first so Analyze · DoF stay visible (esp. desktop side dock) -->
+        <div class="subpanel subpanel-compact" id="panelPortrait" hidden>
+          <div class="acc-group open" data-acc="dof">
+            <button type="button" class="acc-head" data-acc-toggle="dof">
+              <span>Depth of field</span>
+              <span class="acc-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="acc-body">
+              <p class="scene-status" id="sceneStatus">Load a photo</p>
+              <div class="portrait-actions">
+                <button type="button" class="btn-pill sm" id="btnSceneAnalyze" disabled>
+                  <span class="btn-spinner" hidden aria-hidden="true"></span>
+                  <span class="btn-label">Analyze</span>
+                </button>
+                <label class="ios-switch">
+                  <input type="checkbox" id="opticsEnabled" />
+                  <span class="ios-switch-ui"></span>
+                  <span class="ios-switch-label">DoF</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="acc-group open" data-acc="optics">
+            <button type="button" class="acc-head" data-acc-toggle="optics">
+              <span>Lens &amp; bokeh</span>
+              <span class="acc-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="acc-body">
+              <div class="focal-scroll" id="focalRecipeGrid">
+                <button type="button" class="ratio-chip" data-focal="35">35mm</button>
+                <button type="button" class="ratio-chip active" data-focal="50">50mm</button>
+                <button type="button" class="ratio-chip" data-focal="85">85mm</button>
+                <button type="button" class="ratio-chip" data-focal="anamo">Anamo</button>
+              </div>
+              <div class="bokeh-scroll" id="bokehShapeGrid">
+                <button type="button" class="ratio-chip active" data-bokeh="auto">Auto</button>
+                <button type="button" class="ratio-chip" data-bokeh="circle">Circle</button>
+                <button type="button" class="ratio-chip" data-bokeh="hex">Hex</button>
+                <button type="button" class="ratio-chip" data-bokeh="anamorphic">Anamo</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="acc-group" data-acc="debug">
+            <button type="button" class="acc-head" data-acc-toggle="debug">
+              <span>Debug</span>
+              <span class="acc-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="acc-body">
+              <div class="debug-row compact">
+                <button type="button" class="debug-btn active" data-debug="off">Off</button>
+                <button type="button" class="debug-btn" data-debug="mask">Subj</button>
+                <button type="button" class="debug-btn" data-debug="depth">Depth</button>
+                <button type="button" class="debug-btn" data-debug="coc">CoC</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Active dial row (adjust tools) -->
         <div class="dial-row" id="dialRow" hidden>
           <button type="button" class="dial-reset" id="dialReset" title="Reset to default" hidden>
@@ -323,66 +383,6 @@
           <div class="crop-apply-row">
             <button type="button" class="btn-ghost-wide" id="btnCropReset">Reset</button>
             <button type="button" class="btn-accent-wide" id="btnCropApply">Apply</button>
-          </div>
-        </div>
-
-        <!-- Portrait / scene panel — compact accordion -->
-        <div class="subpanel subpanel-compact" id="panelPortrait" hidden>
-          <div class="acc-group open" data-acc="dof">
-            <button type="button" class="acc-head" data-acc-toggle="dof">
-              <span>Depth of field</span>
-              <span class="acc-chevron" aria-hidden="true"></span>
-            </button>
-            <div class="acc-body">
-              <p class="scene-status" id="sceneStatus">Load a photo</p>
-              <div class="portrait-actions">
-                <button type="button" class="btn-pill sm" id="btnSceneAnalyze" disabled>
-                  <span class="btn-spinner" hidden aria-hidden="true"></span>
-                  <span class="btn-label">Analyze</span>
-                </button>
-                <label class="ios-switch">
-                  <input type="checkbox" id="opticsEnabled" />
-                  <span class="ios-switch-ui"></span>
-                  <span class="ios-switch-label">DoF</span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div class="acc-group" data-acc="optics">
-            <button type="button" class="acc-head" data-acc-toggle="optics">
-              <span>Lens &amp; bokeh</span>
-              <span class="acc-chevron" aria-hidden="true"></span>
-            </button>
-            <div class="acc-body">
-              <div class="focal-scroll" id="focalRecipeGrid">
-                <button type="button" class="ratio-chip" data-focal="35">35mm</button>
-                <button type="button" class="ratio-chip active" data-focal="50">50mm</button>
-                <button type="button" class="ratio-chip" data-focal="85">85mm</button>
-                <button type="button" class="ratio-chip" data-focal="anamo">Anamo</button>
-              </div>
-              <div class="bokeh-scroll" id="bokehShapeGrid">
-                <button type="button" class="ratio-chip active" data-bokeh="auto">Auto</button>
-                <button type="button" class="ratio-chip" data-bokeh="circle">Circle</button>
-                <button type="button" class="ratio-chip" data-bokeh="hex">Hex</button>
-                <button type="button" class="ratio-chip" data-bokeh="anamorphic">Anamo</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="acc-group" data-acc="debug">
-            <button type="button" class="acc-head" data-acc-toggle="debug">
-              <span>Debug</span>
-              <span class="acc-chevron" aria-hidden="true"></span>
-            </button>
-            <div class="acc-body">
-              <div class="debug-row compact">
-                <button type="button" class="debug-btn active" data-debug="off">Off</button>
-                <button type="button" class="debug-btn" data-debug="mask">Subj</button>
-                <button type="button" class="debug-btn" data-debug="depth">Depth</button>
-                <button type="button" class="debug-btn" data-debug="coc">CoC</button>
-              </div>
-            </div>
           </div>
         </div>
       </div>

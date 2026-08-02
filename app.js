@@ -3129,6 +3129,14 @@
     if (panelCrop) panelCrop.hidden = tool !== 'crop';
     if (panelPortrait) panelPortrait.hidden = tool !== 'portrait';
 
+    // Desktop/side dock: always show top of panel (Analyze / dial meta)
+    const dockBodyEl = $('#dockBody');
+    if (dockBodyEl) {
+      requestAnimationFrame(() => {
+        dockBodyEl.scrollTop = 0;
+      });
+    }
+
     // Age: hide long hint on small screens (CSS also hides), scroll chips into view
     if (tool === 'age' && chipsScroll) {
       requestAnimationFrame(() => {
