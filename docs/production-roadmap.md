@@ -198,25 +198,28 @@ Side-by-side working vs export-2048 on 3 test images: no obvious grade shift.
 
 ---
 
-# P1 — Competitive editing floor
+# P1 — Competitive floor (keep UX simple)
 
-## P1-CURVE — Tone curve UI
-Point curve (RGB + luma) or parametric (highs/lights/darks/shadows). Drive engine LUT. Default linear.
+**Product rule:** no curve graphs, no HSL wheels, no pro-panel clutter.  
+Prefer **one-tap optimize** (iPhone Photos wand) + existing simple dials.
 
-## P1-HSL — HSL selective
-8 hue bands: H/S/L sliders. Engine: classify pixels by hue, adjust.
+## P1-WAND — One-tap enhance *(shipped)*
+Dock bar: **Auto · Soft · Vivid**. Analyzes working image → sets light/color params only.  
+Tap again to off. Manual dial on those params clears active mode. Film/looks untouched.
 
-## P1-WB — Eyedropper
-Tap photo → set temp/tint so sample → neutral gray.
-
-## P1-LOCAL — Linear + radial masks
-One mask system: feather, invert, amount; exposure/temp/sat subset. Brush later.
+## P1-LOCAL — Linear + radial masks *(later, still simple)*
+One mask system with minimal controls — only if needed after wand + dials.
 
 ## P1-PRESET — User presets
-Serialize params + look + optics-lite to JSON; localStorage/IDB; import/export file.
+Serialize params + look to JSON; localStorage; import/export file.
 
 ## P1-META — EXIF preserve
-On export JPEG, copy orientation-corrected pixels + preserve copyright/GPS opt-out; use minimal EXIF writer or canvas + piexif-class small lib.
+On export JPEG, preserve orientation-safe metadata where possible.
+
+### Explicitly deferred (not matching product simplicity)
+- Point/parametric **curve UI**
+- **HSL** multi-band panels
+- **WB eyedropper** as primary flow (wand covers mild cast)
 
 ---
 
@@ -246,14 +249,9 @@ On export JPEG, copy orientation-corrected pixels + preserve copyright/GPS opt-o
 
 ```
 [x] production-roadmap.md
-[x] P0-PWA      — manifest + sw.js + js/pwa.js
-[x] P0-HIST     — js/histogram.js + live panel in app
-[x] P0-SAFE     — js/errors.js + export size fallback
-[x] P0-TEST     — tests/ browser smoke suite
-[x] P0-TRUST    — privacy.html + docs/pipeline.md + licenses
-[x] wire + smoke
-[ ] P0-PARITY   — next
-[ ] P1-*        — curves / HSL / local …
+[x] P0-PWA / HIST / SAFE / TEST / TRUST
+[x] P1-WAND     — Auto · Soft · Vivid one-tap enhance
+[ ] P1-PRESET / META / optional LOCAL
 ```
 
 *When a ticket lands, check it here and in git commit message (`P0-HIST: …`).*

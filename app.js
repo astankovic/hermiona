@@ -230,6 +230,8 @@
       flipH: false,
       flipV: false
     },
+    /** One-tap enhance: null | 'auto' | 'soft' | 'vivid' */
+    enhanceMode: null,
     look: {
       film: 'none',
       filmIntensity: 100,
@@ -341,6 +343,7 @@
   const histoCanvas = $('#histoCanvas');
   const histoClipLow = $('#histoClipLow');
   const histoClipHigh = $('#histoClipHigh');
+  const enhanceBar = $('#enhanceBar');
 
   /** Iris + wordmark for idle topbar (must match index.html brand lockup) */
   const BRAND_LOCKUP_HTML =
@@ -582,6 +585,16 @@
 
     if (adj.store === 'params') {
       state.params[adj.id] = val;
+      // Manual tweak clears wand selection (like iOS Photos)
+      const Auto = window.HermionaAuto;
+      if (
+        state.enhanceMode &&
+        Auto &&
+        Auto.PARAM_KEYS &&
+        Auto.PARAM_KEYS.indexOf(adj.id) !== -1
+      ) {
+        clearEnhanceModeFlag();
+      }
     } else if (adj.store === 'look') {
       state.look[adj.id] = val;
       state.lookQuality = 'preview';
@@ -686,6 +699,7 @@
     return {
       params: { ...state.params },
       look: { ...state.look },
+      enhanceMode: state.enhanceMode,
       optics: {
         enabled: state.optics.enabled,
         strength: state.optics.strength,
@@ -714,6 +728,8 @@
     Object.assign(state.params, snap.params);
     Object.assign(state.look, snap.look);
     Object.assign(state.optics, snap.optics);
+    state.enhanceMode =
+      snap.enhanceMode !== undefined ? snap.enhanceMode : null;
     if (snap.crop) {
       state.crop.x = snap.crop.x;
       state.crop.y = snap.crop.y;
@@ -730,6 +746,7 @@
     updateDialUI();
     markChipModified();
     updateToolDots();
+    updateEnhanceBarUI();
     history.lock = false;
     scheduleRender(false);
   }
@@ -801,9 +818,11 @@
         resetCropRect();
         state.scene = null;
         state.optics.focusManual = false;
+        state.enhanceMode = null;
         state.hasImage = true;
         document.body.classList.add('has-image');
         enableControls(true);
+        updateEnhanceBarUI();
         if (btnSceneAnalyze) btnSceneAnalyze.disabled = false;
         if (dock) dock.hidden = false;
         canvas.classList.add('visible');
@@ -1448,6 +1467,63 @@
         if (canvasArea) canvasArea.classList.remove('detail-render');
       }
     }
+  }
+
+  // ========== ONE-TAP ENHANCE (wand) ==========
+  function updateEnhanceBarUI() {
+    if (!enhanceBar) return;
+    enhanceBar.hidden = !state.hasImage;
+    enhanceBar.querySelectorAll('.enhance-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.enhance === state.enhanceMode);
+    });
+  }
+
+  function applyEnhanceMode(modeId) {
+    const Auto = window.HermionaAuto;
+    if (!Auto || !state.originalData) {
+      if (window.HermionaErrors) {
+        window.HermionaErrors.showBanner('Enhance unavailable', { tone: 'info' });
+      }
+      return;
+    }
+
+    // Tap active mode again → off (clear only enhance-owned params)
+    if (state.enhanceMode === modeId) {
+      const cleared = Auto.clearedParams();
+      Object.keys(cleared).forEach((k) => {
+        state.params[k] = cleared[k];
+      });
+      state.enhanceMode = null;
+      updateEnhanceBarUI();
+      updateDialUI();
+      markChipModified();
+      updateToolDots();
+      scheduleHistory();
+      render(false);
+      if (typeof showToast === 'function') showToast('Enhance off');
+      return;
+    }
+
+    const result = Auto.enhance(state.originalData, modeId);
+    Object.keys(result.params).forEach((k) => {
+      state.params[k] = result.params[k];
+    });
+    state.enhanceMode = result.mode;
+    updateEnhanceBarUI();
+    updateDialUI();
+    markChipModified();
+    updateToolDots();
+    scheduleHistory();
+    render(false);
+    if (typeof showToast === 'function') {
+      showToast(result.label + ' enhance');
+    }
+  }
+
+  function clearEnhanceModeFlag() {
+    if (state.enhanceMode == null) return;
+    state.enhanceMode = null;
+    updateEnhanceBarUI();
   }
 
   // ========== HISTOGRAM ==========
@@ -3132,7 +3208,12 @@
     if (!state.exporting) btnDownload.disabled = !enabled;
     if (btnReset) btnReset.disabled = !enabled;
     if (btnClose) btnClose.disabled = !enabled;
-    if (!enabled) setHistoVisible(false);
+    if (!enabled) {
+      setHistoVisible(false);
+      if (enhanceBar) enhanceBar.hidden = true;
+    } else {
+      updateEnhanceBarUI();
+    }
     updateHistoryButtons();
   }
 
@@ -3157,10 +3238,12 @@
       flipV: false
     };
     Object.assign(state.params, defaults);
+    state.enhanceMode = null;
     if (!silent) {
       updateDialUI();
       markChipModified();
       updateToolDots();
+      updateEnhanceBarUI();
     }
   }
 
@@ -3169,6 +3252,8 @@
     pushHistory();
     resetParams(true);
     resetLooks(true);
+    state.enhanceMode = null;
+    updateEnhanceBarUI();
     PRESET_PARAM_KEYS.forEach((k) => {
       state.params[k] = 0;
     });
@@ -3446,6 +3531,14 @@
   }
 
   // ========== ACTIONS ==========
+  if (enhanceBar) {
+    enhanceBar.addEventListener('click', (e) => {
+      const btn = e.target.closest('.enhance-btn');
+      if (!btn || !btn.dataset.enhance) return;
+      applyEnhanceMode(btn.dataset.enhance);
+    });
+  }
+
   btnUpload.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', (e) => {
     if (e.target.files[0]) loadImage(e.target.files[0]);

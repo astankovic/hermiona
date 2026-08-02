@@ -1002,6 +1002,77 @@ body:not(.layout-side) .dock.dock-tall {
     0 -1px 0 rgba(255, 255, 255, 0.07);
 }
 
+/* One-tap enhance (wand) */
+.enhance-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px 2px;
+  animation: dockIn 0.22s var(--ease-out);
+}
+
+.enhance-bar[hidden] {
+  display: none !important;
+}
+
+.enhance-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 14px;
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition:
+    background 0.15s var(--ease-out),
+    color 0.15s,
+    border-color 0.15s,
+    transform 0.12s var(--ease-spring);
+}
+
+.enhance-btn .enhance-wand {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.enhance-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+.enhance-btn:active {
+  transform: scale(0.96);
+}
+
+.enhance-btn.active {
+  background: var(--accent-soft);
+  border-color: rgba(255, 214, 10, 0.45);
+  color: var(--accent);
+}
+
+.enhance-btn.active .enhance-wand {
+  opacity: 1;
+}
+
+body.layout-compact .enhance-bar {
+  padding: 6px 10px 0;
+  gap: 6px;
+}
+
+body.layout-compact .enhance-btn {
+  height: 28px;
+  padding: 0 11px;
+  font-size: 12px;
+}
+
 /* Dial row */
 .dial-row {
   padding: 10px 16px 4px;
