@@ -289,7 +289,7 @@
       frame: 'full', // studio suggestion id
       subject: null // cached bbox {x,y,w,h,cx,cy}
     },
-    /** Print / instant borders (Crop · Borders) — not Age filter */
+    /** Print / instant borders (Border tab) — independent of crop overlay */
     border: {
       id: 'none',
       zoom: 1,
@@ -538,8 +538,10 @@
 
   const panelLooks = $('#panelLooks');
   const panelCrop = $('#panelCrop');
+  const panelBorder = $('#panelBorder');
   const borderFormatScroll = $('#borderFormatScroll');
   const borderFraming = $('#borderFraming');
+  const borderFramingGroup = $('#borderFramingGroup');
   const borderZoom = $('#borderZoom');
   const borderPanX = $('#borderPanX');
   const borderPanY = $('#borderPanY');
@@ -1615,6 +1617,8 @@
       });
     }
     const on = id !== 'none';
+    // Framing controls only when a format is active (and never with crop UI)
+    if (borderFramingGroup) borderFramingGroup.hidden = !on;
     if (borderFraming) borderFraming.hidden = !on;
     if (borderZoom) {
       borderZoom.value = String(Math.round((state.border.zoom || 1) * 100));
@@ -1626,9 +1630,6 @@
       borderPanY.value = String(Math.round((state.border.panY || 0) * 100));
     }
     if (borderZoomVal) {
-      borderZoomVal.textContent =
-        ((state.border.zoom || 1).toFixed(2).replace(/\.?0+$/, '') || '1') + '×';
-      // nicer: 1.00×
       borderZoomVal.textContent = (state.border.zoom || 1).toFixed(2) + '×';
     }
     if (borderPanXVal) {
@@ -1641,6 +1642,9 @@
 
   function setBorderFormat(id) {
     if (!state.border) state.border = { id: 'none', zoom: 1, panX: 0, panY: 0 };
+    // Never couple to crop overlay / aspect
+    if (state.crop && state.crop.active) setCropMode(false);
+
     const prev = state.border.id;
     state.border.id = id || 'none';
     if (state.border.id === 'none') {
@@ -1648,10 +1652,11 @@
       state.border.panX = 0;
       state.border.panY = 0;
     } else if (prev === 'none') {
-      // sensible start: slight zoom so pan has room
-      state.border.zoom = 1.05;
+      state.border.zoom = 1.08;
+      state.border.panX = 0;
+      state.border.panY = 0;
     }
-    // Border framing uses its own window — not Age filter
+    // Legacy Age polaroid border filter stays off
     if (state.look && state.look.imperf) state.look.imperf.border = 0;
     syncBorderUI();
     scheduleHistoryPush();
@@ -3415,7 +3420,11 @@
     if (dock) {
       dock.classList.toggle(
         'dock-tall',
-        tool === 'looks' || tool === 'age' || tool === 'crop' || tool === 'portrait'
+        tool === 'looks' ||
+          tool === 'age' ||
+          tool === 'crop' ||
+          tool === 'border' ||
+          tool === 'portrait'
       );
       dock.dataset.tool = tool || '';
       // Keep active tool rail button visible on narrow screens
@@ -3437,12 +3446,14 @@
       tool === 'effects' ||
       tool === 'portrait' ||
       tool === 'age';
+    // Border has its own panel (no dial row / no crop handles)
     const showDial = isAdj || tool === 'crop';
 
     if (dialRow) dialRow.hidden = !showDial;
     if (chipsScroll) chipsScroll.hidden = !showDial;
     if (panelLooks) panelLooks.hidden = tool !== 'looks';
     if (panelCrop) panelCrop.hidden = tool !== 'crop';
+    if (panelBorder) panelBorder.hidden = tool !== 'border';
     if (panelPortrait) panelPortrait.hidden = tool !== 'portrait';
 
     // Desktop/side dock: always show top of panel (Analyze / dial meta)
@@ -3466,7 +3477,15 @@
       });
     }
 
+    // Crop overlay ONLY on Crop tab — never on Border
     setCropMode(tool === 'crop');
+
+    if (tool === 'border') {
+      syncBorderUI();
+      // Ensure no crop handles linger
+      if (cropLayer) cropLayer.hidden = true;
+      if (canvasArea) canvasArea.classList.remove('crop-mode');
+    }
 
     if (showDial) {
       // When opening Age, surface current camera-baked values in dials
@@ -3492,6 +3511,7 @@
         age: 'Age / analog',
         looks: 'Presets',
         crop: 'Crop',
+        border: 'Border',
         portrait: 'Portrait'
       };
       if (state.hasImage) {

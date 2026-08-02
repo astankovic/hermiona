@@ -12,7 +12,8 @@ Runs as a **single-page** app and hosts cleanly on **GitHub Pages**.
 - **Effects**: Clarity, Sharpen, Vignette, Grain
 - **Presets**: ready looks (Portra, Cinestill, HP5, Lomo, Holga…) + **Save look** (Mine, this device only)
 - **Age**: analog imperfections — soft corners, light leak, dust, scratches, film gate, barrel, CA, ghost, stains, Polaroid border, date stamp, halation
-- **Crop**: 90° rotate, flip, straighten · **Borders** (Polaroid, Instax, mats) with zoom/pan
+- **Crop**: 90° rotate, flip, straighten
+- **Border**: Polaroid / Instax / mats · zoom & pan inside the frame (separate from crop)
 - Before / After compare (hold photo or Space)
 - Drag & drop + tap to upload
 - Fully responsive and **mobile-friendly**
