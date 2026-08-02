@@ -1222,7 +1222,12 @@ body.hero-ready .hero-slot--foot  { animation-delay: 1.28s; }  /* quiet legal la
   display: none !important;
 }
 
-/* Live histogram + clip stats (stage overlay; toggled by app.js) */
+/* Optional histogram (off by default; toggle in zoom HUD) */
+.zoom-btn.active {
+  color: var(--accent);
+  background: rgba(255, 214, 10, 0.14);
+}
+
 .histo-panel {
   position: absolute;
   left: 12px;

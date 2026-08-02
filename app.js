@@ -320,7 +320,9 @@
       looksTab: 'presets',
       presetCategory: 'all',
       scrubbing: false,
-      comparing: false
+      comparing: false,
+      /** Optional live histogram overlay (off by default) */
+      showHistogram: false
     },
     isComparing: false,
     hasImage: false,
@@ -364,6 +366,7 @@
   const histoCanvas = $('#histoCanvas');
   const histoClipLow = $('#histoClipLow');
   const histoClipHigh = $('#histoClipHigh');
+  const btnHistoToggle = $('#btnHistoToggle');
   const enhanceBar = $('#enhanceBar');
   const btnSaveLook = $('#btnSaveLook');
   const userLooksHint = $('#userLooksHint');
@@ -1515,6 +1518,12 @@
     });
   }
   if (btnZoomFit) btnZoomFit.addEventListener('click', () => fitView());
+  if (btnHistoToggle) {
+    btnHistoToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleHistogram();
+    });
+  }
 
   // ========== PIPE CACHE (G1 dirty flags) ==========
   // Snapshot after grade+looks so optics/selective-only changes skip re-looks.
@@ -2039,16 +2048,31 @@
     updateEnhanceBarUI();
   }
 
-  // ========== HISTOGRAM ==========
+  // ========== HISTOGRAM (optional tool — off by default) ==========
   let histoRaf = 0;
   let histoPending = null;
 
+  function syncHistoToggleUI() {
+    const on = !!state.ui.showHistogram;
+    if (btnHistoToggle) {
+      btnHistoToggle.classList.toggle('active', on);
+      btnHistoToggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+    if (!on && histoPanel) histoPanel.hidden = true;
+  }
+
   function setHistoVisible(on) {
     if (!histoPanel) return;
-    histoPanel.hidden = !on;
+    // Only show panel when user opted in AND we have content to draw
+    histoPanel.hidden = !(on && state.ui.showHistogram && state.hasImage);
   }
 
   function scheduleHistogram(imageData) {
+    // Skip work entirely when tool is off
+    if (!state.ui.showHistogram) {
+      if (histoPanel) histoPanel.hidden = true;
+      return;
+    }
     if (!imageData || !window.HermionaHistogram || !histoCanvas) return;
     histoPending = imageData;
     if (histoRaf) return;
@@ -2056,7 +2080,7 @@
       histoRaf = 0;
       const src = histoPending;
       histoPending = null;
-      if (!src || !state.hasImage) return;
+      if (!src || !state.hasImage || !state.ui.showHistogram) return;
       try {
         const H = window.HermionaHistogram;
         const hist = H.compute(src, src.width, src.height, {
@@ -2075,6 +2099,19 @@
         /* non-fatal */
       }
     });
+  }
+
+  function toggleHistogram() {
+    state.ui.showHistogram = !state.ui.showHistogram;
+    syncHistoToggleUI();
+    if (state.ui.showHistogram && state.hasImage) {
+      // Refresh from last process on next render
+      scheduleRender(false);
+      showToast('Histogram on', 800);
+    } else {
+      setHistoVisible(false);
+      showToast('Histogram off', 800);
+    }
   }
 
   function render(fast) {
@@ -3948,10 +3985,13 @@
     if (btnClose) btnClose.disabled = !enabled;
     if (btnSaveLook) btnSaveLook.disabled = !enabled;
     if (!enabled) {
+      state.ui.showHistogram = false;
+      syncHistoToggleUI();
       setHistoVisible(false);
       if (enhanceBar) enhanceBar.hidden = true;
     } else {
       updateEnhanceBarUI();
+      syncHistoToggleUI();
     }
     updateHistoryButtons();
   }
