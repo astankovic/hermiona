@@ -2571,6 +2571,10 @@
         });
       }
     }
+    // Selecting a tool always reveals chrome on mobile
+    if (typeof setChromeHidden === 'function' && isOverlayChrome && isOverlayChrome()) {
+      setChromeHidden(false);
+    }
 
     const isAdj =
       tool === 'adjust' ||
@@ -3455,6 +3459,162 @@
     });
   }
 
+  // ========== IMMERSIVE CHROME (mobile: swipe toolbar hide/show) ==========
+  const chromeState = {
+    hidden: false,
+    dragging: false,
+    startY: 0,
+    startT: 0,
+    lastY: 0
+  };
+
+  function isOverlayChrome() {
+    return !document.body.classList.contains('layout-side');
+  }
+
+  function setChromeHidden(hidden, opts) {
+    opts = opts || {};
+    if (!isOverlayChrome()) {
+      hidden = false;
+    }
+    chromeState.hidden = !!hidden;
+    document.body.classList.toggle('chrome-hidden', chromeState.hidden);
+    document.body.classList.remove('chrome-dragging');
+    // Stage size does not change — only re-clamp pan if zoomed
+    if (state.view.zoom > 1.02) clampPan();
+    applyViewTransform();
+    if (state.crop.active) updateCropOverlay();
+    if (opts.toast && chromeState.hidden) {
+      showToast('Swipe up for tools', 1200);
+    }
+  }
+
+  function setChromeDragging(on) {
+    chromeState.dragging = !!on;
+    document.body.classList.toggle('chrome-dragging', chromeState.dragging);
+  }
+
+  /** Bind swipe on dock handle (+ peek when hidden) and edge of tool rail */
+  function bindChromeGestures() {
+    const handle = document.getElementById('dockHandleHit');
+    const targets = [handle, dock].filter(Boolean);
+    if (!targets.length) return;
+
+    let active = false;
+    let pointerId = null;
+
+    function onDown(e) {
+      if (!isOverlayChrome() || !state.hasImage) return;
+      // Only start from handle, or from top of dock (not deep in panels)
+      const onHandle = handle && (e.target === handle || handle.contains(e.target));
+      const onRail =
+        e.target.closest && e.target.closest('.tool-rail');
+      if (!onHandle && !onRail && !chromeState.hidden) {
+        // Allow swipe-down from dock-body top 24px
+        if (!dock) return;
+        const rect = dock.getBoundingClientRect();
+        if (e.clientY - rect.top > 28) return;
+      }
+      if (e.target.closest('input, button.ratio-chip, button.preset-card, button.look-card, button.chip, button.seg-btn, button.preset-cat, button.frame-chip, button.tool-icon-btn, .ios-dial, .export-size-btn')) {
+        if (!onHandle) return;
+      }
+      active = true;
+      pointerId = e.pointerId;
+      chromeState.startY = e.clientY;
+      chromeState.lastY = e.clientY;
+      chromeState.startT = Date.now();
+      setChromeDragging(true);
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch (_) { /* ignore */ }
+      if (e.cancelable && onHandle) e.preventDefault();
+    }
+
+    function onMove(e) {
+      if (!active || (pointerId != null && e.pointerId !== pointerId)) return;
+      chromeState.lastY = e.clientY;
+      const dy = e.clientY - chromeState.startY;
+      // Live drag feel: follow finger slightly
+      if (dock && isOverlayChrome()) {
+        if (!chromeState.hidden && dy > 0) {
+          const peek = Math.min(dy, 120);
+          dock.style.transform = 'translate3d(0,' + peek + 'px,0)';
+          const topbar = document.getElementById('topbar');
+          if (topbar) {
+            topbar.style.transform = 'translate3d(0,' + -peek * 0.55 + 'px,0)';
+            topbar.style.opacity = String(Math.max(0.15, 1 - peek / 140));
+          }
+        } else if (chromeState.hidden && dy < 0) {
+          const pull = Math.min(-dy, 100);
+          // reveal from peek
+          const base = 'calc(100% - 22px - var(--safe-bottom))';
+          dock.style.transform =
+            'translate3d(0, calc(' + base + ' - ' + pull + 'px), 0)';
+        }
+      }
+      if (e.cancelable) e.preventDefault();
+    }
+
+    function onUp(e) {
+      if (!active) return;
+      if (pointerId != null && e.pointerId !== pointerId) return;
+      active = false;
+      pointerId = null;
+      setChromeDragging(false);
+
+      // Clear inline drag styles — CSS classes take over
+      if (dock) dock.style.transform = '';
+      const topbar = document.getElementById('topbar');
+      if (topbar) {
+        topbar.style.transform = '';
+        topbar.style.opacity = '';
+      }
+
+      const dy = chromeState.lastY - chromeState.startY;
+      const dt = Math.max(1, Date.now() - chromeState.startT);
+      const velocity = dy / dt; // px/ms
+
+      if (!chromeState.hidden) {
+        // Swipe down to hide
+        if (dy > 48 || velocity > 0.45) {
+          setChromeHidden(true, { toast: true });
+        }
+      } else {
+        // Swipe up (or tap peek) to show
+        if (dy < -36 || velocity < -0.35 || Math.abs(dy) < 10) {
+          setChromeHidden(false);
+        }
+      }
+    }
+
+    targets.forEach((el) => {
+      el.addEventListener('pointerdown', onDown);
+      el.addEventListener('pointermove', onMove);
+      el.addEventListener('pointerup', onUp);
+      el.addEventListener('pointercancel', onUp);
+    });
+
+    // Double-tap photo to toggle chrome (review)
+    let lastTap = 0;
+    if (canvasArea) {
+      canvasArea.addEventListener('pointerup', (e) => {
+        if (!isOverlayChrome() || !state.hasImage) return;
+        if (state.crop.active) return;
+        if (e.target.closest('button, .zoom-hud, .crop-layer')) return;
+        if (panDrag.active) return;
+        const now = Date.now();
+        if (now - lastTap < 300) {
+          setChromeHidden(!chromeState.hidden, { toast: !chromeState.hidden });
+          lastTap = 0;
+        } else {
+          lastTap = now;
+        }
+      });
+    }
+  }
+
+  bindChromeGestures();
+
   // ========== RESPONSIVE LAYOUT (portrait bottom dock · landscape/desktop side dock) ==========
   function updateLayoutMode() {
     const w = window.innerWidth || document.documentElement.clientWidth || 0;
@@ -3473,7 +3633,12 @@
     document.body.classList.toggle('layout-landscape', landscape);
     document.body.classList.toggle('layout-portrait', !landscape);
 
-    // Refit image + crop after reflow (critical for portrait web layout)
+    // Side layout always shows chrome
+    if (side && chromeState.hidden) {
+      setChromeHidden(false);
+    }
+
+    // Refit image after reflow — stage size is stable on overlay layout
     requestAnimationFrame(() => {
       layoutViewport();
       if (state.crop.active) {
@@ -3515,6 +3680,16 @@
         endScrub();
         return;
       }
+      if (chromeState.hidden && isOverlayChrome()) {
+        setChromeHidden(false);
+        return;
+      }
+      return;
+    }
+    // Toggle review chrome
+    if (e.key === 'h' && !e.metaKey && !e.ctrlKey && state.hasImage && isOverlayChrome()) {
+      e.preventDefault();
+      setChromeHidden(!chromeState.hidden, { toast: !chromeState.hidden });
       return;
     }
     if (!state.hasImage) return;

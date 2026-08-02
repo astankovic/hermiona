@@ -77,27 +77,65 @@ button, input {
 }
 
 /*
- * Mobile / bottom-toolbar layout:
- * Stage and dock share the same grid cell — dock overlays the photo.
- * Expanding Age/Presets never reflows or moves the image.
+ * Mobile immersive layout (not layout-side):
+ * - Stage is the ONLY full-viewport layer (photo never reflows)
+ * - Topbar + dock are overlays on the same cell
+ * - chrome-hidden: both slide off for full-bleed review
  */
 body:not(.layout-side) #app {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
-  grid-template-areas:
-    "topbar"
-    "workspace";
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "workspace";
 }
 
 body:not(.layout-side) .topbar {
-  grid-area: topbar;
+  grid-area: workspace;
+  align-self: start;
+  justify-self: stretch;
+  width: 100%;
+  z-index: 60;
+  /* Floating glass over photo */
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.62) 0%,
+    rgba(0, 0, 0, 0.28) 55%,
+    transparent 100%
+  );
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom: none;
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  transition:
+    transform 0.36s var(--ease-out),
+    opacity 0.28s ease;
+  pointer-events: auto;
+}
+
+body:not(.layout-side) .topbar .tb-btn {
+  background: rgba(0, 0, 0, 0.32);
+  color: #fff;
+}
+
+body:not(.layout-side) .topbar .tb-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.48);
+}
+
+body:not(.layout-side) .topbar .tb-done {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+body:not(.layout-side) .topbar-title {
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
 }
 
 body:not(.layout-side) .stage {
   grid-area: workspace;
   min-height: 0;
   z-index: 1;
+  /* Always full app height — chrome never steals rows */
+  height: 100%;
 }
 
 body:not(.layout-side) .dock {
@@ -106,19 +144,68 @@ body:not(.layout-side) .dock {
   justify-self: stretch;
   width: 100%;
   z-index: 50;
-  /* Overlay chrome — not part of stage flex height */
   flex: none;
   border-radius: 18px 18px 0 0;
   box-shadow:
     0 -8px 32px rgba(0, 0, 0, 0.5),
     0 -1px 0 rgba(255, 255, 255, 0.06);
-  background: rgba(12, 12, 14, 0.82);
+  background: rgba(12, 12, 14, 0.86);
   max-height: min(72vh, 560px);
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform 0.36s var(--ease-out),
+    max-height 0.32s var(--ease-out),
+    box-shadow 0.28s var(--ease-out),
+    background 0.28s ease;
+  will-change: transform;
+  touch-action: pan-y;
 }
 
-/* Keep photo fit region stable: only reserve the tool-rail strip */
+/* Full-bleed photo — no padding that depends on dock height */
 body:not(.layout-side) .canvas-area {
-  padding-bottom: calc(var(--dock-rail) + var(--safe-bottom) + 10px);
+  padding: 0;
+  position: absolute;
+  inset: 0;
+}
+
+body:not(.layout-side) .stage {
+  position: relative;
+}
+
+/* Chrome hidden: review mode — photo stays put, chrome slides away */
+body.chrome-hidden:not(.layout-side) .topbar {
+  transform: translate3d(0, calc(-100% - 12px), 0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.chrome-hidden:not(.layout-side) .dock {
+  /* Leave a thin peek handle so user can swipe up */
+  transform: translate3d(0, calc(100% - 22px - var(--safe-bottom)), 0);
+}
+
+body.chrome-hidden:not(.layout-side) .dock .dock-body,
+body.chrome-hidden:not(.layout-side) .dock .tool-rail {
+  pointer-events: none;
+}
+
+body.chrome-hidden:not(.layout-side) .dock .dock-handle-hit {
+  pointer-events: auto;
+}
+
+body.chrome-hidden:not(.layout-side) .zoom-hud {
+  bottom: calc(28px + var(--safe-bottom));
+  transition: bottom 0.36s var(--ease-out);
+}
+
+body:not(.layout-side) .zoom-hud {
+  transition: bottom 0.36s var(--ease-out);
+}
+
+/* Dragging chrome — disable transition for direct follow */
+body.chrome-dragging:not(.layout-side) .topbar,
+body.chrome-dragging:not(.layout-side) .dock {
+  transition: none;
 }
 
 /* ========== TOP BAR ========== */
@@ -468,6 +555,16 @@ body:not(.layout-side) .canvas-area {
   z-index: 14;
 }
 
+/* Below floating topbar on immersive mobile */
+body:not(.layout-side) .look-chip {
+  top: calc(var(--topbar-h) + var(--safe-top) + 4px);
+}
+
+body.chrome-hidden:not(.layout-side) .look-chip {
+  top: calc(12px + var(--safe-top));
+  transition: top 0.36s var(--ease-out);
+}
+
 .look-chip[hidden] {
   display: none !important;
 }
@@ -492,6 +589,58 @@ body:not(.layout-side) .canvas-area {
 
 .dock[hidden] {
   display: none !important;
+}
+
+/* Grab strip for swipe hide/show */
+.dock-handle-hit {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px 4px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.dock-handle-hit:active {
+  cursor: grabbing;
+}
+
+.dock-handle {
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.28);
+  transition: background 0.15s, width 0.15s;
+}
+
+.dock-handle-hit:active .dock-handle,
+body.chrome-dragging .dock-handle {
+  background: rgba(255, 255, 255, 0.5);
+  width: 48px;
+}
+
+.dock-handle-hint {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+body.chrome-hidden .dock-handle-hint {
+  opacity: 0;
+}
+
+body.layout-side .dock-handle-hit {
+  display: none; /* side layout keeps always-visible chrome */
 }
 
 /* Dock body: dials / chips / panels (tool-rail stays outside, sticky bottom) */
@@ -2120,6 +2269,29 @@ body.layout-side .topbar {
   margin: 0;
   padding-left: max(8px, var(--safe-left));
   padding-right: max(8px, var(--safe-right));
+  /* Reset immersive overlay styles */
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border-bottom: 0.5px solid var(--separator);
+  transform: none !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+body.layout-side .topbar .tb-btn {
+  background: transparent;
+}
+
+body.layout-side .dock {
+  transform: none !important;
+}
+
+body.chrome-hidden.layout-side .topbar,
+body.chrome-hidden.layout-side .dock {
+  transform: none !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
 body.layout-side .stage {
@@ -2221,13 +2393,17 @@ body.layout-side .canvas-area {
   padding: 16px 20px;
 }
 
-/* Portrait phone: stable fit area above tool-rail (dock overlays, doesn't reflow) */
+/* Portrait phone: true full-bleed — chrome floats over photo */
 body.layout-portrait:not(.layout-side) .canvas-area {
-  padding: 6px 8px calc(var(--dock-rail) + var(--safe-bottom) + 10px);
+  padding: 0;
 }
 
 body.layout-portrait.layout-compact:not(.layout-side) .canvas-area {
-  padding: 4px 6px calc(var(--dock-rail) + var(--safe-bottom) + 6px);
+  padding: 0;
+}
+
+body.layout-compact:not(.layout-side) .canvas-area {
+  padding-bottom: 0 !important;
 }
 
 body.layout-side #mainCanvas.visible {

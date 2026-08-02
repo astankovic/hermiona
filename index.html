@@ -113,6 +113,11 @@
 
     <!-- Editor dock — iOS Photos style (bottom portrait · side landscape/desktop) -->
     <footer class="dock" id="dock" hidden>
+      <!-- Swipe handle: drag down to hide chrome, up to show -->
+      <div class="dock-handle-hit" id="dockHandleHit" aria-label="Drag to show or hide tools">
+        <div class="dock-handle" aria-hidden="true"></div>
+        <span class="dock-handle-hint" id="dockHandleHint">Swipe down to review</span>
+      </div>
       <div class="dock-body" id="dockBody">
         <!-- Active dial row (adjust tools) -->
         <div class="dial-row" id="dialRow" hidden>

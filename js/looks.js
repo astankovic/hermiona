@@ -81,6 +81,32 @@
       mono: false,
       halation: 0.08
     },
+    /**
+     * Field 35 — tuned to testing/analog reference rolls
+     * Soft daylight P&S: warm sun, cool shadows, lifted blacks, fine grain, hazy highlights
+     */
+    {
+      id: 'field35',
+      name: 'Field 35',
+      swatch: 'linear-gradient(135deg,#f0e0c8 0%,#c8b098 40%,#7a9088 100%)',
+      desc: 'Soft daylight film · warm sun · cool shadows',
+      curves: {
+        // Lifted floor, soft shoulder (no hard clip in sun)
+        r: [[0, 14], [48, 62], [96, 108], [160, 172], [210, 228], [255, 248]],
+        g: [[0, 12], [48, 58], [96, 104], [160, 164], [210, 218], [255, 242]],
+        b: [[0, 16], [48, 60], [96, 100], [160, 152], [210, 198], [255, 228]]
+      },
+      sat: -0.08,
+      contrast: -0.1,
+      warmth: 0.1,
+      greenShadow: 0.04,
+      coolLift: 0.05,
+      fade: 0.16,
+      grain: 0.34,
+      grainSize: 1.2,
+      mono: false,
+      halation: 0.14
+    },
     {
       id: 'fuji400h',
       name: 'Fuji 400H',
@@ -384,6 +410,40 @@
         dateStamp: 0,
         halationBlur: 0.03,
         highlightRoll: 0.35
+      }
+    },
+    /**
+     * Compact 35mm point-and-shoot body — matches testing/analog softness + vignette
+     */
+    {
+      id: 'pointshoot',
+      name: 'Point & Shoot',
+      swatch: 'linear-gradient(135deg,#3a342e,#d8c8b0 45%,#2a2824)',
+      desc: 'Soft P&S glass · mild vignette · sun haze',
+      vignette: 0.32,
+      vignettePower: 1.85,
+      soft: 0.14,
+      contrast: -0.06,
+      sat: -0.02,
+      warmth: 0.05,
+      fade: 0.06,
+      clarity: -0.04,
+      imperf: {
+        softCorners: 0.42,
+        leakEdge: 0.06,
+        dust: 0.1,
+        scratches: 0.04,
+        gate: 0.14,
+        uneven: 0.08,
+        barrel: 0.1,
+        lateralCA: 0.14,
+        ghost: 0,
+        stains: 0.03,
+        border: 0,
+        dateStamp: 0,
+        // Sun bloom / highlight glow (strong in backlit refs)
+        halationBlur: 0.22,
+        highlightRoll: 0.55
       }
     }
   ];
@@ -859,10 +919,10 @@
    */
   const PRESET_CATEGORIES = [
     { id: 'all', name: 'All' },
+    { id: 'film', name: 'Analog' },
     { id: 'portrait', name: 'Portrait' },
     { id: 'street', name: 'Street' },
     { id: 'night', name: 'Night' },
-    { id: 'film', name: 'Film' },
     { id: 'bw', name: 'B&W' },
     { id: 'retro', name: 'Retro' },
     { id: 'clean', name: 'Clean' }
@@ -885,6 +945,103 @@
       bloom: 0,
       ca: 0,
       params: {}
+    },
+    // —— SIGNATURE: testing/analog reference look ——
+    {
+      id: 'analog',
+      name: 'Analog',
+      category: 'film',
+      desc: '35mm day · soft grain · warm sun',
+      recipe: 'Field 35 · P&S · Soft',
+      swatch: 'linear-gradient(145deg,#f2e6d4 0%,#c4a888 42%,#6a8880 100%)',
+      film: 'field35',
+      camera: 'pointshoot',
+      lens: 'soft',
+      filmIntensity: 100,
+      cameraIntensity: 88,
+      lensIntensity: 52,
+      bloom: 22,
+      ca: 10,
+      params: {
+        exposure: 0.06,
+        contrast: -14,
+        highlights: -28,
+        shadows: 20,
+        whites: -12,
+        blacks: 14,
+        temperature: 14,
+        tint: -3,
+        saturation: -8,
+        vibrance: 10,
+        clarity: -14,
+        sharpen: 3,
+        vignette: 16,
+        grain: 8
+      }
+    },
+    {
+      id: 'analog-sun',
+      name: 'Analog Sun',
+      category: 'film',
+      desc: 'Backlit haze · golden spill',
+      recipe: 'Field 35 · P&S · Dream',
+      swatch: 'linear-gradient(145deg,#fff4e0 0%,#e8b878 50%,#887868 100%)',
+      film: 'field35',
+      camera: 'pointshoot',
+      lens: 'dream',
+      filmIntensity: 95,
+      cameraIntensity: 80,
+      lensIntensity: 62,
+      bloom: 42,
+      ca: 12,
+      params: {
+        exposure: 0.12,
+        contrast: -18,
+        highlights: -32,
+        shadows: 22,
+        whites: -10,
+        blacks: 16,
+        temperature: 20,
+        tint: -2,
+        saturation: -10,
+        vibrance: 12,
+        clarity: -18,
+        sharpen: 0,
+        vignette: 20,
+        grain: 6
+      }
+    },
+    {
+      id: 'analog-cool',
+      name: 'Analog Cool',
+      category: 'film',
+      desc: 'Beach / open shade · cooler cast',
+      recipe: 'Field 35 · Contax · Standard',
+      swatch: 'linear-gradient(145deg,#e8f0f0 0%,#b0c0b8 50%,#687878 100%)',
+      film: 'field35',
+      camera: 'contax',
+      lens: 'standard',
+      filmIntensity: 92,
+      cameraIntensity: 75,
+      lensIntensity: 55,
+      bloom: 12,
+      ca: 8,
+      params: {
+        exposure: 0.04,
+        contrast: -10,
+        highlights: -18,
+        shadows: 16,
+        whites: -6,
+        blacks: 12,
+        temperature: 2,
+        tint: -6,
+        saturation: -6,
+        vibrance: 8,
+        clarity: -10,
+        sharpen: 6,
+        vignette: 12,
+        grain: 10
+      }
     },
     // —— PORTRAIT ——
     {
