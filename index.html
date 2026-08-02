@@ -21,7 +21,7 @@
         if (p.has("fresh") || p.get("nocache") === "1") return String(Date.now());
         if (p.get("v")) return p.get("v");
       } catch (e) {}
-      return "202608021800"; // ← bump this when you push JS/CSS changes
+      return "202608022100"; // ← bump this when you push JS/CSS changes
     })();
     document.write(
       '<link rel="stylesheet" href="styles.css?v=' +
@@ -462,27 +462,19 @@
         </div>
       </div>
 
-      <!-- Category tool rail -->
+      <!-- Category tool rail — 6 primary tools (iPhone Photos density) -->
       <nav class="tool-rail" id="toolRail" role="tablist" aria-label="Tools">
         <button type="button" class="tool-btn active" data-tool="adjust" role="tab" aria-selected="true">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-          <span>Light</span>
+          <span>Adjust</span>
         </button>
-        <button type="button" class="tool-btn" data-tool="color" role="tab">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" opacity="0.35"/><path d="M12 3a9 9 0 0 1 0 18" opacity="0.5"/></svg>
-          <span>Color</span>
-        </button>
-        <button type="button" class="tool-btn" data-tool="effects" role="tab">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3z"/><path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8L18 15z" opacity="0.7"/></svg>
-          <span>Effects</span>
+        <button type="button" class="tool-btn" data-tool="looks" role="tab">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M7 5v-1a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-1"/><circle cx="10" cy="12" r="2.5"/><path d="M14 9h4M14 12h3" opacity="0.55"/></svg>
+          <span>Filters</span>
         </button>
         <button type="button" class="tool-btn" data-tool="age" role="tab">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 5v14M16 5v14" opacity="0.45"/><path d="M4 10h16" opacity="0.3"/><circle cx="18" cy="8" r="1" fill="currentColor" stroke="none" opacity="0.5"/></svg>
           <span>Age</span>
-        </button>
-        <button type="button" class="tool-btn" data-tool="looks" role="tab">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M7 5v-1a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-1"/><circle cx="10" cy="12" r="2.5"/><path d="M14 9h4M14 12h3" opacity="0.55"/></svg>
-          <span>Preset</span>
         </button>
         <button type="button" class="tool-btn" data-tool="crop" role="tab">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>
@@ -490,7 +482,7 @@
         </button>
         <button type="button" class="tool-btn" data-tool="border" role="tab">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="6" y="6" width="12" height="10" rx="0.5" opacity="0.55"/><path d="M6 18h12" opacity="0.35"/></svg>
-          <span>Border</span>
+          <span>Frame</span>
         </button>
         <button type="button" class="tool-btn" data-tool="portrait" role="tab">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5"/><circle cx="12" cy="12" r="9" opacity="0.35"/></svg>

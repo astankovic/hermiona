@@ -109,21 +109,18 @@
 
   /** @type {Record<string, AdjDef[]>} */
   const TOOL_ADJUSTMENTS = {
+    // iPhone Photos style: one Adjust filmstrip (light + color + effects)
     adjust: [
       { id: 'exposure', label: 'Exposure', min: -2, max: 2, step: 0.01, def: 0, store: 'params', format: 'exp' },
       { id: 'contrast', label: 'Contrast', min: -100, max: 100, step: 1, def: 0, store: 'params' },
       { id: 'highlights', label: 'Highlights', min: -100, max: 100, step: 1, def: 0, store: 'params' },
       { id: 'shadows', label: 'Shadows', min: -100, max: 100, step: 1, def: 0, store: 'params' },
       { id: 'whites', label: 'Whites', min: -100, max: 100, step: 1, def: 0, store: 'params' },
-      { id: 'blacks', label: 'Blacks', min: -100, max: 100, step: 1, def: 0, store: 'params' }
-    ],
-    color: [
+      { id: 'blacks', label: 'Blacks', min: -100, max: 100, step: 1, def: 0, store: 'params' },
       { id: 'temperature', label: 'Temperature', min: -100, max: 100, step: 1, def: 0, store: 'params' },
       { id: 'tint', label: 'Tint', min: -100, max: 100, step: 1, def: 0, store: 'params' },
       { id: 'saturation', label: 'Saturation', min: -100, max: 100, step: 1, def: 0, store: 'params' },
-      { id: 'vibrance', label: 'Vibrance', min: -100, max: 100, step: 1, def: 0, store: 'params' }
-    ],
-    effects: [
+      { id: 'vibrance', label: 'Vibrance', min: -100, max: 100, step: 1, def: 0, store: 'params' },
       { id: 'clarity', label: 'Clarity', min: -100, max: 100, step: 1, def: 0, store: 'params' },
       { id: 'sharpen', label: 'Sharpen', min: 0, max: 100, step: 1, def: 0, store: 'params' },
       { id: 'vignette', label: 'Vignette', min: 0, max: 100, step: 1, def: 0, store: 'params' },
@@ -436,7 +433,15 @@
       dock.style.transform = '';
       dock.style.opacity = '';
     }
-    if (typeof setImmersive === 'function') setImmersive(false);
+    // Fresh edit session always starts with full chrome (not rail/immersive)
+    if (typeof setChromeMode === 'function') {
+      chromeState.mode = 'full';
+      chromeState.beforeImmersive = 'full';
+      chromeState.sheetOpen = false;
+      applyChromeUI();
+    } else if (typeof setImmersive === 'function') {
+      setImmersive(false);
+    }
     canvas.classList.add('visible');
 
     if (prefersReducedMotion()) {
@@ -2068,7 +2073,9 @@
   // ========== ONE-TAP ENHANCE (wand) ==========
   function updateEnhanceBarUI() {
     if (!enhanceBar) return;
-    enhanceBar.hidden = !state.hasImage;
+    // Auto / Soft / Vivid live only on Adjust (keeps other tools compact)
+    const onAdjust = state.hasImage && state.ui.tool === 'adjust';
+    enhanceBar.hidden = !onAdjust;
     enhanceBar.querySelectorAll('.enhance-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.enhance === state.enhanceMode);
     });
@@ -3517,7 +3524,16 @@
   }
 
   // ========== UI: TOOLS / CHIPS / DIAL ==========
+  /** Legacy draft/tool ids → current rail */
+  function normalizeToolId(tool) {
+    if (tool === 'color' || tool === 'effects' || tool === 'light') return 'adjust';
+    if (tool === 'preset' || tool === 'filters') return 'looks';
+    if (tool === 'frame') return 'border';
+    return tool || 'adjust';
+  }
+
   function setTool(tool) {
+    tool = normalizeToolId(tool);
     const prevTool = state.ui.tool;
     const toolChanged = tool !== prevTool;
     state.ui.tool = tool;
@@ -3546,17 +3562,16 @@
         });
       }
     }
-    // Selecting a tool always reveals chrome on mobile
-    if (typeof setChromeHidden === 'function' && isOverlayChrome && isOverlayChrome()) {
+
+    // Selecting a tool always reveals full chrome (never stay immersive in a tool)
+    if (typeof revealChromeForTool === 'function') {
+      revealChromeForTool(tool);
+    } else if (typeof setChromeHidden === 'function' && isOverlayChrome && isOverlayChrome()) {
       setChromeHidden(false);
+      if (typeof setImmersive === 'function') setImmersive(false);
     }
 
-    const isAdj =
-      tool === 'adjust' ||
-      tool === 'color' ||
-      tool === 'effects' ||
-      tool === 'portrait' ||
-      tool === 'age';
+    const isAdj = tool === 'adjust' || tool === 'portrait' || tool === 'age';
     // Border has its own panel (no dial row / no crop handles)
     const showDial = isAdj || tool === 'crop';
 
@@ -3614,15 +3629,15 @@
       setLooksTab(state.ui.looksTab || 'presets');
     }
 
+    updateEnhanceBarUI();
+
     if (topbarTitle) {
       const titles = {
-        adjust: 'Light',
-        color: 'Color',
-        effects: 'Effects',
-        age: 'Age / analog',
-        looks: 'Presets',
+        adjust: 'Adjust',
+        age: 'Age',
+        looks: 'Filters',
         crop: 'Crop',
-        border: 'Border',
+        border: 'Frame',
         portrait: 'Portrait'
       };
       if (state.hasImage) {
@@ -3733,8 +3748,8 @@
     $$('.tool-btn').forEach((btn) => {
       const tool = btn.dataset.tool;
       let has = false;
-      if (tool === 'adjust' || tool === 'color' || tool === 'effects') {
-        has = (TOOL_ADJUSTMENTS[tool] || []).some(isAdjModified);
+      if (tool === 'adjust') {
+        has = (TOOL_ADJUSTMENTS.adjust || []).some(isAdjModified);
       } else if (tool === 'looks') {
         has =
           (state.look.preset && state.look.preset !== 'none') ||
@@ -3750,12 +3765,16 @@
           state.optics.focusManual ||
           Math.abs(state.optics.strength - 0.55) > 0.01 ||
           Math.abs(state.optics.apertureStrength - 0.55) > 0.01 ||
-          Math.abs(state.optics.bokehAmount - 0.55) > 0.01;
+          Math.abs(state.optics.bokehAmount - 0.55) > 0.01 ||
+          (state.optics.skinSoft || 0) > 0.01 ||
+          (state.optics.subjectPunch || 0) > 0.01;
       } else if (tool === 'crop') {
         has =
           Math.abs(state.params.rotation) > 0.01 ||
           state.crop.w < 0.999 ||
           state.crop.h < 0.999;
+      } else if (tool === 'border') {
+        has = !!(state.border && state.border.id && state.border.id !== 'none');
       }
       btn.classList.toggle('has-edits', has);
     });
@@ -4036,7 +4055,8 @@
       tapState.timer = setTimeout(() => {
         tapState.timer = null;
         // Single tap on the photo: toggle immersive view (iOS Photos)
-        if (isOverlayChrome() && state.hasImage && !state.crop.active) {
+        // Blocked during crop / export sheet / fine scrub (canEnterImmersive)
+        if (isOverlayChrome() && state.hasImage) {
           toggleImmersive();
         }
       }, 290);
@@ -4338,12 +4358,16 @@
 
   function openExportSheet() {
     if (!state.hasImage || state.exporting) return;
+    // Exit immersive so the sheet isn't buried under photo gestures
+    if (typeof setImmersive === 'function') setImmersive(false);
+    if (typeof chromeState !== 'undefined') chromeState.sheetOpen = true;
     updateExportSheetUI();
     if (exportBackdrop) exportBackdrop.hidden = false;
     if (exportSheet) exportSheet.hidden = false;
   }
 
   function closeExportSheet() {
+    if (typeof chromeState !== 'undefined') chromeState.sheetOpen = false;
     if (exportBackdrop) exportBackdrop.hidden = true;
     if (exportSheet) exportSheet.hidden = true;
   }
@@ -4610,53 +4634,141 @@
     });
   }
 
-  // ========== IMMERSIVE CHROME (mobile: tap chevron to collapse panels) ==========
+  // ========== CHROME STATE MACHINE (mobile overlay) ==========
+  // mode: 'full' | 'rail' | 'immersive'
+  //   full       — topbar + tool surface + rail
+  //   rail       — topbar + rail only (panels collapsed via chevron/swipe)
+  //   immersive  — photo only (tap photo); restore to beforeImmersive
   const chromeState = {
-    hidden: false,
-    immersive: false
+    mode: 'full',
+    beforeImmersive: 'full',
+    sheetOpen: false,
+    get hidden() {
+      return this.mode === 'rail';
+    },
+    get immersive() {
+      return this.mode === 'immersive';
+    }
   };
 
   function isOverlayChrome() {
     return !document.body.classList.contains('layout-side');
   }
 
-  /** Full immersive: tap photo hides ALL chrome (topbar + dock). Tap again restores. */
-  function setImmersive(on) {
-    if (!isOverlayChrome() || !state.hasImage) on = false;
-    on = !!on;
-    if (chromeState.immersive === on) return;
-    chromeState.immersive = on;
-    document.body.classList.toggle('ui-immersive', on);
+  function canEnterImmersive() {
+    if (!isOverlayChrome() || !state.hasImage) return false;
+    if (state.crop && state.crop.active) return false;
+    if (chromeState.sheetOpen) return false;
+    if (fineOverlay && !fineOverlay.hidden) return false;
+    if (exportSheet && !exportSheet.hidden) return false;
+    return true;
+  }
+
+  function applyChromeUI() {
+    const overlay = isOverlayChrome() && state.hasImage;
+    const mode = overlay ? chromeState.mode : 'full';
+
+    document.body.classList.toggle('ui-immersive', mode === 'immersive');
+    document.body.classList.toggle('chrome-hidden', mode === 'rail');
+
+    const bodyEl = document.getElementById('dockBody');
+    if (bodyEl) {
+      // Hard-hide panel stack (more reliable than max-height alone on iOS)
+      bodyEl.hidden = mode === 'rail' || mode === 'immersive';
+    }
+
+    const handle = document.getElementById('dockHandleHit');
+    if (handle) {
+      const panelsOpen = mode === 'full';
+      handle.setAttribute('aria-expanded', panelsOpen ? 'true' : 'false');
+      handle.setAttribute(
+        'aria-label',
+        panelsOpen ? 'Hide tool panels' : 'Show tool panels'
+      );
+      handle.setAttribute('title', panelsOpen ? 'Hide panels' : 'Show panels');
+    }
+
     if (state.view.zoom > 1.02) clampPan();
     applyViewTransform();
+    if (state.crop && state.crop.active) updateCropOverlay();
+  }
+
+  /** Set chrome mode. Invalid / guarded transitions no-op or fall back. */
+  function setChromeMode(mode) {
+    if (!isOverlayChrome() || !state.hasImage) {
+      chromeState.mode = 'full';
+      applyChromeUI();
+      return;
+    }
+    if (mode === 'immersive' && !canEnterImmersive()) {
+      return;
+    }
+    if (mode !== 'full' && mode !== 'rail' && mode !== 'immersive') {
+      mode = 'full';
+    }
+    if (mode === 'immersive' && chromeState.mode !== 'immersive') {
+      chromeState.beforeImmersive =
+        chromeState.mode === 'rail' ? 'rail' : 'full';
+    }
+    if (mode !== 'immersive') {
+      chromeState.beforeImmersive = mode === 'rail' ? 'rail' : 'full';
+    }
+    chromeState.mode = mode;
+    applyChromeUI();
+  }
+
+  /** Full immersive: tap photo hides ALL chrome. Tap again restores. */
+  function setImmersive(on) {
+    on = !!on;
+    if (on) {
+      if (!canEnterImmersive()) return;
+      if (chromeState.mode === 'immersive') return;
+      setChromeMode('immersive');
+    } else {
+      if (chromeState.mode !== 'immersive') {
+        // Still clear class if layout flipped to side
+        if (!isOverlayChrome()) applyChromeUI();
+        return;
+      }
+      const restore =
+        chromeState.beforeImmersive === 'rail' ? 'rail' : 'full';
+      setChromeMode(restore);
+    }
   }
 
   function toggleImmersive() {
-    setImmersive(!chromeState.immersive);
+    if (chromeState.mode === 'immersive') {
+      setImmersive(false);
+    } else if (canEnterImmersive()) {
+      setImmersive(true);
+    } else {
+      return;
+    }
     hapticLight();
   }
 
-  function setChromeHidden(hidden, opts) {
-    opts = opts || {};
+  /** Collapse panels only (rail stays). */
+  function setChromeHidden(hidden) {
     if (!isOverlayChrome()) {
-      hidden = false;
+      setChromeMode('full');
+      return;
     }
-    chromeState.hidden = !!hidden;
-    document.body.classList.toggle('chrome-hidden', chromeState.hidden);
-    // Hard-hide panel stack (more reliable than max-height alone on iOS)
-    const bodyEl = document.getElementById('dockBody');
-    if (bodyEl) bodyEl.hidden = chromeState.hidden;
-    const handle = document.getElementById('dockHandleHit');
-    if (handle) {
-      const open = !chromeState.hidden;
-      handle.setAttribute('aria-expanded', open ? 'true' : 'false');
-      handle.setAttribute('aria-label', open ? 'Hide tool panels' : 'Show tool panels');
-      handle.setAttribute('title', open ? 'Hide panels' : 'Show panels');
+    if (hidden) {
+      setChromeMode('rail');
+    } else {
+      setChromeMode('full');
     }
-    // Stage size does not change — only re-clamp pan if zoomed
-    if (state.view.zoom > 1.02) clampPan();
-    applyViewTransform();
-    if (state.crop.active) updateCropOverlay();
+  }
+
+  /**
+   * Entering a tool always exits immersive and shows panels.
+   * Crop/border force full chrome (handles + controls need space).
+   */
+  function revealChromeForTool(_tool) {
+    if (!isOverlayChrome() || !state.hasImage) return;
+    chromeState.mode = 'full';
+    chromeState.beforeImmersive = 'full';
+    applyChromeUI();
   }
 
   /** Chevron tap + vertical swipe on handle/rail. Tool rail always stays. */
@@ -4668,6 +4780,7 @@
     const setPanels = (hidden) => {
       if (!isOverlayChrome() || !state.hasImage) return;
       if (dock && dock.hidden) return;
+      if (chromeState.mode === 'immersive') return;
       const now = Date.now();
       if (now - lastToggle < 280) return;
       lastToggle = now;
@@ -4695,8 +4808,8 @@
         if (Math.abs(dy) < 24 || Math.abs(dy) < Math.abs(dx) * 1.3) return;
         track = null;
         swipedAt = Date.now();
-        if (dy > 0 && !chromeState.hidden) setPanels(true);
-        else if (dy < 0 && chromeState.hidden) setPanels(false);
+        if (dy > 0 && chromeState.mode === 'full') setPanels(true);
+        else if (dy < 0 && chromeState.mode === 'rail') setPanels(false);
       });
       const clear = () => {
         track = null;
@@ -4723,31 +4836,32 @@
       handle.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        setPanels(!chromeState.hidden);
+        if (chromeState.mode === 'immersive') {
+          setImmersive(false);
+          hapticLight();
+          return;
+        }
+        setPanels(chromeState.mode !== 'rail');
       });
     }
   }
 
-  /** Accordion open/close for compact Crop & Portrait panels */
+  /**
+   * Accordion open/close — desktop/side only.
+   * Mobile overlay uses flat surfaces (CSS always-open bodies).
+   */
   function bindAccordions() {
     document.querySelectorAll('[data-acc-toggle]').forEach((btn) => {
       btn.addEventListener('click', () => {
+        // Mobile flat UI: headers are hidden; ignore accidental hits
+        if (isOverlayChrome()) return;
         const id = btn.getAttribute('data-acc-toggle');
         const panel = btn.closest('.subpanel');
         if (!panel || !id) return;
         const group = panel.querySelector('.acc-group[data-acc="' + id + '"]');
         if (!group) return;
         const wasOpen = group.classList.contains('open');
-        // On mobile: accordion one-open; on side desktop: toggle freely
-        const single =
-          !document.body.classList.contains('layout-side') ||
-          window.matchMedia('(max-width: 859px)').matches;
-        if (single) {
-          panel.querySelectorAll('.acc-group').forEach((g) => g.classList.remove('open'));
-          if (!wasOpen) group.classList.add('open');
-        } else {
-          group.classList.toggle('open', !wasOpen);
-        }
+        group.classList.toggle('open', !wasOpen);
       });
     });
   }
@@ -4801,12 +4915,11 @@
     document.body.classList.toggle('layout-landscape', landscape);
     document.body.classList.toggle('layout-portrait', !landscape);
 
-    // Side layout always shows chrome
-    if (side && chromeState.hidden) {
-      setChromeHidden(false);
-    }
-    if (side && chromeState.immersive) {
-      setImmersive(false);
+    // Side layout always shows full chrome
+    if (side && chromeState.mode !== 'full') {
+      chromeState.mode = 'full';
+      chromeState.beforeImmersive = 'full';
+      applyChromeUI();
     }
 
     // Refit image after reflow — stage size is stable on overlay layout
@@ -4851,20 +4964,24 @@
         endScrub();
         return;
       }
-      if (chromeState.immersive && isOverlayChrome()) {
+      if (chromeState.mode === 'immersive' && isOverlayChrome()) {
         setImmersive(false);
         return;
       }
-      if (chromeState.hidden && isOverlayChrome()) {
+      if (chromeState.mode === 'rail' && isOverlayChrome()) {
         setChromeHidden(false);
         return;
       }
       return;
     }
-    // Toggle dock panels (rail stays)
+    // Toggle dock panels (rail stays) — also exits immersive
     if (e.key === 'h' && !e.metaKey && !e.ctrlKey && state.hasImage && isOverlayChrome()) {
       e.preventDefault();
-      setChromeHidden(!chromeState.hidden);
+      if (chromeState.mode === 'immersive') {
+        setChromeMode('full');
+      } else {
+        setChromeHidden(chromeState.mode !== 'rail');
+      }
       return;
     }
     if (!state.hasImage) return;

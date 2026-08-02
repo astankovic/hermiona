@@ -1458,7 +1458,7 @@ body.layout-side .tb-cluster {
   display: contents;
 }
 
-/* —— Accordion submenus (Crop / Portrait compact) —— */
+/* —— Accordion submenus (Crop / Portrait) — desktop side only —— */
 .acc-group {
   border-bottom: 0.5px solid var(--separator);
 }
@@ -1516,6 +1516,66 @@ body.layout-side .tb-cluster {
   display: block;
 }
 
+/*
+ * Mobile overlay: FLAT tool surfaces (iPhone Photos).
+ * No accordion headers — all primary controls visible as horizontal rows.
+ */
+body:not(.layout-side) .subpanel-compact .acc-head {
+  display: none !important;
+}
+
+body:not(.layout-side) .subpanel-compact .acc-group {
+  border-bottom: none;
+}
+
+body:not(.layout-side) .subpanel-compact .acc-group .acc-body {
+  display: block !important;
+  padding: 0 2px 6px;
+  animation: none;
+}
+
+/* Debug row is desktop/pro — hide on phone overlay */
+body:not(.layout-side) .subpanel-compact .acc-group[data-acc="debug"] {
+  display: none !important;
+}
+
+/* Crop hints eat vertical space on phone */
+body:not(.layout-side) .subpanel-compact .crop-hint {
+  display: none;
+}
+
+body:not(.layout-side) .subpanel-compact {
+  padding: 2px 10px 4px;
+}
+
+body:not(.layout-side) .subpanel-compact .crop-tools {
+  margin: 2px 0 4px;
+  gap: 6px;
+}
+
+body:not(.layout-side) .subpanel-compact .crop-apply-row {
+  margin-top: 4px;
+  padding-top: 2px;
+}
+
+body:not(.layout-side) .subpanel-compact .scene-status {
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+
+body:not(.layout-side) .subpanel-compact .portrait-actions {
+  margin-bottom: 6px;
+}
+
+/* Tighter filmstrips on overlay */
+body:not(.layout-side) .frame-scroll,
+body:not(.layout-side) .ratio-scroll,
+body:not(.layout-side) .focal-scroll,
+body:not(.layout-side) .bokeh-scroll {
+  margin-bottom: 4px;
+  padding-bottom: 2px;
+}
+
 .subpanel-compact {
   padding-top: 4px;
   padding-bottom: 6px;
@@ -1543,17 +1603,6 @@ body.layout-side .tb-cluster {
   margin-bottom: 0;
 }
 
-/* Side: keep accordions open-looking optional — still work */
-body.layout-side .acc-group .acc-body {
-  /* default closed except .open */
-}
-
-@media (min-width: 860px) {
-  body.layout-side .subpanel-compact .acc-group:not(.open) .acc-body {
-    /* desktop side can leave user control */
-  }
-}
-
 /* Dock body: dials / chips / panels — must leave room for tool-rail below */
 .dock-body {
   display: flex;
@@ -1579,13 +1628,61 @@ body.layout-side .acc-group .acc-body {
   max-height: min(40dvh, 320px);
 }
 
-/* Overlay mobile: never let body flex-grow create a hole above the rail */
+/* Overlay mobile: tighter caps so the photo stays hero */
 body:not(.layout-side) .dock-body {
   flex: 0 1 auto;
+  max-height: min(26dvh, 200px);
+}
+
+body:not(.layout-side) .dock.dock-tall .dock-body {
+  max-height: min(34dvh, 260px);
+}
+
+body:not(.layout-side) .dock.dock-tall[data-tool="looks"] .dock-body,
+body:not(.layout-side) .dock.dock-tall[data-tool="age"] .dock-body,
+body:not(.layout-side) .dock.dock-tall[data-tool="crop"] .dock-body,
+body:not(.layout-side) .dock.dock-tall[data-tool="border"] .dock-body,
+body:not(.layout-side) .dock.dock-tall[data-tool="portrait"] .dock-body {
+  max-height: min(36dvh, 280px);
+}
+
+/* Filters: prefer filmstrip over tall scroll */
+body:not(.layout-side) .dock[data-tool="looks"] .subpanel {
+  max-height: none;
+  overflow: visible;
+  padding-top: 6px;
+  padding-bottom: 4px;
+}
+
+body:not(.layout-side) .dock[data-tool="looks"] .preset-hint {
+  display: none;
+}
+
+body:not(.layout-side) .dial-hint {
+  display: none; /* reclaim vertical space on phone */
 }
 
 body:not(.layout-side) .tool-rail {
   margin-top: 0; /* no auto-gap on phone bottom sheet */
+  overflow-x: hidden; /* 6 tools fit without scroll on 390px */
+  justify-content: space-between;
+  padding: 0 2px;
+}
+
+body:not(.layout-side) .tool-btn {
+  min-width: 0;
+  flex: 1 1 0;
+  padding: 6px 2px;
+}
+
+body:not(.layout-side) .tool-btn span {
+  font-size: 9.5px;
+  letter-spacing: -0.02em;
+}
+
+body:not(.layout-side) .tool-rail .tool-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 /* Slightly stronger glass when expanded over the photo */
@@ -3610,8 +3707,9 @@ body.is-exiting.layout-side .dock:not([hidden]) {
   pointer-events: none;
 }
 
-/* After any enter/exit, hard-pin dock (guards against leftover transform) */
-body.has-image:not(.is-entering):not(.is-exiting) .dock {
+/* After any enter/exit, hard-pin dock (guards against leftover transform).
+   ui-immersive excluded — it slides the dock away via its own transform. */
+body.has-image:not(.is-entering):not(.is-exiting):not(.ui-immersive) .dock {
   transform: none !important;
   opacity: 1 !important;
 }
