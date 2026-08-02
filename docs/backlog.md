@@ -23,10 +23,10 @@ Priority order below is intentional: **semantic understanding first** (same Medi
 
 ## Queue
 
-| Order | ID | Title | Effort | Default? | Depends |
-|------:|----|-------|--------|----------|---------|
-| 1 | **I5e** | Multiclass + Face + selective looks | M | Portrait on | I5a–c |
-| 2 | **I5d** | Pro monocular depth (Depth Anything V2 Small) | L | Off (Pro) | I5e preferred |
+| Order | ID | Title | Effort | Default? | Depends | Status |
+|------:|----|-------|--------|----------|---------|--------|
+| 1 | **I5e** | Multiclass + Face + selective looks | M | Portrait on | I5a–c | **shipped** |
+| 2 | **I5d** | Pro monocular depth (Depth Anything V2 Small) | L | Off (Pro) | I5e preferred | planned |
 
 ---
 

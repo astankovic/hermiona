@@ -254,7 +254,8 @@ On export JPEG, preserve orientation-safe metadata where possible.
 [x] P1-PRESET   — Save look / Mine (localStorage)
 [x] DRAFT       — Continue last edit (IndexedDB)
 [x] SHARE       — Web Share when available, else download
-[ ] I5e / optional LOCAL library
+[x] I5e         — multiclass + face + Skin soft / Subject
+[ ] I5d Pro depth / optional LOCAL library
 ```
 
 *When a ticket lands, check it here and in git commit message (`P0-HIST: …`).*

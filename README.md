@@ -6,6 +6,7 @@ Runs as a **single-page** app and hosts cleanly on **GitHub Pages**.
 ## Features
 
 - **Enhance**: one-tap **Auto · Soft · Vivid** (iPhone-style wand; on-device)
+- **Portrait**: on-device person/parts AI · DoF · **Skin soft** · **Subject** punch
 - **Light**: Exposure, Contrast, Highlights, Shadows, Whites, Blacks
 - **Color**: Temperature, Tint, Saturation, Vibrance
 - **Effects**: Clarity, Sharpen, Vignette, Grain

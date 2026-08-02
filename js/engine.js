@@ -283,6 +283,21 @@
       );
     }
 
+    // I5e: selective skin soft + subject punch (after film, before DoF)
+    const Selective = global.HermionaSelective;
+    if (
+      !fast &&
+      Selective &&
+      scene &&
+      optics &&
+      ((optics.skinSoft || 0) > 0.01 || (optics.subjectPunch || 0) > 0.01)
+    ) {
+      Selective.apply(data, w, h, scene, {
+        skinSoft: optics.skinSoft || 0,
+        subjectPunch: optics.subjectPunch || 0
+      });
+    }
+
     // Portrait DoF blur (same CoC)
     if (
       !fast &&

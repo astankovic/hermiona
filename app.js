@@ -97,7 +97,11 @@
     focusDepth:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>',
     bokehAmount:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="10" r="3" opacity="0.5"/><circle cx="15" cy="9" r="4" opacity="0.7"/><circle cx="12" cy="15" r="2.5" opacity="0.45"/></svg>'
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="10" r="3" opacity="0.5"/><circle cx="15" cy="9" r="4" opacity="0.7"/><circle cx="12" cy="15" r="2.5" opacity="0.45"/></svg>',
+    skinSoft:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="10" r="5"/><path d="M8 20c1.5-3 6.5-3 8 0" opacity="0.5"/></svg>',
+    subjectPunch:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 4v16M4 12h16"/><circle cx="12" cy="12" r="3"/></svg>'
   };
 
   /** @typedef {{ id:string, label:string, min:number, max:number, step:number, def:number, store:'params'|'look'|'optics', opticsKey?:string, format?:string }} AdjDef */
@@ -130,7 +134,9 @@
       { id: 'dofStrength', label: 'DoF amount', min: 0, max: 100, step: 1, def: 55, store: 'optics', opticsKey: 'strength', format: 'pct' },
       { id: 'aperture', label: 'Aperture', min: 0, max: 100, step: 1, def: 55, store: 'optics', opticsKey: 'apertureStrength', format: 'fstop' },
       { id: 'focusDepth', label: 'Focus', min: 0, max: 100, step: 1, def: 30, store: 'optics', opticsKey: 'focusDepth', format: 'pct' },
-      { id: 'bokehAmount', label: 'Bokeh', min: 0, max: 100, step: 1, def: 55, store: 'optics', opticsKey: 'bokehAmount', format: 'pct' }
+      { id: 'bokehAmount', label: 'Bokeh', min: 0, max: 100, step: 1, def: 55, store: 'optics', opticsKey: 'bokehAmount', format: 'pct' },
+      { id: 'skinSoft', label: 'Skin soft', min: 0, max: 100, step: 1, def: 0, store: 'optics', opticsKey: 'skinSoft', format: 'pct' },
+      { id: 'subjectPunch', label: 'Subject', min: 0, max: 100, step: 1, def: 0, store: 'optics', opticsKey: 'subjectPunch', format: 'pct' }
     ],
     crop: [
       { id: 'rotation', label: 'Straighten', min: -45, max: 45, step: 0.5, def: 0, store: 'params', format: 'deg' }
@@ -268,7 +274,10 @@
       focusManual: false,
       focalRecipe: '50',
       bokehShape: 'auto',
-      bokehAmount: 0.55
+      bokehAmount: 0.55,
+      /** I5e selective 0..1 */
+      skinSoft: 0,
+      subjectPunch: 0
     },
     debugScene: 'off',
     crop: {
@@ -584,6 +593,9 @@
       if (adj.id === 'dofStrength') return Math.round(state.optics.strength * 100);
       if (adj.id === 'focusDepth') return Math.round(state.optics.focusDepth * 100);
       if (adj.id === 'bokehAmount') return Math.round(state.optics.bokehAmount * 100);
+      if (adj.id === 'skinSoft') return Math.round((state.optics.skinSoft || 0) * 100);
+      if (adj.id === 'subjectPunch')
+        return Math.round((state.optics.subjectPunch || 0) * 100);
     }
     return adj.def;
   }
@@ -628,6 +640,16 @@
       } else if (adj.id === 'focusDepth') {
         state.optics.focusManual = true;
         state.optics.focusDepth = val / 100;
+      } else if (adj.id === 'skinSoft') {
+        state.optics.skinSoft = val / 100;
+        if (val > 0 && !state.scene && typeof scheduleSceneAnalysis === 'function') {
+          scheduleSceneAnalysis(400, { force: true });
+        }
+      } else if (adj.id === 'subjectPunch') {
+        state.optics.subjectPunch = val / 100;
+        if (val > 0 && !state.scene && typeof scheduleSceneAnalysis === 'function') {
+          scheduleSceneAnalysis(400, { force: true });
+        }
       } else if (adj.id === 'bokehAmount') {
         state.optics.bokehAmount = val / 100;
       }
@@ -678,6 +700,8 @@
       if (adj.id === 'aperture') return Math.abs(state.optics.apertureStrength - 0.55) > 0.01;
       if (adj.id === 'focusDepth') return state.optics.focusManual;
       if (adj.id === 'bokehAmount') return Math.abs(state.optics.bokehAmount - 0.55) > 0.01;
+      if (adj.id === 'skinSoft') return (state.optics.skinSoft || 0) > 0.01;
+      if (adj.id === 'subjectPunch') return (state.optics.subjectPunch || 0) > 0.01;
       return false;
     }
     if (adj.store === 'imperf' || adj.id === 'imperfIntensity') {
@@ -721,7 +745,9 @@
         focusManual: state.optics.focusManual,
         focalRecipe: state.optics.focalRecipe,
         bokehShape: state.optics.bokehShape,
-        bokehAmount: state.optics.bokehAmount
+        bokehAmount: state.optics.bokehAmount,
+        skinSoft: state.optics.skinSoft || 0,
+        subjectPunch: state.optics.subjectPunch || 0
       },
       crop: {
         x: state.crop.x,
@@ -853,7 +879,9 @@
             focusManual: state.optics.focusManual,
             focalRecipe: state.optics.focalRecipe,
             bokehShape: state.optics.bokehShape,
-            bokehAmount: state.optics.bokehAmount
+            bokehAmount: state.optics.bokehAmount,
+            skinSoft: state.optics.skinSoft || 0,
+            subjectPunch: state.optics.subjectPunch || 0
           },
           userLookId: state.userLookId
         })
@@ -1635,7 +1663,9 @@
           focalRecipe: state.optics.focalRecipe || '50',
           bokehShape: state.optics.bokehShape || 'auto',
           bokehAmount:
-            state.optics.bokehAmount != null ? state.optics.bokehAmount : 0.55
+            state.optics.bokehAmount != null ? state.optics.bokehAmount : 0.55,
+          skinSoft: state.optics.skinSoft || 0,
+          subjectPunch: state.optics.subjectPunch || 0
         },
         debugScene: state.debugScene === 'off' ? null : state.debugScene
       });
@@ -1793,7 +1823,9 @@
         focusDepth: state.optics.focusDepth,
         focalRecipe: state.optics.focalRecipe || '50',
         bokehShape: state.optics.bokehShape || 'auto',
-        bokehAmount: state.optics.bokehAmount != null ? state.optics.bokehAmount : 0.55
+        bokehAmount: state.optics.bokehAmount != null ? state.optics.bokehAmount : 0.55,
+          skinSoft: state.optics.skinSoft || 0,
+          subjectPunch: state.optics.subjectPunch || 0
       },
       debugScene: useFast || state.debugScene === 'off' ? null : state.debugScene
     });
@@ -1854,10 +1886,16 @@
         analysis.personConfidence != null
           ? Math.round(analysis.personConfidence * 100)
           : null;
+      const cov =
+        analysis.personCoverage != null
+          ? Math.round(analysis.personCoverage * 100)
+          : conf;
+      const partsNote = analysis.parts ? ' · parts' : '';
+      const faceNote = analysis.face ? ' · face' : '';
       setSceneStatus(
-        conf != null
-          ? 'Ready · subject ' + conf + '%'
-          : 'Ready',
+        cov != null
+          ? 'Ready · subject ' + cov + '%' + partsNote + faceNote
+          : 'Ready' + partsNote + faceNote,
         'ready'
       );
       scheduleRender(false);
@@ -3617,6 +3655,8 @@
     state.optics.apertureStrength = 0.55;
     state.optics.apertureSlider = 55;
     state.optics.bokehAmount = 0.55;
+    state.optics.skinSoft = 0;
+    state.optics.subjectPunch = 0;
     state.optics.focusManual = false;
     state.optics.focusDepth = 0.3;
     state.optics.focalRecipe = '50';
@@ -3853,7 +3893,9 @@
           focusDepth: state.optics.focusDepth,
           focalRecipe: state.optics.focalRecipe || '50',
           bokehShape: state.optics.bokehShape || 'auto',
-          bokehAmount: state.optics.bokehAmount != null ? state.optics.bokehAmount : 0.55
+          bokehAmount: state.optics.bokehAmount != null ? state.optics.bokehAmount : 0.55,
+          skinSoft: state.optics.skinSoft || 0,
+          subjectPunch: state.optics.subjectPunch || 0
         },
         maxWorkingSize: state.maxWorkingSize
       });

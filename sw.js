@@ -26,6 +26,7 @@ var PRECACHE = [
   "./js/scene/coc.js",
   "./js/scene/bokeh.js",
   "./js/scene/dof.js",
+  "./js/scene/selective.js",
   "./js/scene/analyze.js",
 ];
 
