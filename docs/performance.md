@@ -231,12 +231,13 @@ You almost do this with `fast` — formalize dirty flags so settle doesn’t red
 
 **Expected:** snappier aperture/skin scrub; export less freezy.
 
-### Phase G2 — WebGL grade core (1–2 weeks)
-1. `js/gpu/grade.js` — upload texture, one FS for light+color+LUT film  
-2. Fallback to CPU if WebGL fail  
-3. Preview path GPU; export: GPU + readback OR CPU parity tests  
+### Phase G2 — WebGL grade core *(shipped)*
+1. `js/gpu/grade.js` — WebGL2 light/color + film LUT/curves (grain still CPU)  
+2. Auto CPU fallback if WebGL2 missing / texture too large / error  
+3. `Looks.applyLooks({ skipFilm, filmGrainOnly })` after GPU film  
+4. Perf: `grade:gpu` mark when `?perf=1`  
 
-**Expected:** light/color/film scrub ~1–3 ms @ 1400p on mid GPU.
+**Expected:** snappier light/color/film scrub; camera/imperf/lens still CPU.
 
 ### Phase G3 — WebGL DoF (1–2 weeks)
 1. CoC texture from CPU map (or gen on GPU later)  

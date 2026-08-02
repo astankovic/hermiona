@@ -2009,7 +2009,23 @@
     const camera = cameraById(cameraId);
     const lens = lensById(lensId);
 
-    applyFilm(data, w, h, film, filmInt, grainMode || 'static');
+    // G2: GPU may have already applied film curves; optionally only grain left
+    if (!opts.skipFilm) {
+      applyFilm(data, w, h, film, filmInt, grainMode || 'static');
+    } else if (opts.filmGrainOnly && film && film.id !== 'none' && filmInt > 0) {
+      const grainAmt = (film.grain || 0) * filmInt;
+      if (grainAmt > 0) {
+        applyCharacterGrain(
+          data,
+          w,
+          h,
+          grainAmt,
+          film.grainSize || 1,
+          !!film.mono || film.sat === -1,
+          grainMode || 'static'
+        );
+      }
+    }
     applyCamera(data, w, h, camera, camInt);
 
     // I6 analog imperfections (spatial / mechanical) — between body and lens
@@ -2054,6 +2070,7 @@
     applyCamera,
     applyLens,
     applyLooks,
-    buildLUT
+    buildLUT,
+    getFilmLUTs
   };
 })(typeof window !== 'undefined' ? window : globalThis);

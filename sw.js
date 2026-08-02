@@ -31,6 +31,7 @@ var PRECACHE = [
   "./js/scene/dof.js",
   "./js/scene/selective.js",
   "./js/scene/analyze.js",
+  "./js/gpu/grade.js",
 ];
 
 /** CDN / model hosts — never put these in the shell cache. */

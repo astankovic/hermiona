@@ -168,105 +168,130 @@
     const vignette = (p.vignette || 0) / 100;
     const grainAmt = (p.grain || 0) / 100;
 
-    // ——— Grade (light/color) — skip if resuming after looks ———
+    const Looks = global.HermionaLooks;
+    const DoF = global.HermionaDoF;
+    const CoC = global.HermionaCoC;
+    let gpuDidFilm = false;
+
+    // ——— Grade (light/color) + optional film curves — skip if fromAfterLooks ———
     if (!fromLooks) {
       const perfGrade = Perf && Perf.isEnabled() ? Perf.start('grade') : null;
-      const exp = Math.pow(2, p.exposure || 0);
-      const contrast = ((p.contrast || 0) + 100) / 100;
-      const sat = ((p.saturation || 0) + 100) / 100;
-      const vib = (p.vibrance || 0) / 100;
-      const temp = (p.temperature || 0) / 100;
-      const tintVal = (p.tint || 0) / 100;
-      const hi = (p.highlights || 0) / 100;
-      const sh = (p.shadows || 0) / 100;
-      const wh = (p.whites || 0) / 100;
-      const bl = (p.blacks || 0) / 100;
       const clarity = (p.clarity || 0) / 100;
       const sharpen = (p.sharpen || 0) / 100;
 
-      for (let i = 0; i < data.length; i += 4) {
-        let r = data[i] / 255;
-        let g = data[i + 1] / 255;
-        let b = data[i + 2] / 255;
+      const filmId =
+        options.look && options.look.film ? options.look.film : 'none';
+      const filmInt =
+        options.look && options.look.filmIntensity != null
+          ? options.look.filmIntensity / 100
+          : 1;
+      const film =
+        Looks && filmId !== 'none' ? Looks.filmById(filmId) : null;
 
-        r *= exp;
-        g *= exp;
-        b *= exp;
-
-        r = (r - 0.5) * contrast + 0.5;
-        g = (g - 0.5) * contrast + 0.5;
-        b = (b - 0.5) * contrast + 0.5;
-
-        const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-
-        if (sh !== 0 && luma < 0.5) {
-          const amount = sh * (1 - luma * 2);
-          r += amount * 0.35;
-          g += amount * 0.35;
-          b += amount * 0.35;
+      // G2 WebGL path
+      let gpuOk = false;
+      const Gpu = global.HermionaGpuGrade;
+      if (Gpu && !options.forceCpu && typeof Gpu.apply === 'function') {
+        const perfGpu = Perf && Perf.isEnabled() ? Perf.start('grade:gpu') : null;
+        gpuOk = Gpu.apply(data, w, h, p, film, filmInt);
+        if (perfGpu) perfGpu.end({ ok: gpuOk ? 1 : 0 });
+        if (gpuOk && film && film.id !== 'none' && filmInt > 0) {
+          gpuDidFilm = true;
         }
+      }
 
-        if (hi !== 0 && luma > 0.5) {
-          const amount = hi * ((luma - 0.5) * 2);
-          r -= amount * 0.25;
-          g -= amount * 0.25;
-          b -= amount * 0.25;
-        }
+      if (!gpuOk) {
+        const exp = Math.pow(2, p.exposure || 0);
+        const contrast = ((p.contrast || 0) + 100) / 100;
+        const sat = ((p.saturation || 0) + 100) / 100;
+        const vib = (p.vibrance || 0) / 100;
+        const temp = (p.temperature || 0) / 100;
+        const tintVal = (p.tint || 0) / 100;
+        const hi = (p.highlights || 0) / 100;
+        const sh = (p.shadows || 0) / 100;
+        const wh = (p.whites || 0) / 100;
+        const bl = (p.blacks || 0) / 100;
 
-        if (wh !== 0) {
-          const t = Math.max(0, (luma - 0.7) / 0.3);
-          r = lerp(r, r + wh * 0.3, t);
-          g = lerp(g, g + wh * 0.3, t);
-          b = lerp(b, b + wh * 0.3, t);
-        }
-        if (bl !== 0) {
-          const t = Math.max(0, (0.3 - luma) / 0.3);
-          r = lerp(r, r + bl * 0.25, t);
-          g = lerp(g, g + bl * 0.25, t);
-          b = lerp(b, b + bl * 0.25, t);
-        }
+        for (let i = 0; i < data.length; i += 4) {
+          let r = data[i] / 255;
+          let g = data[i + 1] / 255;
+          let b = data[i + 2] / 255;
 
-        if (temp !== 0) {
-          r += temp * 0.15;
-          b -= temp * 0.15;
-        }
-        if (tintVal !== 0) {
-          g += tintVal * 0.12;
-          r -= tintVal * 0.04;
-          b -= tintVal * 0.04;
-        }
+          r *= exp;
+          g *= exp;
+          b *= exp;
 
-        if (sat !== 1) {
-          const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-          r = gray + (r - gray) * sat;
-          g = gray + (g - gray) * sat;
-          b = gray + (b - gray) * sat;
-        }
+          r = (r - 0.5) * contrast + 0.5;
+          g = (g - 0.5) * contrast + 0.5;
+          b = (b - 0.5) * contrast + 0.5;
 
-        if (vib !== 0) {
-          const maxc = Math.max(r, g, b);
-          const minc = Math.min(r, g, b);
-          const satLevel = maxc === 0 ? 0 : (maxc - minc) / maxc;
-          const amount = vib * (1 - satLevel);
-          const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-          r = gray + (r - gray) * (1 + amount);
-          g = gray + (g - gray) * (1 + amount);
-          b = gray + (b - gray) * (1 + amount);
-        }
+          const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
 
-        data[i] = clamp(r * 255, 0, 255);
-        data[i + 1] = clamp(g * 255, 0, 255);
-        data[i + 2] = clamp(b * 255, 0, 255);
+          if (sh !== 0 && luma < 0.5) {
+            const amount = sh * (1 - luma * 2);
+            r += amount * 0.35;
+            g += amount * 0.35;
+            b += amount * 0.35;
+          }
+
+          if (hi !== 0 && luma > 0.5) {
+            const amount = hi * ((luma - 0.5) * 2);
+            r -= amount * 0.25;
+            g -= amount * 0.25;
+            b -= amount * 0.25;
+          }
+
+          if (wh !== 0) {
+            const tv = Math.max(0, (luma - 0.7) / 0.3);
+            r = lerp(r, r + wh * 0.3, tv);
+            g = lerp(g, g + wh * 0.3, tv);
+            b = lerp(b, b + wh * 0.3, tv);
+          }
+          if (bl !== 0) {
+            const tv = Math.max(0, (0.3 - luma) / 0.3);
+            r = lerp(r, r + bl * 0.25, tv);
+            g = lerp(g, g + bl * 0.25, tv);
+            b = lerp(b, b + bl * 0.25, tv);
+          }
+
+          if (temp !== 0) {
+            r += temp * 0.15;
+            b -= temp * 0.15;
+          }
+          if (tintVal !== 0) {
+            g += tintVal * 0.12;
+            r -= tintVal * 0.04;
+            b -= tintVal * 0.04;
+          }
+
+          if (sat !== 1) {
+            const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            r = gray + (r - gray) * sat;
+            g = gray + (g - gray) * sat;
+            b = gray + (b - gray) * sat;
+          }
+
+          if (vib !== 0) {
+            const maxc = Math.max(r, g, b);
+            const minc = Math.min(r, g, b);
+            const satLevel = maxc === 0 ? 0 : (maxc - minc) / maxc;
+            const amount = vib * (1 - satLevel);
+            const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            r = gray + (r - gray) * (1 + amount);
+            g = gray + (g - gray) * (1 + amount);
+            b = gray + (b - gray) * (1 + amount);
+          }
+
+          data[i] = clamp(r * 255, 0, 255);
+          data[i + 1] = clamp(g * 255, 0, 255);
+          data[i + 2] = clamp(b * 255, 0, 255);
+        }
       }
 
       if (!fast && clarity !== 0) applyClarity(data, w, h, clarity);
       if (!fast && sharpen > 0) applySharpen(data, w, h, sharpen);
-      if (perfGrade) perfGrade.end();
+      if (perfGrade) perfGrade.end({ gpu: gpuOk ? 1 : 0 });
     }
-
-    const Looks = global.HermionaLooks;
-    const DoF = global.HermionaDoF;
-    const CoC = global.HermionaCoC;
 
     // CoC when needed for lens or DoF
     let cocBuilt = null;
@@ -310,9 +335,13 @@
         options.grainMode || 'static',
         quality,
         fast ? null : cocMap,
-        { fast: fast }
+        {
+          fast: fast,
+          skipFilm: gpuDidFilm,
+          filmGrainOnly: gpuDidFilm
+        }
       );
-      if (perfLooks) perfLooks.end();
+      if (perfLooks) perfLooks.end({ skipFilm: gpuDidFilm ? 1 : 0 });
     }
 
     // Dirty-flag snapshot: graded + looks, before selective/DoF
