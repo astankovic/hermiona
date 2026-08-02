@@ -376,6 +376,93 @@
     '</g></svg>' +
     '<span class="brand-word">HERMIONA</span>';
 
+
+  const dockBody = $('#dockBody');
+  let enterAnimTimer = 0;
+  let exitAnimTimer = 0;
+  let panelAnimTimer = 0;
+
+  function prefersReducedMotion() {
+    try {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /** Hero boot / return — Iris finds focus */
+  function playHeroEnter() {
+    document.body.classList.remove('is-entering', 'is-exiting');
+    document.body.classList.remove('hero-ready');
+    void document.body.offsetWidth;
+    document.body.classList.add('hero-ready');
+  }
+
+  /**
+   * Hero → editor: photo settles, chrome + dock rise (mobile) or slide (desktop).
+   * Call after state.hasImage is true and canvas is ready to paint.
+   */
+  function playEditorEnter() {
+    document.body.classList.remove('hero-ready', 'is-exiting');
+    document.body.classList.add('has-image');
+    if (dock) dock.hidden = false;
+    canvas.classList.add('visible');
+
+    if (prefersReducedMotion()) {
+      document.body.classList.remove('is-entering');
+      return;
+    }
+
+    document.body.classList.remove('is-entering');
+    void document.body.offsetWidth;
+    document.body.classList.add('is-entering');
+    clearTimeout(enterAnimTimer);
+    enterAnimTimer = setTimeout(() => {
+      document.body.classList.remove('is-entering');
+    }, 900);
+  }
+
+  /** Editor → hero. Runs onDone after exit animation. */
+  function playEditorExit(onDone) {
+    clearTimeout(exitAnimTimer);
+    if (prefersReducedMotion() || !document.body.classList.contains('has-image')) {
+      document.body.classList.remove('has-image', 'is-entering', 'is-exiting');
+      if (typeof onDone === 'function') onDone();
+      playHeroEnter();
+      return;
+    }
+    document.body.classList.remove('is-entering');
+    document.body.classList.add('is-exiting');
+    exitAnimTimer = setTimeout(() => {
+      document.body.classList.remove('has-image', 'is-exiting');
+      if (typeof onDone === 'function') onDone();
+      playHeroEnter();
+    }, 420);
+  }
+
+  /** Re-trigger panel/chip entrance when switching tools */
+  function playPanelEnter() {
+    if (!dockBody || prefersReducedMotion()) return;
+    dockBody.classList.remove('is-panel-enter');
+    void dockBody.offsetWidth;
+    dockBody.classList.add('is-panel-enter');
+    clearTimeout(panelAnimTimer);
+    panelAnimTimer = setTimeout(() => {
+      dockBody.classList.remove('is-panel-enter');
+    }, 520);
+  }
+
+  /** Soft pulse on dial value when scrubbing */
+  function tickDialValue() {
+    const el = document.getElementById('dialValue');
+    if (!el || prefersReducedMotion()) return;
+    el.classList.remove('is-ticking');
+    void el.offsetWidth;
+    el.classList.add('is-ticking');
+    clearTimeout(tickDialValue._t);
+    tickDialValue._t = setTimeout(() => el.classList.remove('is-ticking'), 180);
+  }
+
   function setTopbarBrand() {
     if (!topbarTitle) return;
     topbarTitle.classList.add('topbar-title--brand');
@@ -933,12 +1020,9 @@
       resetCropRect();
       state.scene = null;
       state.hasImage = true;
-      document.body.classList.add('has-image');
       enableControls(true);
       updateEnhanceBarUI();
       if (btnSceneAnalyze) btnSceneAnalyze.disabled = false;
-      if (dock) dock.hidden = false;
-      canvas.classList.add('visible');
       if (typeof setChromeHidden === 'function') setChromeHidden(false);
       if (opticsEnabledEl) opticsEnabledEl.checked = !!state.optics.enabled;
       if (compareHint && !restore) {
@@ -946,15 +1030,16 @@
         compareHint.classList.add('show');
         setTimeout(() => compareHint.classList.remove('show'), 2800);
       }
+      busyEnd('load');
+      resetHistory();
+      if (typeof updateLayoutMode === 'function') updateLayoutMode();
+      render(false);
+      playEditorEnter();
       setTool(state.ui.tool || 'adjust');
       syncLookUI();
       updateDialUI();
       markChipModified();
       updateToolDots();
-      busyEnd('load');
-      resetHistory();
-      if (typeof updateLayoutMode === 'function') updateLayoutMode();
-      render(false);
       if (state.crop.active) updateCropOverlay();
       if (restore) showToast('Restored · ' + (Draft.formatAge(restore.savedAt) || 'draft'), 1400);
       scheduleDraftSave();
@@ -963,6 +1048,7 @@
       URL.revokeObjectURL(url);
       busyEnd('load');
       dropOverlay.classList.remove('hidden');
+      playHeroEnter();
       showToast('Could not restore photo');
     };
     img.src = url;
@@ -1044,23 +1130,22 @@
             state.enhanceMode = null;
             state.userLookId = null;
             state.hasImage = true;
-            document.body.classList.add('has-image');
             enableControls(true);
             updateEnhanceBarUI();
             if (btnSceneAnalyze) btnSceneAnalyze.disabled = false;
-            if (dock) dock.hidden = false;
-            canvas.classList.add('visible');
             if (typeof setChromeHidden === 'function') setChromeHidden(false);
-            setTool(state.ui.tool || 'adjust');
             busyEnd('load');
             resetHistory();
             if (typeof updateLayoutMode === 'function') updateLayoutMode();
             render(false);
+            playEditorEnter();
+            setTool(state.ui.tool || 'adjust');
             scheduleDraftSave();
           };
           img.onerror = () => {
             busyEnd('load');
             dropOverlay.classList.remove('hidden');
+            playHeroEnter();
             showToast('Could not load the image.');
           };
           img.src = e.target.result;
@@ -1069,6 +1154,7 @@
     reader.onerror = () => {
       busyEnd('load');
       dropOverlay.classList.remove('hidden');
+      playHeroEnter();
       showToast('Could not read the file.');
     };
     reader.readAsDataURL(file);
@@ -3184,6 +3270,10 @@
         setTopbarBrand();
       }
     }
+
+    if (state.hasImage) {
+      requestAnimationFrame(() => playPanelEnter());
+    }
   }
 
   function buildChips(list, activeId) {
@@ -3358,6 +3448,7 @@
       if (dialValue) {
         dialValue.textContent = formatAdjValue(adj, val);
         dialValue.classList.toggle('neutral', !isAdjModified(adj));
+        tickDialValue();
       }
       if (dialReset) dialReset.hidden = !isAdjModified(adj);
       markChipModified();
@@ -3998,25 +4089,26 @@
       }
       if (confirm('Close and load a new photo? This clears the on-device draft.')) {
         clearDraft();
-        state.hasImage = false;
-        document.body.classList.remove('has-image');
-        state.originalImage = null;
-        state.originalData = null;
-        state.scrubData = null;
-        state.workingCanvas = null;
-        state.ops = [];
-        state.scene = null;
-        state.sourceFileName = null;
-        canvas.classList.remove('visible');
-        if (dock) dock.hidden = true;
-        if (typeof setChromeHidden === 'function') setChromeHidden(false);
-        dropOverlay.classList.remove('hidden');
-        enableControls(false);
-        if (lookChip) lookChip.hidden = true;
-        setTopbarBrand();
-        if (typeof updateLayoutMode === 'function') updateLayoutMode();
-        fileInput.value = '';
-        fileInput.click();
+        playEditorExit(() => {
+          state.hasImage = false;
+          state.originalImage = null;
+          state.originalData = null;
+          state.scrubData = null;
+          state.workingCanvas = null;
+          state.ops = [];
+          state.scene = null;
+          state.sourceFileName = null;
+          canvas.classList.remove('visible');
+          if (dock) dock.hidden = true;
+          if (typeof setChromeHidden === 'function') setChromeHidden(false);
+          dropOverlay.classList.remove('hidden');
+          enableControls(false);
+          if (lookChip) lookChip.hidden = true;
+          setTopbarBrand();
+          if (typeof updateLayoutMode === 'function') updateLayoutMode();
+          fileInput.value = '';
+          fileInput.click();
+        });
       }
     });
   }
@@ -4294,6 +4386,7 @@
   if (dock) dock.hidden = true;
   enableControls(false);
   checkDraftOnBoot();
+  requestAnimationFrame(() => playHeroEnter());
 
   // MediaPipe / portrait pipeline stays cold until user enables DoF or taps Analyze
 

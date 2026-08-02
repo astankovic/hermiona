@@ -193,15 +193,15 @@ body:not(.layout-side).has-image .topbar-title {
  * Idle (no photo): one brand moment only — the empty stage.
  * Topbar chrome is silent so HERMIONA is not repeated.
  */
-body:not(.has-image) .topbar {
+body:not(.has-image):not(.is-exiting) .topbar {
   background: transparent;
   border-bottom: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
 
-body:not(.has-image) .topbar-left,
-body:not(.has-image) .topbar-right {
+body:not(.has-image):not(.is-exiting) .topbar-left,
+body:not(.has-image):not(.is-exiting) .topbar-right {
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
@@ -211,10 +211,18 @@ body:not(.has-image) .topbar-title {
   display: none !important;
 }
 
-body:not(.has-image) .tb-cluster {
+body:not(.has-image):not(.is-exiting) .tb-cluster {
   box-shadow: none;
   background: transparent;
   border: none;
+}
+
+/* Soften topbar into place when editor is live */
+body.has-image .topbar-left,
+body.has-image .topbar-right {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 body:not(.layout-side) .header-busy {
@@ -664,6 +672,11 @@ body.layout-side.is-entering #mainCanvas.visible {
   min-width: 148px;
 }
 
+.drop-invite .btn-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 28px rgba(255, 214, 10, 0.28);
+}
+
 .fine-print {
   margin-top: 28px;
   font-size: 11px;
@@ -758,7 +771,10 @@ body.layout-side.is-entering #mainCanvas.visible {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.12s var(--ease-spring), background 0.15s;
+  transition:
+    transform 0.22s var(--ease-spring),
+    background 0.2s var(--ease-soft),
+    box-shadow 0.28s var(--ease-out);
 }
 
 .btn-pill:active {
@@ -1455,7 +1471,9 @@ body.layout-compact .enhance-btn {
   color: var(--text-secondary);
   cursor: pointer;
   -webkit-user-select: none;
-  transition: color 0.15s, transform 0.12s var(--ease-spring);
+  transition:
+    color 0.22s var(--ease-soft),
+    transform 0.18s var(--ease-spring);
 }
 
 .chip:active {
@@ -3253,14 +3271,28 @@ body.layout-side .topbar {
   margin: 0;
   padding-left: max(8px, var(--safe-left));
   padding-right: max(8px, var(--safe-right));
-  /* Reset immersive overlay styles */
+  /* Reset immersive overlay styles when editing */
+  transform: none !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transition:
+    background 0.4s var(--ease-soft),
+    border-color 0.4s,
+    backdrop-filter 0.4s;
+}
+
+body.layout-side.has-image .topbar {
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
   border-bottom: 0.5px solid var(--separator);
-  transform: none !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
+}
+
+body.layout-side:not(.has-image) .topbar {
+  background: transparent;
+  border-bottom: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 body.layout-side .topbar .tb-btn {
