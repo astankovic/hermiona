@@ -53,6 +53,11 @@
   padding: 0;
 }
 
+html {
+  height: 100%;
+  height: -webkit-fill-available;
+}
+
 html, body {
   height: 100%;
   overflow: hidden;
@@ -68,6 +73,13 @@ html, body {
   touch-action: manipulation;
 }
 
+body {
+  /* iOS Safari: account for dynamic toolbars */
+  min-height: 100%;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+}
+
 button, input {
   font-family: inherit;
 }
@@ -77,6 +89,9 @@ button, input {
   flex-direction: column;
   height: 100%;
   height: 100dvh;
+  max-height: 100dvh;
+  /* iOS fill when dvh is flaky */
+  max-height: -webkit-fill-available;
   background: var(--bg);
   overflow: hidden;
   min-height: 0;
@@ -250,19 +265,19 @@ body:not(.layout-side) .dock {
   width: 100%;
   z-index: 50;
   flex: none;
-  /* Pack chrome to the bottom edge of the dock box (never float mid-screen) */
-  justify-content: flex-end;
-  border-radius: 18px 18px 0 0;
+  /* Natural stack: handle → panels → rail (rail always last / bottom) */
+  justify-content: flex-start;
+  border-radius: 16px 16px 0 0;
   box-shadow:
     0 -8px 32px rgba(0, 0, 0, 0.5),
     0 -1px 0 rgba(255, 255, 255, 0.06);
-  background: rgba(12, 12, 14, 0.86);
-  /* Cap total dock so handle + panels + tool-rail always fit on screen */
-  max-height: min(70dvh, 70vh, 520px);
+  background: rgba(12, 12, 14, 0.92);
+  /* Cap so photo stays visible; home indicator sits in padding-bottom */
+  max-height: min(62dvh, 480px);
   overflow: hidden;
   transform: none;
+  padding-bottom: max(var(--safe-bottom), 8px);
   transition:
-    max-height 0.32s var(--ease-out),
     box-shadow 0.28s var(--ease-out),
     background 0.28s ease;
   touch-action: pan-y;
@@ -279,40 +294,47 @@ body:not(.layout-side) .stage {
   position: relative;
 }
 
-/* Chrome collapsed: hide dials/panels only — tool rail + topbar stay */
+/* Chrome collapsed: panels gone, handle + tool rail stay flush to bottom */
 body.chrome-hidden:not(.layout-side) .dock {
   transform: none;
-  background: rgba(12, 12, 14, 0.78);
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.35);
+  background: rgba(12, 12, 14, 0.88);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+  max-height: none;
 }
 
 body.chrome-hidden:not(.layout-side) .dock-body {
   max-height: 0 !important;
+  min-height: 0 !important;
+  flex: 0 0 0 !important;
   opacity: 0;
-  overflow: hidden;
+  overflow: hidden !important;
   pointer-events: none;
-  margin: 0;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
+  visibility: hidden;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none;
+  transition: max-height 0.22s var(--ease-out), opacity 0.12s ease;
 }
 
-/* Main tool menu always visible */
+/* Main tool menu always visible & interactive when collapsed */
 body.chrome-hidden:not(.layout-side) .tool-rail {
   max-height: none;
   min-height: var(--dock-rail);
-  height: var(--dock-rail);
+  height: auto;
   opacity: 1;
   overflow-x: auto;
   overflow-y: hidden;
   pointer-events: auto;
+  margin-top: 0;
+  border-top: 0.5px solid var(--separator);
 }
 
 body.chrome-hidden:not(.layout-side) .zoom-hud {
-  bottom: calc(var(--dock-rail) + 44px + var(--safe-bottom));
+  bottom: calc(var(--dock-rail) + 36px + var(--safe-bottom));
 }
 
 body:not(.layout-side) .zoom-hud {
-  transition: bottom 0.36s var(--ease-out);
+  transition: bottom 0.28s var(--ease-out);
 }
 
 /* ========== TOP BAR ========== */
@@ -1324,20 +1346,19 @@ body:not(.layout-side) .look-chip {
   display: none !important;
 }
 
-/* Tap chevron to collapse / expand dock panels */
+/* Chevron-only collapse control (no label text) */
 .dock-handle-hit {
   flex: 0 0 auto;
   flex-shrink: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
   margin: 0;
-  padding: 6px 16px 2px;
+  padding: 8px 20px 4px;
+  min-height: 32px;
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   touch-action: manipulation;
   user-select: none;
@@ -1349,44 +1370,37 @@ body:not(.layout-side) .look-chip {
 }
 
 .dock-handle-hit:active {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .dock-handle-chevron {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
+  width: 40px;
   height: 22px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  transition: transform 0.28s var(--ease-out), background 0.15s;
+  background: rgba(255, 255, 255, 0.1);
+  transition: transform 0.22s var(--ease-out), background 0.15s, color 0.15s;
 }
 
 .dock-handle-hit:active .dock-handle-chevron {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(0.96);
 }
 
-/* Collapsed panels → chevron points up (tap to expand) */
+/* Expanded = chevron down (collapse). Collapsed = up (expand). */
 body.chrome-hidden:not(.layout-side) .dock-handle-chevron {
   transform: rotate(180deg);
 }
 
-.dock-handle-hint {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-tertiary);
-  letter-spacing: 0.02em;
-  line-height: 1;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-  pointer-events: none;
-  min-height: 1em;
+body.chrome-hidden:not(.layout-side) .dock-handle-hit:active .dock-handle-chevron {
+  transform: rotate(180deg) scale(0.96);
 }
 
-body.chrome-hidden:not(.layout-side) .dock-handle-hint {
-  opacity: 0.85;
-  color: rgba(255, 255, 255, 0.65);
+/* legacy class if any leftover markup */
+.dock-handle-hint {
+  display: none !important;
 }
 
 body.layout-side .dock-handle-hit {
@@ -1497,26 +1511,34 @@ body.layout-side .acc-group .acc-body {
 .dock-body {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
+  /* Mobile overlay: size to content, never steal height from the rail */
+  flex: 0 1 auto;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  /* Leave ~handle + rail + safe-area (~120px) under dock max-height */
-  max-height: min(32dvh, 32vh, 240px);
-  /* max-height only — opacity transitions flash content when panels swap */
-  transition: max-height 0.28s var(--ease-cinematic);
+  max-height: min(28dvh, 220px);
+  transition: max-height 0.22s var(--ease-out);
 }
 
-/* Tall dock for Age / Presets / Crop — grow body, never push rail off-screen */
+/* Tall tools — still leave handle + rail (~100px) under the dock cap */
 .dock.dock-tall .dock-body {
-  max-height: min(40dvh, 40vh, 300px);
+  max-height: min(36dvh, 280px);
 }
 
 .dock.dock-tall[data-tool="looks"] .dock-body,
 .dock.dock-tall[data-tool="age"] .dock-body {
-  max-height: min(44dvh, 44vh, 340px);
+  max-height: min(40dvh, 320px);
+}
+
+/* Overlay mobile: never let body flex-grow create a hole above the rail */
+body:not(.layout-side) .dock-body {
+  flex: 0 1 auto;
+}
+
+body:not(.layout-side) .tool-rail {
+  margin-top: 0; /* no auto-gap on phone bottom sheet */
 }
 
 /* Slightly stronger glass when expanded over the photo */
@@ -2574,39 +2596,63 @@ body.layout-compact .preset-scroll {
   padding-bottom: 2px;
 }
 
-/* Mobile / narrow phones */
+/* Mobile / narrow phones (iPhone portrait widths) */
 @media (max-width: 480px) {
+  :root {
+    --dock-rail: 58px;
+    --topbar-h: 48px;
+  }
+
   .tool-rail {
     justify-content: flex-start;
     gap: 0;
-    padding: 0 6px;
+    padding: 2px 4px 0;
     height: auto;
     min-height: var(--dock-rail);
   }
 
   .tool-btn {
     flex: 0 0 auto;
-    min-width: 58px;
-    padding: 8px 10px 6px;
+    min-width: 52px;
+    padding: 6px 8px 4px;
+    gap: 2px;
   }
 
   .tool-btn span {
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .tool-rail .tool-btn svg {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
   }
 
   /* Keep body shorter than dock so Light/Color/Age rail stays on screen */
+  body:not(.layout-side) .dock {
+    max-height: min(58dvh, 460px);
+  }
+
   body:not(.layout-side) .dock.dock-tall .dock-body {
-    max-height: min(42dvh, 42vh, 320px);
+    max-height: min(34dvh, 260px);
   }
 
   body:not(.layout-side) .dock.dock-tall[data-tool="looks"] .dock-body,
   body:not(.layout-side) .dock.dock-tall[data-tool="age"] .dock-body {
-    max-height: min(46dvh, 46vh, 360px);
+    max-height: min(38dvh, 300px);
+  }
+
+  .dock[data-tool="age"] .chips-scroll {
+    min-height: 0;
+    padding: 6px 10px 10px;
+  }
+
+  .dial-hint {
+    display: none;
+  }
+
+  .dock-handle-hit {
+    padding: 6px 16px 2px;
+    min-height: 28px;
   }
 
   #looksSeg .seg-btn {

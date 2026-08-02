@@ -21,7 +21,7 @@
         if (p.has("fresh") || p.get("nocache") === "1") return String(Date.now());
         if (p.get("v")) return p.get("v");
       } catch (e) {}
-      return "202608021100"; // ← bump this when you push JS/CSS changes
+      return "202608021120"; // ← bump this when you push JS/CSS changes
     })();
     document.write(
       '<link rel="stylesheet" href="styles.css?v=' +
@@ -204,12 +204,11 @@
 
     <!-- Editor dock — iOS Photos style (bottom portrait · side landscape/desktop) -->
     <footer class="dock" id="dock" hidden>
-      <!-- Tap chevron to collapse/expand tool panels (rail always stays) -->
-      <button type="button" class="dock-handle-hit" id="dockHandleHit" aria-label="Hide tool panels" aria-expanded="true">
+      <!-- Chevron only — collapse/expand panels (tool rail always stays) -->
+      <button type="button" class="dock-handle-hit" id="dockHandleHit" aria-label="Hide tool panels" aria-expanded="true" title="Hide panels">
         <span class="dock-handle-chevron" id="dockHandleChevron" aria-hidden="true">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
         </span>
-        <span class="dock-handle-hint" id="dockHandleHint">Hide panels</span>
       </button>
       <div class="dock-body" id="dockBody">
         <!-- One-tap enhance (iPhone Photos wand style) -->

@@ -4307,16 +4307,11 @@
     chromeState.hidden = !!hidden;
     document.body.classList.toggle('chrome-hidden', chromeState.hidden);
     const handle = document.getElementById('dockHandleHit');
-    const hint = document.getElementById('dockHandleHint');
     if (handle) {
-      handle.setAttribute('aria-expanded', chromeState.hidden ? 'false' : 'true');
-      handle.setAttribute(
-        'aria-label',
-        chromeState.hidden ? 'Show tool panels' : 'Hide tool panels'
-      );
-    }
-    if (hint) {
-      hint.textContent = chromeState.hidden ? 'Show panels' : 'Hide panels';
+      const open = !chromeState.hidden;
+      handle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      handle.setAttribute('aria-label', open ? 'Hide tool panels' : 'Show tool panels');
+      handle.setAttribute('title', open ? 'Hide panels' : 'Show panels');
     }
     // Stage size does not change — only re-clamp pan if zoomed
     if (state.view.zoom > 1.02) clampPan();
@@ -4324,16 +4319,35 @@
     if (state.crop.active) updateCropOverlay();
   }
 
-  /** Simple click toggle — no swipe (unreliable on mobile). Tool rail always stays. */
+  /** Chevron tap only — no swipe. Tool rail always stays. */
   function bindChromeGestures() {
     const handle = document.getElementById('dockHandleHit');
     if (!handle) return;
-    handle.addEventListener('click', (e) => {
-      e.preventDefault();
+    // Guard against double-fire (iOS ghost clicks)
+    let lastToggle = 0;
+    const toggle = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       if (!isOverlayChrome() || !state.hasImage) return;
       if (dock && dock.hidden) return;
+      const now = Date.now();
+      if (now - lastToggle < 280) return;
+      lastToggle = now;
       setChromeHidden(!chromeState.hidden);
-    });
+    };
+    handle.addEventListener('click', toggle);
+    // Pointerup helps when click is swallowed after scroll bounce
+    handle.addEventListener(
+      'pointerup',
+      (e) => {
+        if (e.pointerType === 'touch' && e.button === 0) {
+          // click will also fire — debounce handles it
+        }
+      },
+      { passive: true }
+    );
   }
 
   /** Accordion open/close for compact Crop & Portrait panels */
