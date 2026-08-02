@@ -3319,7 +3319,7 @@ body:not(.layout-side) {
   --photos-dial-value-h: 22px;
   --photos-dial-track-h: 44px;
   --photos-dial-band-h: calc(var(--photos-dial-value-h) + var(--photos-dial-track-h));
-  --dial-minor: 7px; /* JS must match MINOR_PX */
+  --dial-minor: 8px; /* JS must match MINOR_PX (tick ratchet) */
 }
 
 body:not(.layout-side) .dial-row,
@@ -3485,10 +3485,10 @@ body:not(.layout-side) .look-intensity .dial-ticks {
   /* Fallback pattern; JS overwrites backgroundImage for major+minor */
   background: repeating-linear-gradient(
     to right,
-    rgba(255, 255, 255, 0.32) 0,
-    rgba(255, 255, 255, 0.32) 1px,
-    transparent 1px,
-    transparent 7px
+    rgba(255, 255, 255, 0.36) 0,
+    rgba(255, 255, 255, 0.36) 1.5px,
+    transparent 1.5px,
+    transparent 8px
   );
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
   opacity: 0.95;
@@ -3532,12 +3532,18 @@ body:not(.layout-side) .dial-center-mark {
 }
 
 body:not(.layout-side) .dial-track-wrap.is-scrubbing .dial-center-mark {
-  height: 32px;
-  margin-top: -16px;
+  height: 34px;
+  margin-top: -17px;
   box-shadow:
     0 0 0 0.5px rgba(0, 0, 0, 0.3),
-    0 0 14px rgba(255, 214, 10, 0.6),
+    0 0 14px rgba(255, 214, 10, 0.65),
     0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+/* Brief scale punch on the value when a tick clicks */
+body:not(.layout-side) .dial-row:has(.dial-track-wrap.is-scrubbing) .dial-value,
+body:not(.layout-side) .look-intensity:has(.dial-track-wrap.is-scrubbing) .dial-value {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Range is a11y-only; no visible thumb (needle is the indicator) */

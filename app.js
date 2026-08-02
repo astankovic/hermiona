@@ -4570,14 +4570,14 @@
   }
 
   /**
-   * Sliding-tape dial — phone-first fluid version.
+   * Sliding-tape dial — iOS Photos "tick ratchet".
    *
-   * Critical split:
-   *   1) Visual (tape transform + label) — every pointer/rAF sample, free
-   *   2) Image pipeline — hard-throttled so main thread stays free for 60fps tape
+   * The tape never floats between marks: finger travel accumulates in px,
+   * and every MINOR_PX crosses exactly one step with a short snap + click.
+   * Fling coasts tick-by-tick (not continuous float). Image pipeline is
+   * still throttled so the ratchet stays snappy on phone.
    *
-   * Swipe inverted (physical tape): finger right → tape slides right → value ↓
-   * Finite [min…max] ticks only. No mid-gesture haptics (jank on iOS).
+   * Swipe inverted (physical tape): finger right → ticks slide right → value ↓
    */
   function bindSlidingTapeDial(input, { onDisplay, onInput, onEnd } = {}) {
     if (!input) return null;
@@ -4587,44 +4587,47 @@
     const ticksEl = wrap.querySelector('.dial-ticks');
     if (!tape || !ticksEl) return null;
 
-    const MINOR_PX = 7;
+    // Distance finger must travel to click one tick (Photos-dense)
+    const MINOR_PX = 8;
     const MAJOR_EVERY = 5;
-    const FRICTION = 0.94;
-    const MIN_VEL = 0.01; // value-units / ms
-    const MAX_RELEASE_VEL = 0.38;
-    const VEL_SMOOTH = 0.28;
-    // Image pipeline budget — leave headroom for 60fps tape
-    const PIPE_MS = 48;
+    // Tick-coast after fling
+    const FLING_MIN_TICKS_PER_S = 18; // below this → no coast
+    const FLING_MAX_TICKS_PER_S = 90;
+    const FLING_FRICTION = 0.88; // per coast step
+    // Image pipeline budget
+    const PIPE_MS = 40;
 
     let dragging = false;
     let ended = true;
-    let startX = 0;
-    let startVal = 0;
     let lastX = 0;
     let lastT = 0;
-    let velocity = 0;
-    let inertiaRaf = 0;
-    let liveVal = 0;
-    let displayVal = null; // last snapped shown in label
-    let pipedVal = null; // last snapped sent to image pipeline
+    let accumPx = 0; // residual finger travel toward next tick
+    let tickIndex = 0; // integer steps from min
+    let maxIndex = 0;
+    let flingRate = 0; // ticks / second (signed)
+    let flingTimer = 0;
     let rangeKey = '';
     let min = 0;
     let max = 100;
     let step = 1;
+    let displayVal = null;
+    let pipedVal = null;
     let pendingPipe = null;
     let pipeTimer = 0;
     let lastPipeAt = 0;
     let cachedTapeX = NaN;
+    let recentDx = []; // last few frame dx for fling estimate
 
     function readRange() {
       min = parseFloat(input.min);
       max = parseFloat(input.max);
       step = parseFloat(input.step);
       if (!(step > 0)) step = 1;
+      maxIndex = Math.max(0, Math.round((max - min) / step));
     }
 
-    function snapRaw(val) {
-      let v = min + Math.round((val - min) / step) * step;
+    function valFromIndex(i) {
+      let v = min + i * step;
       const decimals = (String(step).split('.')[1] || '').length;
       if (decimals) v = parseFloat(v.toFixed(decimals));
       if (v < min) v = min;
@@ -4632,8 +4635,8 @@
       return v;
     }
 
-    function clampVal(val) {
-      return val < min ? min : val > max ? max : val;
+    function indexFromVal(val) {
+      return Math.round((clamp(val, min, max) - min) / step);
     }
 
     function rebuildTicks() {
@@ -4641,38 +4644,45 @@
       const key = min + ':' + max + ':' + step;
       if (key === rangeKey) return;
       rangeKey = key;
-      const steps = Math.max(1, Math.round((max - min) / step));
-      const w = steps * MINOR_PX;
+      const w = Math.max(1, maxIndex) * MINOR_PX;
       ticksEl.style.width = w + 'px';
       ticksEl.style.backgroundImage =
         'repeating-linear-gradient(to right,' +
-        'rgba(255,255,255,0.75) 0,rgba(255,255,255,0.75) 1.5px,' +
+        'rgba(255,255,255,0.8) 0,rgba(255,255,255,0.8) 1.5px,' +
         'transparent 1.5px, transparent ' +
         MINOR_PX * MAJOR_EVERY +
         'px),' +
         'repeating-linear-gradient(to right,' +
-        'rgba(255,255,255,0.32) 0, rgba(255,255,255,0.32) 1px,' +
-        'transparent 1px, transparent ' +
+        'rgba(255,255,255,0.36) 0, rgba(255,255,255,0.36) 1.5px,' +
+        'transparent 1.5px, transparent ' +
         MINOR_PX +
         'px)';
       ticksEl.style.boxShadow =
-        'inset 1.5px 0 0 rgba(255,255,255,0.85),' +
-        'inset -1.5px 0 0 rgba(255,255,255,0.85)';
+        'inset 1.5px 0 0 rgba(255,255,255,0.9),' +
+        'inset -1.5px 0 0 rgba(255,255,255,0.9)';
       wrap.classList.toggle('dial-unipolar', min >= 0 && max > min);
       wrap.classList.toggle('dial-bipolar', min < 0 && max > 0);
     }
 
-    /** min-mark at center when val===min → empty air past ends */
-    function paintTape(val, withTransition) {
-      const x = -((val - min) / step) * MINOR_PX;
-      if (x === cachedTapeX && !withTransition) return;
+    function paintTape(index, animate) {
+      const x = -index * MINOR_PX;
+      if (x === cachedTapeX && !animate) return;
       cachedTapeX = x;
-      if (withTransition) {
-        tape.style.transition = 'transform 0.18s cubic-bezier(0.22, 1, 0.36, 1)';
+      // Short snap — feels like a detent, not a slide
+      if (animate) {
+        tape.style.transition = 'transform 0.045s cubic-bezier(0.2, 0.8, 0.2, 1)';
       } else if (tape.style.transition !== 'none') {
         tape.style.transition = 'none';
       }
       tape.style.transform = 'translate3d(' + x + 'px,0,0)';
+    }
+
+    function hapticTick(index) {
+      // Selection-style click; major ticks slightly stronger
+      try {
+        const major = index % MAJOR_EVERY === 0;
+        if (navigator.vibrate) navigator.vibrate(major ? 2 : 1);
+      } catch (_) { /* ignore */ }
     }
 
     function flushPipe(force) {
@@ -4691,7 +4701,6 @@
       if (onInput) onInput(v, { final: !!force });
     }
 
-    /** Throttle image work so tape rAF never waits on the pipeline. */
     function queuePipe(snapped) {
       pendingPipe = snapped;
       const now = performance.now();
@@ -4708,82 +4717,84 @@
       }
     }
 
-    function publishDisplay(snapped) {
-      if (snapped === displayVal) return;
-      displayVal = snapped;
-      if (onDisplay) onDisplay(snapped);
-      queuePipe(snapped);
-    }
-
-    /** Visual path only — never blocks on render. */
-    function applyVisual(val) {
-      liveVal = clampVal(val);
-      paintTape(liveVal, false);
-      publishDisplay(snapRaw(liveVal));
-    }
-
-    function stopInertia() {
-      if (inertiaRaf) {
-        cancelAnimationFrame(inertiaRaf);
-        inertiaRaf = 0;
+    function publish(index, opts) {
+      opts = opts || {};
+      const animate = opts.animate !== false;
+      const haptic = opts.haptic !== false;
+      const prev = tickIndex;
+      if (index < 0) index = 0;
+      if (index > maxIndex) index = maxIndex;
+      if (index === tickIndex && displayVal != null && !opts.force) {
+        paintTape(tickIndex, false);
+        return false;
       }
+      const jumped = Math.abs(index - prev);
+      tickIndex = index;
+      const val = valFromIndex(tickIndex);
+      // Snap animation only for single-tick steps (multi-tick jumps hard-cut)
+      paintTape(tickIndex, animate && jumped === 1);
+      if (val !== displayVal) {
+        displayVal = val;
+        if (onDisplay) onDisplay(val);
+        queuePipe(val);
+      }
+      if (haptic && jumped > 0) {
+        // One click per event; majors feel stronger
+        hapticTick(tickIndex);
+      }
+      return jumped > 0;
+    }
+
+    function stopFling() {
+      if (flingTimer) {
+        clearTimeout(flingTimer);
+        flingTimer = 0;
+      }
+      flingRate = 0;
     }
 
     function finishGesture() {
       if (ended) return;
       ended = true;
-      stopInertia();
-      liveVal = snapRaw(liveVal);
-      paintTape(liveVal, false);
-      displayVal = liveVal;
-      pendingPipe = liveVal;
-      // Force final frame through pipeline now
+      stopFling();
+      publish(tickIndex, { animate: false, haptic: false, force: true });
+      pendingPipe = displayVal;
       flushPipe(true);
       wrap.classList.remove('is-scrubbing');
-      if (onDisplay) onDisplay(liveVal);
-      if (onEnd) onEnd(liveVal);
+      if (onDisplay) onDisplay(displayVal);
+      if (onEnd) onEnd(displayVal);
     }
 
-    function runInertia() {
-      let prev = performance.now();
-      const frame = function (now) {
-        inertiaRaf = 0;
-        const dt = Math.min(22, Math.max(8, now - prev));
-        prev = now;
-
-        if (Math.abs(velocity) < MIN_VEL) {
+    /**
+     * Coast tick-by-tick (Photos fling) — never interpolates between marks.
+     */
+    function runFling() {
+      const stepOnce = function () {
+        flingTimer = 0;
+        if (Math.abs(flingRate) < FLING_MIN_TICKS_PER_S * 0.35) {
           finishGesture();
           return;
         }
-
-        let next = liveVal + velocity * dt;
-        if (next <= min) {
-          next = min;
-          velocity = 0;
-        } else if (next >= max) {
-          next = max;
-          velocity = 0;
-        } else {
-          velocity *= Math.pow(FRICTION, dt / 16);
-        }
-
-        // Tape only this frame — pipeline is independently throttled
-        liveVal = next;
-        paintTape(liveVal, false);
-        publishDisplay(snapRaw(liveVal));
-
-        if (velocity === 0 || Math.abs(velocity) < MIN_VEL) {
+        const dir = flingRate > 0 ? 1 : -1;
+        const next = tickIndex + dir;
+        if (next < 0 || next > maxIndex) {
+          // Hit wall
+          publish(tickIndex, { animate: true, haptic: true });
           finishGesture();
           return;
         }
-        inertiaRaf = requestAnimationFrame(frame);
+        publish(next, { animate: true, haptic: true });
+        flingRate *= FLING_FRICTION;
+        // Interval from current rate (ticks/s → ms)
+        const ms = Math.max(12, Math.min(90, 1000 / Math.abs(flingRate)));
+        flingTimer = setTimeout(stepOnce, ms);
       };
-      inertiaRaf = requestAnimationFrame(frame);
+      stepOnce();
     }
 
     function onDown(e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      stopInertia();
+      stopFling();
       if (pipeTimer) {
         clearTimeout(pipeTimer);
         pipeTimer = 0;
@@ -4793,14 +4804,15 @@
       wrap.classList.add('is-scrubbing');
       beginScrub();
       rebuildTicks();
-      startX = lastX = e.clientX;
-      startVal = liveVal = displayVal = pipedVal = snapRaw(
-        parseFloat(input.value) || 0
-      );
+      lastX = e.clientX;
       lastT = performance.now();
-      velocity = 0;
+      accumPx = 0;
+      recentDx = [];
+      flingRate = 0;
+      tickIndex = indexFromVal(parseFloat(input.value) || 0);
+      displayVal = pipedVal = valFromIndex(tickIndex);
       cachedTapeX = NaN;
-      paintTape(liveVal, false);
+      paintTape(tickIndex, false);
       try {
         if (e.pointerId != null) wrap.setPointerCapture(e.pointerId);
       } catch (_) { /* Safari */ }
@@ -4811,27 +4823,66 @@
       if (!dragging) return;
       if (e.cancelable) e.preventDefault();
       const now = performance.now();
-      const dx = e.clientX - startX;
-      // INVERTED: finger right → tape follows right → value decreases
-      const next = startVal - (dx / MINOR_PX) * step;
-
-      const dt = Math.max(1, now - lastT);
       const frameDx = e.clientX - lastX;
-      const instant = -((frameDx / MINOR_PX) * step) / dt;
-      velocity = velocity * (1 - VEL_SMOOTH) + instant * VEL_SMOOTH;
+      const dt = Math.max(1, now - lastT);
       lastX = e.clientX;
       lastT = now;
 
-      applyVisual(next);
+      // Track recent motion for fling (px/ms)
+      recentDx.push({ dx: frameDx, dt: dt, t: now });
+      if (recentDx.length > 5) recentDx.shift();
+
+      // INVERTED physical tape:
+      // finger right (dx>0) → ticks move right → value decreases → index ↓
+      // So positive finger dx feeds positive accum toward index--
+      accumPx += frameDx;
+
+      // How many whole ticks did we cross?
+      let steps = 0;
+      if (accumPx >= MINOR_PX || accumPx <= -MINOR_PX) {
+        steps = (accumPx / MINOR_PX) | 0; // trunc toward 0
+        accumPx -= steps * MINOR_PX;
+      }
+      if (steps !== 0) {
+        // steps > 0 (finger right) → lower index
+        publish(tickIndex - steps, {
+          animate: Math.abs(steps) === 1,
+          haptic: true
+        });
+      }
     }
 
     function onUp() {
       if (!dragging) return;
       dragging = false;
-      velocity = clamp(velocity, -MAX_RELEASE_VEL, MAX_RELEASE_VEL);
-      if (Math.abs(velocity) > MIN_VEL * 5) {
-        runInertia();
+
+      // Estimate fling rate from recent samples (px/ms → ticks/s)
+      let sumDx = 0;
+      let sumDt = 0;
+      const cutoff = performance.now() - 80;
+      for (let i = 0; i < recentDx.length; i++) {
+        const s = recentDx[i];
+        if (s.t >= cutoff) {
+          sumDx += s.dx;
+          sumDt += s.dt;
+        }
+      }
+      let ticksPerSec = 0;
+      if (sumDt > 0) {
+        // finger right → negative value direction
+        const pxPerMs = sumDx / sumDt;
+        ticksPerSec = (-pxPerMs * 1000) / MINOR_PX;
+      }
+      // Clamp
+      if (ticksPerSec > FLING_MAX_TICKS_PER_S) ticksPerSec = FLING_MAX_TICKS_PER_S;
+      if (ticksPerSec < -FLING_MAX_TICKS_PER_S) ticksPerSec = -FLING_MAX_TICKS_PER_S;
+
+      if (Math.abs(ticksPerSec) >= FLING_MIN_TICKS_PER_S) {
+        flingRate = ticksPerSec;
+        runFling();
       } else {
+        // Discard residual accum — always rest on a tick
+        accumPx = 0;
         finishGesture();
       }
     }
@@ -4845,31 +4896,33 @@
     });
 
     input.addEventListener('input', function () {
-      if (dragging || inertiaRaf) return;
+      if (dragging || flingTimer) return;
       readRange();
-      liveVal = displayVal = pipedVal = snapRaw(parseFloat(input.value));
-      paintTape(liveVal, true);
-      if (onDisplay) onDisplay(liveVal);
-      if (onInput) onInput(liveVal, { final: false });
+      tickIndex = indexFromVal(parseFloat(input.value));
+      displayVal = pipedVal = valFromIndex(tickIndex);
+      paintTape(tickIndex, true);
+      if (onDisplay) onDisplay(displayVal);
+      if (onInput) onInput(displayVal, { final: false });
     });
     input.addEventListener('change', function () {
-      if (dragging || inertiaRaf) return;
-      if (onEnd) onEnd(liveVal);
+      if (dragging || flingTimer) return;
+      if (onEnd) onEnd(displayVal);
     });
 
     function sync(val, animate) {
-      if (dragging || inertiaRaf) return;
+      if (dragging || flingTimer) return;
       rebuildTicks();
-      liveVal = displayVal = pipedVal =
-        val != null ? snapRaw(val) : snapRaw(parseFloat(input.value));
-      input.value = String(liveVal);
+      tickIndex = indexFromVal(val != null ? val : parseFloat(input.value));
+      displayVal = pipedVal = valFromIndex(tickIndex);
+      input.value = String(displayVal);
       cachedTapeX = NaN;
-      paintTape(liveVal, !!animate);
+      paintTape(tickIndex, !!animate);
     }
 
     rebuildTicks();
-    liveVal = displayVal = pipedVal = snapRaw(parseFloat(input.value) || 0);
-    paintTape(liveVal, false);
+    tickIndex = indexFromVal(parseFloat(input.value) || 0);
+    displayVal = pipedVal = valFromIndex(tickIndex);
+    paintTape(tickIndex, false);
 
     return { wrap, sync };
   }
